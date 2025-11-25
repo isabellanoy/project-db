@@ -1,0 +1,12 @@
+{
+  "name": "proyecto-bd",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Scaffolding para proyecto universitario de Bases de Datos",
+  "scripts": {
+    "start": "lite-server"
+  },
+  "devDependencies": {
+    "lite-server": "^2.6.1"
+  }
+}

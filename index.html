@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="Proyecto universitario de Bases de Datos - Dashboard académico" />
+  <title>Proyecto BD | Dashboard Académico</title>
+  <link rel="stylesheet" href="./src/styles/styles.css" />
+</head>
+
+<body>
+  <header class="navbar" role="banner">
+    <div class="navbar__content">
+      <a class="navbar__brand" href="./index.html">Proyecto BD</a>
+      <nav aria-label="Secciones principales">
+        <ul class="navbar__links" role="list">
+          <li><a href="#resumen">Resumen</a></li>
+          <li><a href="#dataset">Dataset</a></li>
+          <li><a href="#reportes">Reportes</a></li>
+        </ul>
+      </nav>
+    </div>
+  </header>
+
+  <main>
+    <section class="wrapper hero" id="resumen">
+      <article class="hero__card">
+        <p class="hero__subtitle">Panel académico</p>
+        <h1 class="hero__title">Proyecto de Base de Datos Relacional</h1>
+        <p class="hero__text">
+          Este dashboard servirá como punto central de monitoreo para los indicadores académicos
+          y administrativos de la universidad.
+        </p>
+        <div class="stats-grid" aria-live="polite" aria-label="Indicadores clave">
+          <article class="stats-card">
+            <p class="stats-card__value">128</p>
+            <p class="stats-card__label">Estudiantes activos*</p>
+            <!-- TODO: Reemplazar con total real desde SQL -->
+          </article>
+          <article class="stats-card">
+            <p class="stats-card__value">32</p>
+            <p class="stats-card__label">Cursos disponibles*</p>
+            <!-- TODO: Inyectar conteo desde consulta de cursos vigentes -->
+          </article>
+          <article class="stats-card">
+            <p class="stats-card__value">4.7</p>
+            <p class="stats-card__label">Promedio general*</p>
+            <!-- TODO: Calcular promedio ponderado con vista agregada -->
+          </article>
+        </div>
+        <button class="cta-button" type="button">
+          Ver Plan de Consultas SQL
+        </button>
+      </article>
+      <article class="hero__card" aria-labelledby="dataset">
+        <h2 class="section__title" id="dataset">Dataset de referencia</h2>
+        <p class="section__text">
+          <!-- TODO: Resumir dataset con metadatos traídos desde scripts SQL -->
+          Aquí se incluirá la descripción del dataset real cuando se conecte la base de datos.
+        </p>
+        <div class="table-preview" role="region" aria-live="polite">
+          <table>
+            <caption hidden>Vista previa de las próximas consultas</caption>
+            <thead>
+              <tr>
+                <th>Entidad</th>
+                <th>Descripción</th>
+                <th>Fuente</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>Estudiantes</td>
+                <td><!-- TODO: Sustituir por COUNT(*) real -->120 registros</td>
+                <td>Tabla estudiantes</td>
+              </tr>
+              <tr>
+                <td>Profesores</td>
+                <td><!-- TODO: Sustituir por COUNT(*) real -->18 registros</td>
+                <td>Tabla profesores</td>
+              </tr>
+              <tr>
+                <td>Matrículas</td>
+                <td><!-- TODO: Sustituir por COUNT(*) real -->342 registros</td>
+                <td>Vista matriculas_detalle</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </article>
+    </section>
+
+    <section class="wrapper" id="reportes">
+      <header>
+        <h2 class="section__title">Reportes programados</h2>
+        <p class="section__text">
+          <!-- TODO: Rellenar con resumen generado por procedimientos almacenados -->
+          Próximamente este módulo listará los reportes consolidados y sus filtros principales.
+        </p>
+      </header>
+      <div class="table-preview">
+        <table>
+          <thead>
+            <tr>
+              <th>Reporte</th>
+              <th>Descripción</th>
+              <th>Periodicidad</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>Rendimiento académico</td>
+              <td><!-- TODO: Descripción proveniente del catálogo de reportes -->Consolidado por cohorte</td>
+              <td>Mensual</td>
+            </tr>
+            <tr>
+              <td>Alertas de deserción</td>
+              <td><!-- TODO: Descripción proveniente del catálogo de reportes -->Estudiantes en riesgo</td>
+              <td>Semanal</td>
+            </tr>
+            <tr>
+              <td>Tráfico académico</td>
+              <td><!-- TODO: Descripción proveniente del catálogo de reportes -->Cursos con alta demanda</td>
+              <td>Quincenal</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <p>&copy; <span data-current-year></span> Proyecto Universitario de Bases de Datos.</p>
+    <p><!-- TODO: Cargar nombre oficial del equipo/profesor desde tabla responsable -->Equipo académico por definir.</p>
+  </footer>
+
+  <script src="./src/scripts/main.js" type="module"></script>
+</body>
+
+</html>

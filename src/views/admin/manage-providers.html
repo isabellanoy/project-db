@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Gestión de Proveedores | Admin ViajesUCAB</title>
+    <link rel="stylesheet" href="/src/styles/styles.css">
+</head>
+<body>
+    <header class="navbar">
+        <div class="navbar__content">
+            <a class="navbar__brand" href="../home/home.html">ViajesUCAB</a>
+            <div>
+                <a href="../auth/login.html" style="text-decoration: underline; font-size: 0.9rem;">Cerrar Sesión</a>
+            </div>
+        </div>
+    </header>
+
+    <div class="dashboard-container">
+        <aside class="sidebar">
+            <div class="sidebar__title">
+                <h3>Panel Admin</h3>
+            </div>
+            <nav class="sidebar__nav">
+                <a href="./manage-providers.html" class="active">Proveedores</a>
+                <a href="#">Paquetes</a>
+                <a href="#">Promociones</a>
+                <a href="#">Tasas de Cambio</a>
+                <a href="./reports.html">Reportes</a>
+                <a href="#">Quejas</a>
+            </nav>
+        </aside>
+
+        <main style="grid-column: 2 / -1;">
+            <h1 class="section__title" style="margin-bottom: 1.5rem; border-bottom: 1px solid #000; padding-bottom: 0.5rem;">Gestión de Proveedores</h1>
+
+            <div class="toolbar">
+                <div class="search-input-group">
+                    <label style="display: block; font-size: 0.85rem; margin-bottom: 0.25rem;">Buscar</label>
+                    <input type="text" class="form-input" style="border: 1px solid #000;">
+                </div>
+                <button class="icon-btn" title="Buscar">🔍</button>
+                <button class="icon-btn" title="Agregar Nuevo" style="font-weight: bold;">+</button>
+            </div>
+
+            <div class="data-table-container">
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th style="width: 60px;">ID</th>
+                            <th>Nombre</th>
+                            <th>Tipo</th>
+                            <th style="width: 200px;">Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>001</td>
+                            <td>LASER Airlines</td>
+                            <td>Aerolínea</td>
+                            <td class="action-links">
+                                <a href="#">Ver</a>
+                                <a href="#">Editar</a>
+                                <a href="#" style="color: #ef4444;">Eliminar</a>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td>002</td>
+                            <td>Naviera Caribe</td>
+                            <td>Crucero</td>
+                            <td class="action-links">
+                                <a href="#">Ver</a>
+                                <a href="#">Editar</a>
+                                <a href="#" style="color: #ef4444;">Eliminar</a>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td>003</td>
+                            <td>Transporte Madrid Plus</td>
+                            <td>Terrestre</td>
+                            <td class="action-links">
+                                <a href="#">Ver</a>
+                                <a href="#">Editar</a>
+                                <a href="#" style="color: #ef4444;">Eliminar</a>
+                            </td>
+                        </tr>
+                        <!-- TODO: Reemplazar por paginación real una vez haya más data -->
+                        <tr style="height: 150px;">
+                            <td colspan="4"></td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <div style="display: flex; justify-content: center; gap: 0.5rem; margin-top: 1.5rem; border: 1px solid #000; width: fit-content; margin-left: auto; margin-right: auto; padding: 0.5rem;">
+                <button style="border: none; background: transparent;">&lt;</button>
+                <button style="background: #e2e8f0; padding: 0.25rem 0.75rem; border: none;">1</button>
+                <button style="background: #e2e8f0; padding: 0.25rem 0.75rem; border: none;">2</button>
+                <button style="background: #e2e8f0; padding: 0.25rem 0.75rem; border: none;">3</button>
+                <span>...</span>
+                <button style="background: #e2e8f0; padding: 0.25rem 0.75rem; border: none;">9</button>
+                <button style="border: none; background: transparent;">&gt;</button>
+            </div>
+        </main>
+    </div>
+</body>
+</html>
