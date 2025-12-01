@@ -52,43 +52,15 @@
                             <th style="width: 200px;">Acciones</th>
                         </tr>
                     </thead>
-                    <tbody>
+                    <tbody data-providers-body>
                         <tr>
-                            <td>001</td>
-                            <td>LASER Airlines</td>
-                            <td>Aerolínea</td>
-                            <td class="action-links">
-                                <a href="#">Ver</a>
-                                <a href="#">Editar</a>
-                                <a href="#" style="color: #ef4444;">Eliminar</a>
+                            <td colspan="4" style="text-align: center; padding: 1.5rem; color: #475569;">
+                                Cargando datos...
                             </td>
-                        </tr>
-                        <tr>
-                            <td>002</td>
-                            <td>Naviera Caribe</td>
-                            <td>Crucero</td>
-                            <td class="action-links">
-                                <a href="#">Ver</a>
-                                <a href="#">Editar</a>
-                                <a href="#" style="color: #ef4444;">Eliminar</a>
-                            </td>
-                        </tr>
-                        <tr>
-                            <td>003</td>
-                            <td>Transporte Madrid Plus</td>
-                            <td>Terrestre</td>
-                            <td class="action-links">
-                                <a href="#">Ver</a>
-                                <a href="#">Editar</a>
-                                <a href="#" style="color: #ef4444;">Eliminar</a>
-                            </td>
-                        </tr>
-                        <!-- TODO: Reemplazar por paginación real una vez haya más data -->
-                        <tr style="height: 150px;">
-                            <td colspan="4"></td>
                         </tr>
                     </tbody>
                 </table>
+                <p class="table-status" data-providers-status style="display: none; margin-top: 0.75rem;"></p>
             </div>
 
             <div style="display: flex; justify-content: center; gap: 0.5rem; margin-top: 1.5rem; border: 1px solid #000; width: fit-content; margin-left: auto; margin-right: auto; padding: 0.5rem;">
@@ -102,5 +74,6 @@
             </div>
         </main>
     </div>
+    <script src="/src/scripts/manageProviders.js" defer></script>
 </body>
 </html>

@@ -4,9 +4,16 @@
   "private": true,
   "description": "Scaffolding para proyecto universitario de Bases de Datos",
   "scripts": {
-    "start": "lite-server"
+  "start": "node src/index.js",
+    "dev:frontend": "lite-server"
   },
   "devDependencies": {
     "lite-server": "^2.6.1"
+  },
+  "dependencies": {
+    "cors": "^2.8.5",
+    "dotenv": "^17.2.3",
+    "express": "^5.1.0",
+    "pg": "^8.16.3"
   }
 }
