@@ -201,6 +201,7 @@ CREATE TABLE Compra (
     co_millas_a_agregar INT NOT NULL,
     co_compensacion_huella NUMERIC(12,2),
 	co_estado VARCHAR(20) NOT NULL,
+	co_es_paquete BOOLEAN,
     Cliente_c_cod INT NOT NULL
 );
 

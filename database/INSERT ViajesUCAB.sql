@@ -3007,7 +3007,7 @@ WITH s AS (INSERT INTO Servicio (s_costo, s_millas_otorgar) VALUES (500.00, 1000
 INSERT INTO Servicio_Adicional (s_cod, sa_nombre, sa_descripcion, sa_capacidad, operador_turistico_p_cod, lugar_l_cod)
 SELECT s_cod, 'Excursión Salto Ángel', 'Tour de 3 días y 2 noches con pernocta', 1,
     (SELECT p_cod FROM Operador_Turistico WHERE p_nombre = 'Parque Nacional Canaima' LIMIT 1),
-    (SELECT l_cod FROM Lugar WHERE l_nombre = 'Venezuela' LIMIT 1) FROM s;
+    (SELECT l_cod FROM Lugar WHERE l_nombre = 'Gran Sabana' AND l_tipo = 'PARROQUIA' LIMIT 1) FROM s;
 
 -- Alquiler Localiza Rio
 WITH s AS (INSERT INTO Servicio (s_costo, s_millas_otorgar) VALUES (200.00, 400) RETURNING s_cod)
