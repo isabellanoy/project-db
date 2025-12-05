@@ -2515,7 +2515,7 @@ INSERT INTO Modelo (mv_nombre, Marca_mav_cod) VALUES
     ('CRJ-900',         (SELECT mav_cod FROM Marca WHERE mav_nombre = 'Bombardier')),
     ('Citation X',      (SELECT mav_cod FROM Marca WHERE mav_nombre = 'Cessna')),
     ('F100',            (SELECT mav_cod FROM Marca WHERE mav_nombre = 'Fokker')),
-	('Clase Oasis',     (SELECT mav_cod FROM Marca WHERE mav_nombre = 'Chantiers de l''Atlantique')),
+	('Oasis',     		(SELECT mav_cod FROM Marca WHERE mav_nombre = 'Chantiers de l''Atlantique')),
     ('Clase Excel',     (SELECT mav_cod FROM Marca WHERE mav_nombre = 'Meyer Werft')),
     ('Clase Vista',     (SELECT mav_cod FROM Marca WHERE mav_nombre = 'Fincantieri')),
     ('Clase Quantum',   (SELECT mav_cod FROM Marca WHERE mav_nombre = 'Meyer Werft')),
@@ -2524,5 +2524,1487 @@ INSERT INTO Modelo (mv_nombre, Marca_mav_cod) VALUES
     ('Clase Spirit',    (SELECT mav_cod FROM Marca WHERE mav_nombre = 'Meyer Werft')),
     ('Clase Solstice',  (SELECT mav_cod FROM Marca WHERE mav_nombre = 'Kvaerner Masa-Yards')),
     ('Clase Freedom',   (SELECT mav_cod FROM Marca WHERE mav_nombre = 'Kvaerner Masa-Yards')),
-    ('Clase Fantasia',  (SELECT mav_cod FROM Marca WHERE mav_nombre = 'STX Europe'));
+    ('Clase Fantasia',  (SELECT mav_cod FROM Marca WHERE mav_nombre = 'STX Europe')),
+	('A4', (SELECT mav_cod FROM Marca WHERE mav_nombre = 'Audi' LIMIT 1)),
+	('Q5', (SELECT mav_cod FROM Marca WHERE mav_nombre = 'Audi' LIMIT 1)),
+	('Silverado', (SELECT mav_cod FROM Marca WHERE mav_nombre = 'Chevrolet' LIMIT 1)),
+	('Aveo', (SELECT mav_cod FROM Marca WHERE mav_nombre = 'Chevrolet' LIMIT 1)),
+	('Gol', (SELECT mav_cod FROM Marca WHERE mav_nombre = 'Volkswagen' LIMIT 1)),
+	('Jetta', (SELECT mav_cod FROM Marca WHERE mav_nombre = 'Volkswagen' LIMIT 1)),
+	('Corolla', (SELECT mav_cod FROM Marca WHERE mav_nombre = 'Toyota' LIMIT 1)),
+	('Hilux', (SELECT mav_cod FROM Marca WHERE mav_nombre = 'Toyota' LIMIT 1)),
+	('Model S', (SELECT mav_cod FROM Marca WHERE mav_nombre = 'Tesla' LIMIT 1)),
+	('Cybertruck', (SELECT mav_cod FROM Marca WHERE mav_nombre = 'Tesla' LIMIT 1)),
+	('Montero', (SELECT mav_cod FROM Marca WHERE mav_nombre = 'Mitsubishi' LIMIT 1)),
+	('Lancer', (SELECT mav_cod FROM Marca WHERE mav_nombre = 'Mitsubishi' LIMIT 1)),
+	('Tucson', (SELECT mav_cod FROM Marca WHERE mav_nombre = 'Hyundai' LIMIT 1)),
+	('Elantra', (SELECT mav_cod FROM Marca WHERE mav_nombre = 'Hyundai' LIMIT 1)),
+	('Civic', (SELECT mav_cod FROM Marca WHERE mav_nombre = 'Honda' LIMIT 1)),
+	('CR-V', (SELECT mav_cod FROM Marca WHERE mav_nombre = 'Honda' LIMIT 1));
 
+INSERT INTO Transporte_Terrestre (p_nombre, p_fecha_afiliacion, lugar_l_cod) VALUES
+	('Greyhound Lines', '1995-05-10', (SELECT l_cod FROM Lugar WHERE l_nombre = 'Estados Unidos' LIMIT 1)),
+	('ALSA', '2000-08-15', (SELECT l_cod FROM Lugar WHERE l_nombre = 'España' LIMIT 1)),
+	('Rodovias de Venezuela', '1998-03-20', (SELECT l_cod FROM Lugar WHERE l_nombre = 'Venezuela' LIMIT 1)),
+	('Expresos Occidente', '1990-11-05', (SELECT l_cod FROM Lugar WHERE l_nombre = 'Venezuela' LIMIT 1)),
+	('FlixBus', '2013-02-14', (SELECT l_cod FROM Lugar WHERE l_nombre = 'Alemania' LIMIT 1)),
+	('JR Bus', '2005-06-30', (SELECT l_cod FROM Lugar WHERE l_nombre = 'Japon' LIMIT 1)),
+	('Autobuses de Oriente (ADO)', '1999-09-09', (SELECT l_cod FROM Lugar WHERE l_nombre = 'Mexico' LIMIT 1)),
+	('Aeroexpresos Ejecutivos', '1992-07-24', (SELECT l_cod FROM Lugar WHERE l_nombre = 'Venezuela' LIMIT 1)),
+	('Viação Itapemirim', '1985-04-12', (SELECT l_cod FROM Lugar WHERE l_nombre = 'Brasil' LIMIT 1)),
+	('Sitssa', '2008-01-15', (SELECT l_cod FROM Lugar WHERE l_nombre = 'Venezuela' LIMIT 1));
+
+INSERT INTO Barco (mt_capacidad, b_nombre, crucero_p_cod, modelo_mv_cod) VALUES
+    (6780, 'Symphony of the Seas', (SELECT p_cod FROM Crucero WHERE p_nombre = 'Royal Caribbean Int.' LIMIT 1), (SELECT mv_cod FROM Modelo WHERE mv_nombre = 'Oasis' LIMIT 1)),
+    (5200, 'Mardi Gras', (SELECT p_cod FROM Crucero WHERE p_nombre = 'Carnival Cruise Line' LIMIT 1), (SELECT mv_cod FROM Modelo WHERE mv_nombre = 'Clase Excel' LIMIT 1)),
+    (6600, 'Costa Toscana', (SELECT p_cod FROM Crucero WHERE p_nombre = 'Costa Cruceros' LIMIT 1), (SELECT mv_cod FROM Modelo WHERE mv_nombre = 'Clase Helios' LIMIT 1)),
+    (5200, 'AIDAnova', (SELECT p_cod FROM Crucero WHERE p_nombre = 'AIDA Cruises' LIMIT 1), (SELECT mv_cod FROM Modelo WHERE mv_nombre = 'Clase Helios' LIMIT 1)),
+    (4900, 'Anthem of the Seas', (SELECT p_cod FROM Crucero WHERE p_nombre = 'Royal Caribbean Int.' LIMIT 1), (SELECT mv_cod FROM Modelo WHERE mv_nombre = 'Clase Quantum' LIMIT 1)),
+    (3960, 'Carnival Vista', (SELECT p_cod FROM Crucero WHERE p_nombre = 'Carnival Cruise Line' LIMIT 1), (SELECT mv_cod FROM Modelo WHERE mv_nombre = 'Clase Vista' LIMIT 1)),
+    (3780, 'Costa Concordia', (SELECT p_cod FROM Crucero WHERE p_nombre = 'Costa Cruceros' LIMIT 1), (SELECT mv_cod FROM Modelo WHERE mv_nombre = 'Clase Concordia' LIMIT 1)),
+    (2850, 'Celebrity Solstice', (SELECT p_cod FROM Crucero WHERE p_nombre = 'Royal Caribbean Int.' LIMIT 1), (SELECT mv_cod FROM Modelo WHERE mv_nombre = 'Clase Solstice' LIMIT 1)),
+    (3690, 'Carnival Freedom', (SELECT p_cod FROM Crucero WHERE p_nombre = 'Carnival Cruise Line' LIMIT 1), (SELECT mv_cod FROM Modelo WHERE mv_nombre = 'Clase Freedom' LIMIT 1)),
+    (4500, 'MSC Fantasia', (SELECT p_cod FROM Crucero WHERE p_nombre = 'Costa Cruceros' LIMIT 1), (SELECT mv_cod FROM Modelo WHERE mv_nombre = 'Clase Fantasia' LIMIT 1)); 
+
+INSERT INTO Automovil (mt_capacidad, a_placa, a_costo_por_km, transporte_terrestre_p_cod, modelo_mv_cod) VALUES
+    (5, 'AB123CD', 15.50, (SELECT p_cod FROM Transporte_Terrestre WHERE p_nombre = 'Sitssa' LIMIT 1), (SELECT mv_cod FROM Modelo WHERE mv_nombre = 'Aveo' LIMIT 1)),
+    (5, 'AA987BB', 20.00, (SELECT p_cod FROM Transporte_Terrestre WHERE p_nombre = 'Rodovias de Venezuela' LIMIT 1), (SELECT mv_cod FROM Modelo WHERE mv_nombre = 'Corolla' LIMIT 1)),
+    (5, 'MEX-889', 18.25, (SELECT p_cod FROM Transporte_Terrestre WHERE p_nombre = 'Autobuses de Oriente (ADO)' LIMIT 1), (SELECT mv_cod FROM Modelo WHERE mv_nombre = 'Hilux' LIMIT 1)),
+    (5, 'USA-554', 25.00, (SELECT p_cod FROM Transporte_Terrestre WHERE p_nombre = 'Greyhound Lines' LIMIT 1), (SELECT mv_cod FROM Modelo WHERE mv_nombre = 'Silverado' LIMIT 1)),
+    (5, 'ESP-112', 22.10, (SELECT p_cod FROM Transporte_Terrestre WHERE p_nombre = 'ALSA' LIMIT 1), (SELECT mv_cod FROM Modelo WHERE mv_nombre = 'Jetta' LIMIT 1)),
+    (5, 'GER-776', 30.50, (SELECT p_cod FROM Transporte_Terrestre WHERE p_nombre = 'FlixBus' LIMIT 1), (SELECT mv_cod FROM Modelo WHERE mv_nombre = 'A4' LIMIT 1)),
+    (7, 'VEN-990', 28.00, (SELECT p_cod FROM Transporte_Terrestre WHERE p_nombre = 'Aeroexpresos Ejecutivos' LIMIT 1), (SELECT mv_cod FROM Modelo WHERE mv_nombre = 'Montero' LIMIT 1)),
+    (5, 'BRA-443', 12.75, (SELECT p_cod FROM Transporte_Terrestre WHERE p_nombre = 'Viação Itapemirim' LIMIT 1), (SELECT mv_cod FROM Modelo WHERE mv_nombre = 'Gol' LIMIT 1)),
+    (5, 'JPN-221', 19.90, (SELECT p_cod FROM Transporte_Terrestre WHERE p_nombre = 'JR Bus' LIMIT 1), (SELECT mv_cod FROM Modelo WHERE mv_nombre = 'Civic' LIMIT 1)),
+    (5, 'CCS-001', 35.00, (SELECT p_cod FROM Transporte_Terrestre WHERE p_nombre = 'Sitssa' LIMIT 1), (SELECT mv_cod FROM Modelo WHERE mv_nombre = 'Tucson' LIMIT 1));
+
+INSERT INTO Aeronave (mt_capacidad, aerolinea_p_cod, modelo_mv_cod) VALUES
+    (160, (SELECT p_cod FROM Aerolinea WHERE p_nombre = 'American Airlines' LIMIT 1), (SELECT mv_cod FROM Modelo WHERE mv_nombre = '737-800' LIMIT 1)),
+    (290, (SELECT p_cod FROM Aerolinea WHERE p_nombre = 'United Airlines' LIMIT 1), (SELECT mv_cod FROM Modelo WHERE mv_nombre = '787 Dreamliner' LIMIT 1)),
+    (100, (SELECT p_cod FROM Aerolinea WHERE p_nombre = 'Conviasa' LIMIT 1), (SELECT mv_cod FROM Modelo WHERE mv_nombre = 'E190' LIMIT 1)),
+    (165, (SELECT p_cod FROM Aerolinea WHERE p_nombre = 'Laser' LIMIT 1), (SELECT mv_cod FROM Modelo WHERE mv_nombre = 'MD-82' LIMIT 1)),
+    (325, (SELECT p_cod FROM Aerolinea WHERE p_nombre = 'Iberia' LIMIT 1), (SELECT mv_cod FROM Modelo WHERE mv_nombre = 'A350-900' LIMIT 1)),
+    (180, (SELECT p_cod FROM Aerolinea WHERE p_nombre = 'Volaris' LIMIT 1), (SELECT mv_cod FROM Modelo WHERE mv_nombre = 'A320neo' LIMIT 1)),
+    (240, (SELECT p_cod FROM Aerolinea WHERE p_nombre = 'Aeromexico' LIMIT 1), (SELECT mv_cod FROM Modelo WHERE mv_nombre = '787 Dreamliner' LIMIT 1)),
+    (72,  (SELECT p_cod FROM Aerolinea WHERE p_nombre = 'Aeroitalia' LIMIT 1), (SELECT mv_cod FROM Modelo WHERE mv_nombre = 'ATR 72-600' LIMIT 1)),
+    (90,  (SELECT p_cod FROM Aerolinea WHERE p_nombre = 'Red Wings Airlines' LIMIT 1), (SELECT mv_cod FROM Modelo WHERE mv_nombre = 'CRJ-900' LIMIT 1)),
+    (325, (SELECT p_cod FROM Aerolinea WHERE p_nombre = 'Japan Airlines' LIMIT 1), (SELECT mv_cod FROM Modelo WHERE mv_nombre = 'A350-900' LIMIT 1)),
+    (186, (SELECT p_cod FROM Aerolinea WHERE p_nombre = 'Vueling Airlines' LIMIT 1), (SELECT mv_cod FROM Modelo WHERE mv_nombre = 'A320neo' LIMIT 1)),
+    (298, (SELECT p_cod FROM Aerolinea WHERE p_nombre = 'Saudia' LIMIT 1), (SELECT mv_cod FROM Modelo WHERE mv_nombre = '787 Dreamliner' LIMIT 1)),
+    (165, (SELECT p_cod FROM Aerolinea WHERE p_nombre = 'Saudia' LIMIT 1), (SELECT mv_cod FROM Modelo WHERE mv_nombre = 'A320neo' LIMIT 1)),
+    (312, (SELECT p_cod FROM Aerolinea WHERE p_nombre = 'Air China' LIMIT 1), (SELECT mv_cod FROM Modelo WHERE mv_nombre = 'A350-900' LIMIT 1)),
+    (160, (SELECT p_cod FROM Aerolinea WHERE p_nombre = 'Air China' LIMIT 1), (SELECT mv_cod FROM Modelo WHERE mv_nombre = '737-800' LIMIT 1));
+
+INSERT INTO Servicio_Barco (sb_descripcion, sb_costo) VALUES
+    ('Paquete de Internet Premium (Starlink)', 25.00),
+    ('Cena en Restaurante de Especialidad (Steakhouse)', 45.00),
+    ('Masaje Relajante en Spa (50 min)', 90.00),
+    ('Acceso a Zona Termal Exclusiva', 35.00),
+    ('Paquete de Bebidas Ilimitadas', 65.00),
+    ('Excursión Guiada en Puerto', 120.00),
+    ('Clase de Cocina Privada', 30.00),
+    ('Servicio de Lavandería Express', 15.00),
+    ('Sesión de Fotos Profesional', 20.00),
+    ('Acceso VIP a Casino y Torneos', 50.00);
+
+INSERT INTO Bar_Ser (servicio_barco_sb_cod, barco_mt_cod) VALUES
+    ((SELECT sb_cod FROM Servicio_Barco WHERE sb_descripcion LIKE 'Paquete de Internet%' LIMIT 1), (SELECT mt_cod FROM Barco WHERE b_nombre = 'Symphony of the Seas' LIMIT 1)),
+    ((SELECT sb_cod FROM Servicio_Barco WHERE sb_descripcion LIKE 'Cena en Restaurante%' LIMIT 1), (SELECT mt_cod FROM Barco WHERE b_nombre = 'Symphony of the Seas' LIMIT 1)),
+    ((SELECT sb_cod FROM Servicio_Barco WHERE sb_descripcion LIKE 'Paquete de Bebidas%' LIMIT 1), (SELECT mt_cod FROM Barco WHERE b_nombre = 'Mardi Gras' LIMIT 1)),
+    ((SELECT sb_cod FROM Servicio_Barco WHERE sb_descripcion LIKE 'Masaje Relajante%' LIMIT 1), (SELECT mt_cod FROM Barco WHERE b_nombre = 'Costa Toscana' LIMIT 1)),
+    ((SELECT sb_cod FROM Servicio_Barco WHERE sb_descripcion LIKE 'Excursión Guiada%' LIMIT 1), (SELECT mt_cod FROM Barco WHERE b_nombre = 'AIDAnova' LIMIT 1)),
+    ((SELECT sb_cod FROM Servicio_Barco WHERE sb_descripcion LIKE 'Acceso VIP%' LIMIT 1), (SELECT mt_cod FROM Barco WHERE b_nombre = 'Anthem of the Seas' LIMIT 1)),
+    ((SELECT sb_cod FROM Servicio_Barco WHERE sb_descripcion LIKE 'Clase de Cocina%' LIMIT 1), (SELECT mt_cod FROM Barco WHERE b_nombre = 'Carnival Vista' LIMIT 1)),
+    ((SELECT sb_cod FROM Servicio_Barco WHERE sb_descripcion LIKE 'Sesión de Fotos%' LIMIT 1), (SELECT mt_cod FROM Barco WHERE b_nombre = 'Costa Concordia' LIMIT 1)),
+    ((SELECT sb_cod FROM Servicio_Barco WHERE sb_descripcion LIKE 'Servicio de Lavandería%' LIMIT 1), (SELECT mt_cod FROM Barco WHERE b_nombre = 'Celebrity Solstice' LIMIT 1)),
+    ((SELECT sb_cod FROM Servicio_Barco WHERE sb_descripcion LIKE 'Acceso a Zona Termal%' LIMIT 1), (SELECT mt_cod FROM Barco WHERE b_nombre = 'MSC Fantasia' LIMIT 1));
+
+INSERT INTO Tipo_Camarote (tc_nombre, tc_descripcion, tc_capacidad, tc_costo) VALUES
+    ('Interior Standard', 'Camarote interior sin ventana, ideal para presupuesto bajo.', 2, 80.00),
+    ('Interior Superior', 'Camarote interior con mayor metraje y ubicación céntrica.', 2, 100.00),
+    ('Vista al Mar (Ojo de Buey)', 'Camarote con pequeña ventana circular en cubierta baja.', 2, 140.00),
+    ('Vista al Mar Panorámica', 'Camarote con ventanal grande en cubierta superior.', 2, 180.00),
+    ('Balcón Deluxe', 'Camarote con balcón privado y vista al mar.', 2, 250.00),
+    ('Balcón Premium', 'Camarote con balcón extendido y tumbonas.', 3, 300.00),
+    ('Mini Suite', 'Suite pequeña con área de estar separada y balcón.', 4, 450.00),
+    ('Grand Suite', 'Suite de lujo con mayordomo, jacuzzi y balcón amplio.', 4, 900.00),
+    ('Family Harbor', 'Camarote temático familiar con capacidad extra.', 5, 500.00),
+    ('The Haven / Yacht Club', 'Suite exclusiva en área privada del barco con acceso VIP.', 4, 1500.00);
+
+INSERT INTO Bar_Tip (bt_cant_camarotes, barco_mt_cod, tipo_camarote_tc_cod) VALUES
+    (500, (SELECT mt_cod FROM Barco WHERE b_nombre = 'Symphony of the Seas' LIMIT 1), (SELECT tc_cod FROM Tipo_Camarote WHERE tc_nombre = 'Balcón Deluxe' LIMIT 1)),
+    (200, (SELECT mt_cod FROM Barco WHERE b_nombre = 'Symphony of the Seas' LIMIT 1), (SELECT tc_cod FROM Tipo_Camarote WHERE tc_nombre = 'Interior Standard' LIMIT 1)),
+    (50,  (SELECT mt_cod FROM Barco WHERE b_nombre = 'Symphony of the Seas' LIMIT 1), (SELECT tc_cod FROM Tipo_Camarote WHERE tc_nombre = 'Grand Suite' LIMIT 1)),
+    (300, (SELECT mt_cod FROM Barco WHERE b_nombre = 'Mardi Gras' LIMIT 1), (SELECT tc_cod FROM Tipo_Camarote WHERE tc_nombre = 'Vista al Mar Panorámica' LIMIT 1)),
+    (150, (SELECT mt_cod FROM Barco WHERE b_nombre = 'Mardi Gras' LIMIT 1), (SELECT tc_cod FROM Tipo_Camarote WHERE tc_nombre = 'Family Harbor' LIMIT 1)),
+    (400, (SELECT mt_cod FROM Barco WHERE b_nombre = 'Costa Toscana' LIMIT 1), (SELECT tc_cod FROM Tipo_Camarote WHERE tc_nombre = 'Balcón Premium' LIMIT 1)),
+    (100, (SELECT mt_cod FROM Barco WHERE b_nombre = 'Costa Toscana' LIMIT 1), (SELECT tc_cod FROM Tipo_Camarote WHERE tc_nombre = 'Mini Suite' LIMIT 1)),
+    (250, (SELECT mt_cod FROM Barco WHERE b_nombre = 'AIDAnova' LIMIT 1), (SELECT tc_cod FROM Tipo_Camarote WHERE tc_nombre = 'Interior Superior' LIMIT 1)),
+    (20,  (SELECT mt_cod FROM Barco WHERE b_nombre = 'MSC Fantasia' LIMIT 1), (SELECT tc_cod FROM Tipo_Camarote WHERE tc_nombre = 'The Haven / Yacht Club' LIMIT 1)),
+    (350, (SELECT mt_cod FROM Barco WHERE b_nombre = 'Anthem of the Seas' LIMIT 1), (SELECT tc_cod FROM Tipo_Camarote WHERE tc_nombre = 'Vista al Mar (Ojo de Buey)' LIMIT 1));	
+
+INSERT INTO Clase_Asiento (ca_nombre, ca_descripcion, ca_costo) VALUES
+    ('Economy Basic', 'Tarifa más baja, sin equipaje de mano ni selección de asiento.', 0.00),
+    ('Economy Standard', 'Incluye equipaje de mano y selección de asiento estándar.', 40.00),
+    ('Economy Plus', 'Espacio extra para las piernas (Exit Row).', 90.00),
+    ('Premium Economy', 'Asiento más ancho, mayor reclinación y comida mejorada.', 250.00),
+    ('Business Class Regional', 'Asiento central bloqueado en vuelos cortos (Europa).', 150.00),
+    ('Business Class Lie-Flat', 'Asiento cama totalmente reclinable para vuelos largos.', 1200.00),
+    ('First Class Suite', 'Suite privada con puerta y servicio personalizado.', 4500.00),
+    ('The Residence', 'Apartamento privado de 3 habitaciones en el aire.', 12000.00),
+    ('Turista Flex', 'Clase turista con cambios y reembolsos permitidos.', 80.00),
+    ('Business Lite', 'Clase ejecutiva sin acceso a sala VIP ni maleta extra.', 800.00);
+
+INSERT INTO Aer_Cla (ac_cant_asientos, aeronave_mt_cod, clase_asiento_ca_cod) VALUES
+    (140, (SELECT mt_cod FROM Aeronave WHERE modelo_mv_cod = (SELECT mv_cod FROM Modelo WHERE mv_nombre = '737-800') LIMIT 1), (SELECT ca_cod FROM Clase_Asiento WHERE ca_nombre = 'Economy Standard' LIMIT 1)),
+    (20,  (SELECT mt_cod FROM Aeronave WHERE modelo_mv_cod = (SELECT mv_cod FROM Modelo WHERE mv_nombre = '737-800') LIMIT 1), (SELECT ca_cod FROM Clase_Asiento WHERE ca_nombre = 'Economy Plus' LIMIT 1)),
+    (200, (SELECT mt_cod FROM Aeronave WHERE aerolinea_p_cod = (SELECT p_cod FROM Aerolinea WHERE p_nombre = 'United Airlines') LIMIT 1), (SELECT ca_cod FROM Clase_Asiento WHERE ca_nombre = 'Economy Standard' LIMIT 1)),
+    (48,  (SELECT mt_cod FROM Aeronave WHERE aerolinea_p_cod = (SELECT p_cod FROM Aerolinea WHERE p_nombre = 'United Airlines') LIMIT 1), (SELECT ca_cod FROM Clase_Asiento WHERE ca_nombre = 'Business Class Lie-Flat' LIMIT 1)),
+    (290, (SELECT mt_cod FROM Aeronave WHERE aerolinea_p_cod = (SELECT p_cod FROM Aerolinea WHERE p_nombre = 'Iberia') LIMIT 1), (SELECT ca_cod FROM Clase_Asiento WHERE ca_nombre = 'Economy Standard' LIMIT 1)),
+    (31,  (SELECT mt_cod FROM Aeronave WHERE aerolinea_p_cod = (SELECT p_cod FROM Aerolinea WHERE p_nombre = 'Iberia') LIMIT 1), (SELECT ca_cod FROM Clase_Asiento WHERE ca_nombre = 'Business Class Lie-Flat' LIMIT 1)),
+    (24,  (SELECT mt_cod FROM Aeronave WHERE aerolinea_p_cod = (SELECT p_cod FROM Aerolinea WHERE p_nombre = 'Iberia') LIMIT 1), (SELECT ca_cod FROM Clase_Asiento WHERE ca_nombre = 'Premium Economy' LIMIT 1)),
+    (100, (SELECT mt_cod FROM Aeronave WHERE aerolinea_p_cod = (SELECT p_cod FROM Aerolinea WHERE p_nombre = 'Conviasa') LIMIT 1), (SELECT ca_cod FROM Clase_Asiento WHERE ca_nombre = 'Economy Standard' LIMIT 1)),
+    (8,   (SELECT mt_cod FROM Aeronave WHERE aerolinea_p_cod = (SELECT p_cod FROM Aerolinea WHERE p_nombre = 'Japan Airlines') LIMIT 1), (SELECT ca_cod FROM Clase_Asiento WHERE ca_nombre = 'First Class Suite' LIMIT 1)),
+    (180, (SELECT mt_cod FROM Aeronave WHERE aerolinea_p_cod = (SELECT p_cod FROM Aerolinea WHERE p_nombre = 'Volaris') LIMIT 1), (SELECT ca_cod FROM Clase_Asiento WHERE ca_nombre = 'Economy Basic' LIMIT 1));	
+
+INSERT INTO Tasa_Cambio (tca_divisa_origen, tca_valor_tasa, tca_fecha_hora_tasa, tca_fecha_hora_fin) VALUES
+    ('USD', 60.50, '2025-11-01 09:00:00', '2025-11-08 08:59:59'),
+    ('USD', 61.20, '2025-11-08 09:00:00', '2025-11-15 08:59:59'),
+    ('USD', 62.00, '2025-11-15 09:00:00', '2025-11-22 08:59:59'),
+    ('USD', 63.50, '2025-11-22 09:00:00', '2025-12-01 08:59:59'),
+    ('USD', 251.88, '2025-12-01 09:00:00', NULL),
+
+    ('EUR', 65.00, '2025-11-01 09:00:00', '2025-11-08 08:59:59'),
+    ('EUR', 66.10, '2025-11-08 09:00:00', '2025-11-15 08:59:59'),
+    ('EUR', 67.20, '2025-11-15 09:00:00', '2025-11-22 08:59:59'),
+    ('EUR', 68.50, '2025-11-22 09:00:00', '2025-12-01 08:59:59'),
+    ('EUR', 293.88, '2025-12-01 09:00:00', NULL),
+
+    ('JPY', 0.4030, '2025-11-01 09:00:00', '2025-11-08 08:59:59'),
+    ('JPY', 0.4080, '2025-11-08 09:00:00', '2025-11-15 08:59:59'),
+    ('JPY', 0.4130, '2025-11-15 09:00:00', '2025-11-22 08:59:59'),
+    ('JPY', 0.4230, '2025-11-22 09:00:00', '2025-12-01 08:59:59'),
+    ('JPY', 1.61, '2025-12-01 09:00:00', NULL),
+
+    ('MILLA', 0.25, '2025-10-01 00:00:00', '2025-10-15 23:59:59'),
+    ('MILLA', 0.28, '2025-10-16 00:00:00', '2025-11-01 23:59:59'),
+    ('MILLA', 0.30, '2025-11-02 00:00:00', '2025-11-15 23:59:59'),
+    ('MILLA', 0.32, '2025-11-16 00:00:00', '2025-12-01 23:59:59'),
+    ('MILLA', 0.35, '2025-12-02 00:00:00', NULL);	
+
+INSERT INTO Tas_Lug VALUES 
+	((SELECT tca_cod FROM Tasa_Cambio WHERE tca_divisa_origen = 'USD' AND tca_fecha_hora_fin IS NULL LIMIT 1), (SELECT l_cod FROM Lugar WHERE l_nombre = 'Mexico' LIMIT 1)),
+	((SELECT tca_cod FROM Tasa_Cambio WHERE tca_divisa_origen = 'USD' AND tca_fecha_hora_fin IS NULL LIMIT 1), (SELECT l_cod FROM Lugar WHERE l_nombre = 'Estados Unidos' LIMIT 1)),	
+	((SELECT tca_cod FROM Tasa_Cambio WHERE tca_divisa_origen = 'USD' AND tca_fecha_hora_fin IS NULL LIMIT 1), (SELECT l_cod FROM Lugar WHERE l_nombre = 'Australia' LIMIT 1)),
+	((SELECT tca_cod FROM Tasa_Cambio WHERE tca_divisa_origen = 'USD' AND tca_fecha_hora_fin IS NULL LIMIT 1), (SELECT l_cod FROM Lugar WHERE l_nombre = 'Africa' LIMIT 1)),
+	((SELECT tca_cod FROM Tasa_Cambio WHERE tca_divisa_origen = 'EUR' AND tca_fecha_hora_fin IS NULL LIMIT 1), (SELECT l_cod FROM Lugar WHERE l_nombre = 'Italia' LIMIT 1)),
+	((SELECT tca_cod FROM Tasa_Cambio WHERE tca_divisa_origen = 'EUR' AND tca_fecha_hora_fin IS NULL LIMIT 1), (SELECT l_cod FROM Lugar WHERE l_nombre = 'Francia' LIMIT 1)),
+	((SELECT tca_cod FROM Tasa_Cambio WHERE tca_divisa_origen = 'EUR' AND tca_fecha_hora_fin IS NULL LIMIT 1), (SELECT l_cod FROM Lugar WHERE l_nombre = 'Alemania' LIMIT 1)),
+	((SELECT tca_cod FROM Tasa_Cambio WHERE tca_divisa_origen = 'EUR' AND tca_fecha_hora_fin IS NULL LIMIT 1), (SELECT l_cod FROM Lugar WHERE l_nombre = 'España' LIMIT 1)),	
+	((SELECT tca_cod FROM Tasa_Cambio WHERE tca_divisa_origen = 'EUR' AND tca_fecha_hora_fin IS NULL LIMIT 1), (SELECT l_cod FROM Lugar WHERE l_nombre = 'Asia' LIMIT 1)),	
+	((SELECT tca_cod FROM Tasa_Cambio WHERE tca_divisa_origen = 'JPY' AND tca_fecha_hora_fin IS NULL LIMIT 1), (SELECT l_cod FROM Lugar WHERE l_nombre = 'Asia' LIMIT 1));	
+
+INSERT INTO Terminal_Operacion (to_direccion, Transporte_terrestre_p_cod, lugar_l_cod) VALUES
+    ('Terminal Privado, Av. Libertador, Colegio de Ingenieros', (SELECT p_cod FROM Transporte_Terrestre WHERE p_nombre = 'Rodovias de Venezuela' LIMIT 1), (SELECT l_cod FROM Lugar WHERE l_nombre = 'Distrito Capital' LIMIT 1)),
+    ('Av. Principal de Bello Campo, Chacao', (SELECT p_cod FROM Transporte_Terrestre WHERE p_nombre = 'Aeroexpresos Ejecutivos' LIMIT 1), (SELECT l_cod FROM Lugar WHERE l_nombre = 'Distrito Capital' LIMIT 1)),
+    ('Terminal La Bandera, Av. Nueva Granada', (SELECT p_cod FROM Transporte_Terrestre WHERE p_nombre = 'Sitssa' LIMIT 1), (SELECT l_cod FROM Lugar WHERE l_nombre = 'Distrito Capital' LIMIT 1)),
+    ('Terminal de Pasajeros Genaro Mendez, La Concordia', (SELECT p_cod FROM Transporte_Terrestre WHERE p_nombre = 'Expresos Occidente' LIMIT 1), (SELECT l_cod FROM Lugar WHERE l_nombre = 'San Cristóbal' LIMIT 1)),
+    ('1716 E 7th St, Downtown LA', (SELECT p_cod FROM Transporte_Terrestre WHERE p_nombre = 'Greyhound Lines' LIMIT 1), (SELECT l_cod FROM Lugar WHERE l_nombre = 'Los Angeles' LIMIT 1)),
+    ('Muelle de Poniente, s/n, Estación de Autobuses', (SELECT p_cod FROM Transporte_Terrestre WHERE p_nombre = 'ALSA' LIMIT 1), (SELECT l_cod FROM Lugar WHERE l_nombre = 'Alicante' AND l_tipo = 'CIUDAD' LIMIT 1)),
+    ('Central de Autobuses de Guadalajara, Tlaquepaque', (SELECT p_cod FROM Transporte_Terrestre WHERE p_nombre = 'Autobuses de Oriente (ADO)' LIMIT 1), (SELECT l_cod FROM Lugar WHERE l_nombre = 'Guadalajara' LIMIT 1)),
+    ('Rodoviária Novo Rio, Av. Francisco Bicalho', (SELECT p_cod FROM Transporte_Terrestre WHERE p_nombre = 'Viação Itapemirim' LIMIT 1), (SELECT l_cod FROM Lugar WHERE l_nombre = 'Rio de Janeiro' AND l_tipo = 'CIUDAD' LIMIT 1)),
+    ('Busta Shinjuku 4F, Shibuya City', (SELECT p_cod FROM Transporte_Terrestre WHERE p_nombre = 'JR Bus' LIMIT 1), (SELECT l_cod FROM Lugar WHERE l_nombre = 'Shinjuku' LIMIT 1)),
+    ('ZOB am Funkturm, Masurenallee', (SELECT p_cod FROM Transporte_Terrestre WHERE p_nombre = 'FlixBus' LIMIT 1), (SELECT l_cod FROM Lugar WHERE l_nombre = 'Postdam' LIMIT 1));	
+
+INSERT INTO Tipo_Habitacion (th_nombre, th_descripcion) VALUES
+    ('Individual', 'Habitación diseñada para una persona, generalmente con una cama individual.'),
+    ('Doble Estándar', 'Habitación para dos personas con dos camas individuales o una cama doble.'),
+    ('Matrimonial', 'Habitación con una cama grande (Queen o King Size) ideal para parejas.'),
+    ('Twin', 'Habitación con dos camas individuales separadas, ideal para amigos o compañeros de trabajo.'),
+    ('Suite Junior', 'Habitación más amplia que la estándar con una pequeña área de estar integrada.'),
+    ('Suite Ejecutiva', 'Habitación espaciosa con escritorio de trabajo, sala de estar y servicios VIP.'),
+    ('Suite Presidencial', 'La habitación más lujosa del hotel, con múltiples ambientes, jacuzzi y mayordomo.'),
+    ('Familiar', 'Habitación de gran tamaño o conectada, con capacidad para 4 o más personas.'),
+    ('Habitación Conectada', 'Dos habitaciones con una puerta interna que permite el acceso entre ellas.'),
+    ('Habitación Accesible', 'Diseñada específicamente para personas con movilidad reducida, con baños adaptados.');
+
+-- CCS -> MAD (Iberia)
+WITH s AS (INSERT INTO Servicio (s_costo, s_millas_otorgar) VALUES (850.00, 4300) RETURNING s_cod)
+INSERT INTO Vuelo (s_cod, v_cod_vue, v_fecha_hora_salida, v_distancia_km, v_duracion_horas, aerolinea_p_cod, lugar_l_cod, lugar_l_cod2, aeronave_mt_cod)
+SELECT s_cod, 'IB6674', '2025-11-20 18:00:00', 7000, 9, 
+    (SELECT p_cod FROM Aerolinea WHERE p_nombre = 'Iberia' LIMIT 1),
+    (SELECT l_cod FROM Lugar WHERE l_nombre = 'Distrito Capital' LIMIT 1),
+    (SELECT l_cod FROM Lugar WHERE l_nombre = 'España' LIMIT 1),
+    (SELECT mt_cod FROM Aeronave WHERE aerolinea_p_cod = (SELECT p_cod FROM Aerolinea WHERE p_nombre = 'Iberia' LIMIT 1) LIMIT 1) FROM s;
+
+-- JFK -> LHR (American Airlines)
+WITH s AS (INSERT INTO Servicio (s_costo, s_millas_otorgar) VALUES (600.00, 3400) RETURNING s_cod)
+INSERT INTO Vuelo (s_cod, v_cod_vue, v_fecha_hora_salida, v_distancia_km, v_duracion_horas, aerolinea_p_cod, lugar_l_cod, lugar_l_cod2, aeronave_mt_cod)
+SELECT s_cod, 'AA100', '2025-12-01 18:30:00', 5500, 7, 
+    (SELECT p_cod FROM Aerolinea WHERE p_nombre = 'American Airlines' LIMIT 1),
+    (SELECT l_cod FROM Lugar WHERE l_nombre = 'Estados Unidos' LIMIT 1), -- Asumiendo JFK en USA
+    (SELECT l_cod FROM Lugar WHERE l_nombre = 'Europa' LIMIT 1),
+    (SELECT mt_cod FROM Aeronave WHERE aerolinea_p_cod = (SELECT p_cod FROM Aerolinea WHERE p_nombre = 'American Airlines' LIMIT 1) LIMIT 1) FROM s;
+
+-- HND -> LAX (Japan Airlines)
+WITH s AS (INSERT INTO Servicio (s_costo, s_millas_otorgar) VALUES (1200.00, 5400) RETURNING s_cod)
+INSERT INTO Vuelo (s_cod, v_cod_vue, v_fecha_hora_salida, v_distancia_km, v_duracion_horas, aerolinea_p_cod, lugar_l_cod, lugar_l_cod2, aeronave_mt_cod)
+SELECT s_cod, 'JL016', '2025-11-25 17:00:00', 8800, 10, 
+    (SELECT p_cod FROM Aerolinea WHERE p_nombre = 'Japan Airlines' LIMIT 1),
+    (SELECT l_cod FROM Lugar WHERE l_nombre = 'Japon' LIMIT 1),
+    (SELECT l_cod FROM Lugar WHERE l_nombre = 'Los Angeles' LIMIT 1),
+    (SELECT mt_cod FROM Aeronave WHERE aerolinea_p_cod = (SELECT p_cod FROM Aerolinea WHERE p_nombre = 'Japan Airlines' LIMIT 1) LIMIT 1) FROM s;
+
+-- FCO -> MEX (ITA Airways)
+WITH s AS (INSERT INTO Servicio (s_costo, s_millas_otorgar) VALUES (950.00, 6000) RETURNING s_cod)
+INSERT INTO Vuelo (s_cod, v_cod_vue, v_fecha_hora_salida, v_distancia_km, v_duracion_horas, aerolinea_p_cod, lugar_l_cod, lugar_l_cod2, aeronave_mt_cod)
+SELECT s_cod, 'AZ676', '2025-12-10 10:00:00', 10200, 13, 
+    (SELECT p_cod FROM Aerolinea WHERE p_nombre = 'Aeroitalia' LIMIT 1),
+    (SELECT l_cod FROM Lugar WHERE l_nombre = 'Italia' LIMIT 1),
+    (SELECT l_cod FROM Lugar WHERE l_nombre = 'Mexico' LIMIT 1),
+    (SELECT mt_cod FROM Aeronave WHERE aerolinea_p_cod = (SELECT p_cod FROM Aerolinea WHERE p_nombre = 'Aeroitalia' LIMIT 1) LIMIT 1) FROM s;
+
+-- CCS -> PMV (Conviasa - Nacional)
+WITH s AS (INSERT INTO Servicio (s_costo, s_millas_otorgar) VALUES (50.00, 200) RETURNING s_cod)
+INSERT INTO Vuelo (s_cod, v_cod_vue, v_fecha_hora_salida, v_distancia_km, v_duracion_horas, aerolinea_p_cod, lugar_l_cod, lugar_l_cod2, aeronave_mt_cod)
+SELECT s_cod, 'V03012', '2025-11-18 07:00:00', 300, 1, 
+    (SELECT p_cod FROM Aerolinea WHERE p_nombre = 'Conviasa' LIMIT 1),
+    (SELECT l_cod FROM Lugar WHERE l_nombre = 'Distrito Capital' LIMIT 1),
+    (SELECT l_cod FROM Lugar WHERE l_nombre = 'Nueva Esparta' LIMIT 1),
+    (SELECT mt_cod FROM Aeronave WHERE aerolinea_p_cod = (SELECT p_cod FROM Aerolinea WHERE p_nombre = 'Conviasa' LIMIT 1) LIMIT 1) FROM s;
+
+-- SYD -> AKL (Qantas)
+WITH s AS (INSERT INTO Servicio (s_costo, s_millas_otorgar) VALUES (300.00, 1300) RETURNING s_cod)
+INSERT INTO Vuelo (s_cod, v_cod_vue, v_fecha_hora_salida, v_distancia_km, v_duracion_horas, aerolinea_p_cod, lugar_l_cod, lugar_l_cod2, aeronave_mt_cod)
+SELECT s_cod, 'QF143', '2025-11-30 09:00:00', 2100, 3, 
+    (SELECT p_cod FROM Aerolinea WHERE p_nombre = 'Red Wings Airlines' LIMIT 1),
+    (SELECT l_cod FROM Lugar WHERE l_nombre = 'Australia' LIMIT 1),
+    (SELECT l_cod FROM Lugar WHERE l_nombre = 'Nueva Zelanda' LIMIT 1),
+    (SELECT mt_cod FROM Aeronave WHERE aerolinea_p_cod = (SELECT p_cod FROM Aerolinea WHERE p_nombre = 'Red Wings Airlines' LIMIT 1) LIMIT 1) FROM s;
+
+-- PEK -> SZX (Air China)
+WITH s AS (INSERT INTO Servicio (s_costo, s_millas_otorgar) VALUES (200.00, 1000) RETURNING s_cod)
+INSERT INTO Vuelo (s_cod, v_cod_vue, v_fecha_hora_salida, v_distancia_km, v_duracion_horas, aerolinea_p_cod, lugar_l_cod, lugar_l_cod2, aeronave_mt_cod)
+SELECT s_cod, 'CA1301', '2025-12-05 14:00:00', 1900, 3, 
+    (SELECT p_cod FROM Aerolinea WHERE p_nombre = 'Air China' LIMIT 1),
+    (SELECT l_cod FROM Lugar WHERE l_nombre = 'China' LIMIT 1), -- PEK (Beijing) genérico
+    (SELECT l_cod FROM Lugar WHERE l_nombre = 'China' LIMIT 1), -- SZX (Shenzhen) genérico
+    (SELECT mt_cod FROM Aeronave WHERE aerolinea_p_cod = (SELECT p_cod FROM Aerolinea WHERE p_nombre = 'Air China' LIMIT 1) LIMIT 1) FROM s;
+
+-- MAD -> BCN (Vueling)
+WITH s AS (INSERT INTO Servicio (s_costo, s_millas_otorgar) VALUES (80.00, 300) RETURNING s_cod)
+INSERT INTO Vuelo (s_cod, v_cod_vue, v_fecha_hora_salida, v_distancia_km, v_duracion_horas, aerolinea_p_cod, lugar_l_cod, lugar_l_cod2, aeronave_mt_cod)
+SELECT s_cod, 'VY1001', '2025-11-22 08:00:00', 500, 1, 
+    (SELECT p_cod FROM Aerolinea WHERE p_nombre = 'Vueling Airlines' LIMIT 1),
+    (SELECT l_cod FROM Lugar WHERE l_nombre = 'España' LIMIT 1),
+    (SELECT l_cod FROM Lugar WHERE l_nombre = 'España' LIMIT 1),
+    (SELECT mt_cod FROM Aeronave WHERE aerolinea_p_cod = (SELECT p_cod FROM Aerolinea WHERE p_nombre = 'Vueling Airlines' LIMIT 1) LIMIT 1) FROM s;
+
+-- RUH -> JED (Saudia)
+WITH s AS (INSERT INTO Servicio (s_costo, s_millas_otorgar) VALUES (120.00, 500) RETURNING s_cod)
+INSERT INTO Vuelo (s_cod, v_cod_vue, v_fecha_hora_salida, v_distancia_km, v_duracion_horas, aerolinea_p_cod, lugar_l_cod, lugar_l_cod2, aeronave_mt_cod)
+SELECT s_cod, 'SV1020', '2025-12-15 11:00:00', 850, 2, 
+    (SELECT p_cod FROM Aerolinea WHERE p_nombre = 'Saudia' LIMIT 1),
+    (SELECT l_cod FROM Lugar WHERE l_nombre = 'Riad' LIMIT 1),
+    (SELECT l_cod FROM Lugar WHERE l_nombre = 'Arabia Saudita' LIMIT 1),
+    (SELECT mt_cod FROM Aeronave WHERE aerolinea_p_cod = (SELECT p_cod FROM Aerolinea WHERE p_nombre = 'Saudia' LIMIT 1) LIMIT 1) FROM s;
+
+-- MEX -> LAX (Volaris)
+WITH s AS (INSERT INTO Servicio (s_costo, s_millas_otorgar) VALUES (250.00, 1500) RETURNING s_cod)
+INSERT INTO Vuelo (s_cod, v_cod_vue, v_fecha_hora_salida, v_distancia_km, v_duracion_horas, aerolinea_p_cod, lugar_l_cod, lugar_l_cod2, aeronave_mt_cod)
+SELECT s_cod, 'Y4900', '2025-11-28 16:00:00', 2500, 4, 
+    (SELECT p_cod FROM Aerolinea WHERE p_nombre = 'Volaris' LIMIT 1),
+    (SELECT l_cod FROM Lugar WHERE l_nombre = 'Mexico' LIMIT 1),
+    (SELECT l_cod FROM Lugar WHERE l_nombre = 'Los Angeles' LIMIT 1),
+    (SELECT mt_cod FROM Aeronave WHERE aerolinea_p_cod = (SELECT p_cod FROM Aerolinea WHERE p_nombre = 'Volaris' LIMIT 1) LIMIT 1) FROM s;	
+
+-- Rodovias CCS
+WITH s AS (INSERT INTO Servicio (s_costo, s_millas_otorgar) VALUES (30.00, 50) RETURNING s_cod)
+INSERT INTO Traslado (s_cod, t_distancia_km, transporte_terrestre_p_cod, lugar_l_cod, terminal_operacion_to_cod)
+SELECT s_cod, 300, 
+    (SELECT p_cod FROM Transporte_Terrestre WHERE p_nombre = 'Rodovias de Venezuela' LIMIT 1),
+    (SELECT l_cod FROM Lugar WHERE l_nombre = 'Distrito Capital' LIMIT 1),
+    (SELECT to_cod FROM Terminal_Operacion WHERE to_direccion LIKE '%Libertador%' LIMIT 1) FROM s;
+
+-- Aeroexpresos CCS
+WITH s AS (INSERT INTO Servicio (s_costo, s_millas_otorgar) VALUES (35.00, 60) RETURNING s_cod)
+INSERT INTO Traslado (s_cod, t_distancia_km, transporte_terrestre_p_cod, lugar_l_cod, terminal_operacion_to_cod)
+SELECT s_cod, 400, 
+    (SELECT p_cod FROM Transporte_Terrestre WHERE p_nombre = 'Aeroexpresos Ejecutivos' LIMIT 1),
+    (SELECT l_cod FROM Lugar WHERE l_nombre = 'Distrito Capital' LIMIT 1),
+    (SELECT to_cod FROM Terminal_Operacion WHERE to_direccion LIKE '%Bello Campo%' LIMIT 1) FROM s;
+
+-- Greyhound LA
+WITH s AS (INSERT INTO Servicio (s_costo, s_millas_otorgar) VALUES (50.00, 100) RETURNING s_cod)
+INSERT INTO Traslado (s_cod, t_distancia_km, transporte_terrestre_p_cod, lugar_l_cod, terminal_operacion_to_cod)
+SELECT s_cod, 200, 
+    (SELECT p_cod FROM Transporte_Terrestre WHERE p_nombre = 'Greyhound Lines' LIMIT 1),
+    (SELECT l_cod FROM Lugar WHERE l_nombre = 'Los Angeles' LIMIT 1),
+    (SELECT to_cod FROM Terminal_Operacion WHERE to_direccion LIKE '%Downtown LA%' LIMIT 1) FROM s;
+
+-- ALSA Alicante
+WITH s AS (INSERT INTO Servicio (s_costo, s_millas_otorgar) VALUES (40.00, 80) RETURNING s_cod)
+INSERT INTO Traslado (s_cod, t_distancia_km, transporte_terrestre_p_cod, lugar_l_cod, terminal_operacion_to_cod)
+SELECT s_cod, 150, 
+    (SELECT p_cod FROM Transporte_Terrestre WHERE p_nombre = 'ALSA' LIMIT 1),
+    (SELECT l_cod FROM Lugar WHERE l_nombre = 'Alicante' AND l_tipo = 'CIUDAD' LIMIT 1),
+    (SELECT to_cod FROM Terminal_Operacion WHERE to_direccion LIKE '%Muelle%' LIMIT 1) FROM s;
+
+-- Expresos Occidente San Cristobal
+WITH s AS (INSERT INTO Servicio (s_costo, s_millas_otorgar) VALUES (25.00, 40) RETURNING s_cod)
+INSERT INTO Traslado (s_cod, t_distancia_km, transporte_terrestre_p_cod, lugar_l_cod, terminal_operacion_to_cod)
+SELECT s_cod, 800, 
+    (SELECT p_cod FROM Transporte_Terrestre WHERE p_nombre = 'Expresos Occidente' LIMIT 1),
+    (SELECT l_cod FROM Lugar WHERE l_nombre = 'San Cristóbal' LIMIT 1),
+    (SELECT to_cod FROM Terminal_Operacion WHERE to_direccion LIKE '%Genaro%' LIMIT 1) FROM s;
+
+-- FlixBus Alemania
+WITH s AS (INSERT INTO Servicio (s_costo, s_millas_otorgar) VALUES (20.00, 30) RETURNING s_cod)
+INSERT INTO Traslado (s_cod, t_distancia_km, transporte_terrestre_p_cod, lugar_l_cod, terminal_operacion_to_cod)
+SELECT s_cod, 60, 
+    (SELECT p_cod FROM Transporte_Terrestre WHERE p_nombre = 'FlixBus' LIMIT 1),
+    (SELECT l_cod FROM Lugar WHERE l_nombre = 'Postdam' LIMIT 1),
+    (SELECT to_cod FROM Terminal_Operacion WHERE to_direccion LIKE '%ZOB%' LIMIT 1) FROM s;
+
+-- ADO Mexico
+WITH s AS (INSERT INTO Servicio (s_costo, s_millas_otorgar) VALUES (45.00, 90) RETURNING s_cod)
+INSERT INTO Traslado (s_cod, t_distancia_km, transporte_terrestre_p_cod, lugar_l_cod, terminal_operacion_to_cod)
+SELECT s_cod, 500, 
+    (SELECT p_cod FROM Transporte_Terrestre WHERE p_nombre = 'Autobuses de Oriente (ADO)' LIMIT 1),
+    (SELECT l_cod FROM Lugar WHERE l_nombre = 'Guadalajara' LIMIT 1),
+    (SELECT to_cod FROM Terminal_Operacion WHERE to_direccion LIKE '%Tlaquepaque%' LIMIT 1) FROM s;
+
+-- JR Bus Japon
+WITH s AS (INSERT INTO Servicio (s_costo, s_millas_otorgar) VALUES (60.00, 120) RETURNING s_cod)
+INSERT INTO Traslado (s_cod, t_distancia_km, transporte_terrestre_p_cod, lugar_l_cod, terminal_operacion_to_cod)
+SELECT s_cod, 100, 
+    (SELECT p_cod FROM Transporte_Terrestre WHERE p_nombre = 'JR Bus' LIMIT 1),
+    (SELECT l_cod FROM Lugar WHERE l_nombre = 'Shinjuku' LIMIT 1),
+    (SELECT to_cod FROM Terminal_Operacion WHERE to_direccion LIKE '%Busta%' LIMIT 1) FROM s;
+
+-- Itapemirim Rio
+WITH s AS (INSERT INTO Servicio (s_costo, s_millas_otorgar) VALUES (55.00, 110) RETURNING s_cod)
+INSERT INTO Traslado (s_cod, t_distancia_km, transporte_terrestre_p_cod, lugar_l_cod, terminal_operacion_to_cod)
+SELECT s_cod, 450, 
+    (SELECT p_cod FROM Transporte_Terrestre WHERE p_nombre = 'Viação Itapemirim' LIMIT 1),
+    (SELECT l_cod FROM Lugar WHERE l_nombre = 'Rio de Janeiro' AND l_tipo = 'CIUDAD' LIMIT 1),
+    (SELECT to_cod FROM Terminal_Operacion WHERE to_direccion LIKE '%Novo Rio%' LIMIT 1) FROM s;
+
+-- Sitssa Interurbano
+WITH s AS (INSERT INTO Servicio (s_costo, s_millas_otorgar) VALUES (15.00, 20) RETURNING s_cod)
+INSERT INTO Traslado (s_cod, t_distancia_km, transporte_terrestre_p_cod, lugar_l_cod, terminal_operacion_to_cod)
+SELECT s_cod, 120, 
+    (SELECT p_cod FROM Transporte_Terrestre WHERE p_nombre = 'Sitssa' LIMIT 1),
+    (SELECT l_cod FROM Lugar WHERE l_nombre = 'Distrito Capital' LIMIT 1),
+    (SELECT to_cod FROM Terminal_Operacion WHERE to_direccion LIKE '%La Bandera%' LIMIT 1) FROM s;	
+
+-- Royal Caribbean (Caribe)
+WITH s AS (INSERT INTO Servicio (s_costo, s_millas_otorgar) VALUES (1200.00, 5000) RETURNING s_cod)
+INSERT INTO Viaje (s_cod, vi_fecha_hora_salida, vi_duracion_dias, vi_distancia_km, crucero_p_cod, lugar_l_cod, lugar_l_cod2, barco_mt_cod)
+SELECT s_cod, '2025-12-20 16:00:00', 7, 3000,
+    (SELECT p_cod FROM Crucero WHERE p_nombre = 'Royal Caribbean Int.' LIMIT 1),
+    (SELECT l_cod FROM Lugar WHERE l_nombre = 'Estados Unidos' LIMIT 1),
+    (SELECT l_cod FROM Lugar WHERE l_nombre = 'Estados Unidos' LIMIT 1),
+    (SELECT mt_cod FROM Barco WHERE b_nombre = 'Symphony of the Seas' LIMIT 1) FROM s;
+
+-- Carnival (Caribe)
+WITH s AS (INSERT INTO Servicio (s_costo, s_millas_otorgar) VALUES (900.00, 3000) RETURNING s_cod)
+INSERT INTO Viaje (s_cod, vi_fecha_hora_salida, vi_duracion_dias, vi_distancia_km, crucero_p_cod, lugar_l_cod, lugar_l_cod2, barco_mt_cod)
+SELECT s_cod, '2026-01-10 15:00:00', 5, 2000,
+    (SELECT p_cod FROM Crucero WHERE p_nombre = 'Carnival Cruise Line' LIMIT 1),
+    (SELECT l_cod FROM Lugar WHERE l_nombre = 'Estados Unidos' LIMIT 1),
+    (SELECT l_cod FROM Lugar WHERE l_nombre = 'Mexico' LIMIT 1),
+    (SELECT mt_cod FROM Barco WHERE b_nombre = 'Mardi Gras' LIMIT 1) FROM s;
+
+-- Costa (Mediterráneo)
+WITH s AS (INSERT INTO Servicio (s_costo, s_millas_otorgar) VALUES (1500.00, 6000) RETURNING s_cod)
+INSERT INTO Viaje (s_cod, vi_fecha_hora_salida, vi_duracion_dias, vi_distancia_km, crucero_p_cod, lugar_l_cod, lugar_l_cod2, barco_mt_cod)
+SELECT s_cod, '2025-11-15 18:00:00', 10, 4000,
+    (SELECT p_cod FROM Crucero WHERE p_nombre = 'Costa Cruceros' LIMIT 1),
+    (SELECT l_cod FROM Lugar WHERE l_nombre = 'Italia' LIMIT 1),
+    (SELECT l_cod FROM Lugar WHERE l_nombre = 'España' LIMIT 1),
+    (SELECT mt_cod FROM Barco WHERE b_nombre = 'Costa Toscana' LIMIT 1) FROM s;
+
+-- AIDA (Canarias)
+WITH s AS (INSERT INTO Servicio (s_costo, s_millas_otorgar) VALUES (1100.00, 4500) RETURNING s_cod)
+INSERT INTO Viaje (s_cod, vi_fecha_hora_salida, vi_duracion_dias, vi_distancia_km, crucero_p_cod, lugar_l_cod, lugar_l_cod2, barco_mt_cod)
+SELECT s_cod, '2025-12-05 17:00:00', 7, 2500,
+    (SELECT p_cod FROM Crucero WHERE p_nombre = 'AIDA Cruises' LIMIT 1),
+    (SELECT l_cod FROM Lugar WHERE l_nombre = 'Alemania' LIMIT 1),
+    (SELECT l_cod FROM Lugar WHERE l_nombre = 'España' LIMIT 1),
+    (SELECT mt_cod FROM Barco WHERE b_nombre = 'AIDAnova' LIMIT 1) FROM s;
+
+-- Royal Caribbean (Transatlántico)
+WITH s AS (INSERT INTO Servicio (s_costo, s_millas_otorgar) VALUES (2000.00, 8000) RETURNING s_cod)
+INSERT INTO Viaje (s_cod, vi_fecha_hora_salida, vi_duracion_dias, vi_distancia_km, crucero_p_cod, lugar_l_cod, lugar_l_cod2, barco_mt_cod)
+SELECT s_cod, '2026-03-01 14:00:00', 14, 6000,
+    (SELECT p_cod FROM Crucero WHERE p_nombre = 'Royal Caribbean Int.' LIMIT 1),
+    (SELECT l_cod FROM Lugar WHERE l_nombre = 'Estados Unidos' LIMIT 1),
+    (SELECT l_cod FROM Lugar WHERE l_nombre = 'Europa' LIMIT 1),
+    (SELECT mt_cod FROM Barco WHERE b_nombre = 'Anthem of the Seas' LIMIT 1) FROM s;
+
+-- Carnival (Pacífico)
+WITH s AS (INSERT INTO Servicio (s_costo, s_millas_otorgar) VALUES (850.00, 3200) RETURNING s_cod)
+INSERT INTO Viaje (s_cod, vi_fecha_hora_salida, vi_duracion_dias, vi_distancia_km, crucero_p_cod, lugar_l_cod, lugar_l_cod2, barco_mt_cod)
+SELECT s_cod, '2025-11-25 15:30:00', 4, 1500,
+    (SELECT p_cod FROM Crucero WHERE p_nombre = 'Carnival Cruise Line' LIMIT 1),
+    (SELECT l_cod FROM Lugar WHERE l_nombre = 'Los Angeles' LIMIT 1),
+    (SELECT l_cod FROM Lugar WHERE l_nombre = 'Mexico' LIMIT 1),
+    (SELECT mt_cod FROM Barco WHERE b_nombre = 'Carnival Vista' LIMIT 1) FROM s;
+
+-- Costa (Adriático)
+WITH s AS (INSERT INTO Servicio (s_costo, s_millas_otorgar) VALUES (1300.00, 5500) RETURNING s_cod)
+INSERT INTO Viaje (s_cod, vi_fecha_hora_salida, vi_duracion_dias, vi_distancia_km, crucero_p_cod, lugar_l_cod, lugar_l_cod2, barco_mt_cod)
+SELECT s_cod, '2026-02-14 18:00:00', 8, 3000,
+    (SELECT p_cod FROM Crucero WHERE p_nombre = 'Costa Cruceros' LIMIT 1),
+    (SELECT l_cod FROM Lugar WHERE l_nombre = 'Venecia' AND l_tipo = 'CIUDAD' LIMIT 1),
+    (SELECT l_cod FROM Lugar WHERE l_nombre = 'Italia' LIMIT 1),
+    (SELECT mt_cod FROM Barco WHERE b_nombre = 'Costa Concordia' LIMIT 1) FROM s;
+
+-- Celebrity (Alaska - Usando Royal como proxy)
+WITH s AS (INSERT INTO Servicio (s_costo, s_millas_otorgar) VALUES (1800.00, 7000) RETURNING s_cod)
+INSERT INTO Viaje (s_cod, vi_fecha_hora_salida, vi_duracion_dias, vi_distancia_km, crucero_p_cod, lugar_l_cod, lugar_l_cod2, barco_mt_cod)
+SELECT s_cod, '2026-05-20 16:00:00', 7, 2800,
+    (SELECT p_cod FROM Crucero WHERE p_nombre = 'Royal Caribbean Int.' LIMIT 1),
+    (SELECT l_cod FROM Lugar WHERE l_nombre = 'Estados Unidos' LIMIT 1),
+    (SELECT l_cod FROM Lugar WHERE l_nombre = 'Estados Unidos' LIMIT 1),
+    (SELECT mt_cod FROM Barco WHERE b_nombre = 'Celebrity Solstice' LIMIT 1) FROM s;
+
+-- Carnival (Caribe Oeste)
+WITH s AS (INSERT INTO Servicio (s_costo, s_millas_otorgar) VALUES (700.00, 2500) RETURNING s_cod)
+INSERT INTO Viaje (s_cod, vi_fecha_hora_salida, vi_duracion_dias, vi_distancia_km, crucero_p_cod, lugar_l_cod, lugar_l_cod2, barco_mt_cod)
+SELECT s_cod, '2025-12-12 15:00:00', 5, 1800,
+    (SELECT p_cod FROM Crucero WHERE p_nombre = 'Carnival Cruise Line' LIMIT 1),
+    (SELECT l_cod FROM Lugar WHERE l_nombre = 'Estados Unidos' LIMIT 1),
+    (SELECT l_cod FROM Lugar WHERE l_nombre = 'Mexico' LIMIT 1),
+    (SELECT mt_cod FROM Barco WHERE b_nombre = 'Carnival Freedom' LIMIT 1) FROM s;
+
+-- MSC (Sudamérica - Usando Costa como proxy)
+WITH s AS (INSERT INTO Servicio (s_costo, s_millas_otorgar) VALUES (1000.00, 4000) RETURNING s_cod)
+INSERT INTO Viaje (s_cod, vi_fecha_hora_salida, vi_duracion_dias, vi_distancia_km, crucero_p_cod, lugar_l_cod, lugar_l_cod2, barco_mt_cod)
+SELECT s_cod, '2025-11-30 17:00:00', 7, 3200,
+    (SELECT p_cod FROM Crucero WHERE p_nombre = 'Costa Cruceros' LIMIT 1),
+    (SELECT l_cod FROM Lugar WHERE l_nombre = 'Rio de Janeiro' AND l_tipo = 'CIUDAD' LIMIT 1),
+    (SELECT l_cod FROM Lugar WHERE l_nombre = 'Brasil' LIMIT 1),
+    (SELECT mt_cod FROM Barco WHERE b_nombre = 'MSC Fantasia' LIMIT 1) FROM s;	
+
+-- Alquiler Hertz USA
+WITH s AS (INSERT INTO Servicio (s_costo, s_millas_otorgar) VALUES (300.00, 600) RETURNING s_cod)
+INSERT INTO Servicio_Adicional (s_cod, sa_nombre, sa_descripcion, sa_capacidad, operador_turistico_p_cod, lugar_l_cod)
+SELECT s_cod, 'Alquiler SUV Semanal', 'Renta de Ford Explorer o similar por 7 días', 5,
+    (SELECT p_cod FROM Operador_Turistico WHERE p_nombre = 'Hertz Car Rental' LIMIT 1),
+    (SELECT l_cod FROM Lugar WHERE l_nombre = 'Estados Unidos' LIMIT 1) FROM s;
+
+-- Entrada Disney
+WITH s AS (INSERT INTO Servicio (s_costo, s_millas_otorgar) VALUES (150.00, 150) RETURNING s_cod)
+INSERT INTO Servicio_Adicional (s_cod, sa_nombre, sa_descripcion, sa_capacidad, operador_turistico_p_cod, lugar_l_cod)
+SELECT s_cod, 'Entrada 1 Día Park Hopper', 'Acceso a ambos parques de Disneyland Resort', 1,
+    (SELECT p_cod FROM Operador_Turistico WHERE p_nombre = 'Disneyland Park' LIMIT 1),
+    (SELECT l_cod FROM Lugar WHERE l_nombre = 'Los Angeles' LIMIT 1) FROM s;
+
+-- Tour Canaima
+WITH s AS (INSERT INTO Servicio (s_costo, s_millas_otorgar) VALUES (500.00, 1000) RETURNING s_cod)
+INSERT INTO Servicio_Adicional (s_cod, sa_nombre, sa_descripcion, sa_capacidad, operador_turistico_p_cod, lugar_l_cod)
+SELECT s_cod, 'Excursión Salto Ángel', 'Tour de 3 días y 2 noches con pernocta', 1,
+    (SELECT p_cod FROM Operador_Turistico WHERE p_nombre = 'Parque Nacional Canaima' LIMIT 1),
+    (SELECT l_cod FROM Lugar WHERE l_nombre = 'Venezuela' LIMIT 1) FROM s;
+
+-- Alquiler Localiza Rio
+WITH s AS (INSERT INTO Servicio (s_costo, s_millas_otorgar) VALUES (200.00, 400) RETURNING s_cod)
+INSERT INTO Servicio_Adicional (s_cod, sa_nombre, sa_descripcion, sa_capacidad, operador_turistico_p_cod, lugar_l_cod)
+SELECT s_cod, 'Alquiler Compacto', 'Renta de Fiat Mobi o similar por 5 días', 4,
+    (SELECT p_cod FROM Operador_Turistico WHERE p_nombre = 'Localiza' LIMIT 1),
+    (SELECT l_cod FROM Lugar WHERE l_nombre = 'Rio de Janeiro' AND l_tipo = 'CIUDAD' LIMIT 1) FROM s;
+
+-- Entrada Universal
+WITH s AS (INSERT INTO Servicio (s_costo, s_millas_otorgar) VALUES (130.00, 130) RETURNING s_cod)
+INSERT INTO Servicio_Adicional (s_cod, sa_nombre, sa_descripcion, sa_capacidad, operador_turistico_p_cod, lugar_l_cod)
+SELECT s_cod, 'Entrada Universal Express', 'Acceso rápido a atracciones', 1,
+    (SELECT p_cod FROM Operador_Turistico WHERE p_nombre = 'Universal Studios Hollywood' LIMIT 1),
+    (SELECT l_cod FROM Lugar WHERE l_nombre = 'Los Angeles' LIMIT 1) FROM s;
+
+-- Booking Hotel Reserva (Agencia)
+WITH s AS (INSERT INTO Servicio (s_costo, s_millas_otorgar) VALUES (50.00, 100) RETURNING s_cod)
+INSERT INTO Servicio_Adicional (s_cod, sa_nombre, sa_descripcion, sa_capacidad, operador_turistico_p_cod, lugar_l_cod)
+SELECT s_cod, 'Comisión de Reserva', 'Tarifa de gestión por reserva de hotel', 1,
+    (SELECT p_cod FROM Operador_Turistico WHERE p_nombre = 'Booking Holdings' LIMIT 1),
+    (SELECT l_cod FROM Lugar WHERE l_nombre = 'Estados Unidos' LIMIT 1) FROM s;
+
+-- Tour Avila
+WITH s AS (INSERT INTO Servicio (s_costo, s_millas_otorgar) VALUES (20.00, 40) RETURNING s_cod)
+INSERT INTO Servicio_Adicional (s_cod, sa_nombre, sa_descripcion, sa_capacidad, operador_turistico_p_cod, lugar_l_cod)
+SELECT s_cod, 'Subida en Teleférico', 'Ticket ida y vuelta al Hotel Humboldt', 1,
+    (SELECT p_cod FROM Operador_Turistico WHERE p_nombre = 'Parque Nacional El Avila' LIMIT 1),
+    (SELECT l_cod FROM Lugar WHERE l_nombre = 'Distrito Capital' LIMIT 1) FROM s;
+
+-- Alquiler Sixt Alemania
+WITH s AS (INSERT INTO Servicio (s_costo, s_millas_otorgar) VALUES (400.00, 800) RETURNING s_cod)
+INSERT INTO Servicio_Adicional (s_cod, sa_nombre, sa_descripcion, sa_capacidad, operador_turistico_p_cod, lugar_l_cod)
+SELECT s_cod, 'Alquiler Sedan Lujo', 'BMW Serie 3 por fin de semana', 5,
+    (SELECT p_cod FROM Operador_Turistico WHERE p_nombre = 'Sixt Rent a Car' LIMIT 1),
+    (SELECT l_cod FROM Lugar WHERE l_nombre = 'Postdam' LIMIT 1) FROM s;
+
+-- Entrada Warner
+WITH s AS (INSERT INTO Servicio (s_costo, s_millas_otorgar) VALUES (60.00, 60) RETURNING s_cod)
+INSERT INTO Servicio_Adicional (s_cod, sa_nombre, sa_descripcion, sa_capacidad, operador_turistico_p_cod, lugar_l_cod)
+SELECT s_cod, 'Entrada General', 'Acceso a Parque Warner Madrid', 1,
+    (SELECT p_cod FROM Operador_Turistico WHERE p_nombre = 'Parque Warner' LIMIT 1),
+    (SELECT l_cod FROM Lugar WHERE l_nombre = 'España' LIMIT 1) FROM s;
+
+-- Tour Japon (JTB)
+WITH s AS (INSERT INTO Servicio (s_costo, s_millas_otorgar) VALUES (150.00, 300) RETURNING s_cod)
+INSERT INTO Servicio_Adicional (s_cod, sa_nombre, sa_descripcion, sa_capacidad, operador_turistico_p_cod, lugar_l_cod)
+SELECT s_cod, 'City Tour Tokyo', 'Recorrido guiado por templos y zonas modernas', 1,
+    (SELECT p_cod FROM Operador_Turistico WHERE p_nombre = 'JTB Corporation' LIMIT 1),
+    (SELECT l_cod FROM Lugar WHERE l_nombre = 'Shinjuku' LIMIT 1) FROM s;	
+
+-- Eurobuilding Caracas - Individual
+WITH s AS (INSERT INTO Servicio (s_costo, s_millas_otorgar) VALUES (120.00, 240) RETURNING s_cod)
+INSERT INTO Habitacion (s_cod, ha_numero, ha_capacidad, hotel_p_cod, tipo_habitacion_th_cod)
+SELECT s_cod, '101', 1,
+    (SELECT p_cod FROM Hotel WHERE p_nombre = 'Hotel Eurobuilding' LIMIT 1),
+    (SELECT th_cod FROM Tipo_Habitacion WHERE th_nombre = 'Individual' LIMIT 1) FROM s;
+
+-- Eurobuilding Caracas - Suite
+WITH s AS (INSERT INTO Servicio (s_costo, s_millas_otorgar) VALUES (300.00, 600) RETURNING s_cod)
+INSERT INTO Habitacion (s_cod, ha_numero, ha_capacidad, hotel_p_cod, tipo_habitacion_th_cod)
+SELECT s_cod, '505', 2,
+    (SELECT p_cod FROM Hotel WHERE p_nombre = 'Hotel Eurobuilding' LIMIT 1),
+    (SELECT th_cod FROM Tipo_Habitacion WHERE th_nombre = 'Suite Ejecutiva' LIMIT 1) FROM s;
+
+-- Humboldt - Suite Presidencial
+WITH s AS (INSERT INTO Servicio (s_costo, s_millas_otorgar) VALUES (500.00, 1000) RETURNING s_cod)
+INSERT INTO Habitacion (s_cod, ha_numero, ha_capacidad, hotel_p_cod, tipo_habitacion_th_cod)
+SELECT s_cod, 'PH-01', 4,
+    (SELECT p_cod FROM Hotel WHERE p_nombre = 'Hotel Humboldt' LIMIT 1),
+    (SELECT th_cod FROM Tipo_Habitacion WHERE th_nombre = 'Suite Presidencial' LIMIT 1) FROM s;
+
+-- Beverly Hills Hotel - Matrimonial
+WITH s AS (INSERT INTO Servicio (s_costo, s_millas_otorgar) VALUES (800.00, 1600) RETURNING s_cod)
+INSERT INTO Habitacion (s_cod, ha_numero, ha_capacidad, hotel_p_cod, tipo_habitacion_th_cod)
+SELECT s_cod, '204', 2,
+    (SELECT p_cod FROM Hotel WHERE p_nombre = 'The Beverly Hills Hotel' LIMIT 1),
+    (SELECT th_cod FROM Tipo_Habitacion WHERE th_nombre = 'Matrimonial' LIMIT 1) FROM s;
+
+-- Ritz Paris - Suite
+WITH s AS (INSERT INTO Servicio (s_costo, s_millas_otorgar) VALUES (1200.00, 2400) RETURNING s_cod)
+INSERT INTO Habitacion (s_cod, ha_numero, ha_capacidad, hotel_p_cod, tipo_habitacion_th_cod)
+SELECT s_cod, '300', 2,
+    (SELECT p_cod FROM Hotel WHERE p_nombre = 'Hotel Ritz Paris' LIMIT 1),
+    (SELECT th_cod FROM Tipo_Habitacion WHERE th_nombre = 'Suite Junior' LIMIT 1) FROM s;
+
+-- Copacabana Palace - Doble
+WITH s AS (INSERT INTO Servicio (s_costo, s_millas_otorgar) VALUES (450.00, 900) RETURNING s_cod)
+INSERT INTO Habitacion (s_cod, ha_numero, ha_capacidad, hotel_p_cod, tipo_habitacion_th_cod)
+SELECT s_cod, '402', 2,
+    (SELECT p_cod FROM Hotel WHERE p_nombre = 'Copacabana Palace' LIMIT 1),
+    (SELECT th_cod FROM Tipo_Habitacion WHERE th_nombre = 'Doble Estándar' LIMIT 1) FROM s;
+
+-- Meliá Caracas - Twin
+WITH s AS (INSERT INTO Servicio (s_costo, s_millas_otorgar) VALUES (150.00, 300) RETURNING s_cod)
+INSERT INTO Habitacion (s_cod, ha_numero, ha_capacidad, hotel_p_cod, tipo_habitacion_th_cod)
+SELECT s_cod, '610', 2,
+    (SELECT p_cod FROM Hotel WHERE p_nombre = 'Meliá Caracas' LIMIT 1),
+    (SELECT th_cod FROM Tipo_Habitacion WHERE th_nombre = 'Twin' LIMIT 1) FROM s;
+
+-- Pestana Lisboa - Familiar
+WITH s AS (INSERT INTO Servicio (s_costo, s_millas_otorgar) VALUES (250.00, 500) RETURNING s_cod)
+INSERT INTO Habitacion (s_cod, ha_numero, ha_capacidad, hotel_p_cod, tipo_habitacion_th_cod)
+SELECT s_cod, '105', 4,
+    (SELECT p_cod FROM Hotel WHERE p_nombre = 'Pestana CR7 Lisboa' LIMIT 1),
+    (SELECT th_cod FROM Tipo_Habitacion WHERE th_nombre = 'Familiar' LIMIT 1) FROM s;
+
+-- Park Hyatt Tokyo - Accesible
+WITH s AS (INSERT INTO Servicio (s_costo, s_millas_otorgar) VALUES (600.00, 1200) RETURNING s_cod)
+INSERT INTO Habitacion (s_cod, ha_numero, ha_capacidad, hotel_p_cod, tipo_habitacion_th_cod)
+SELECT s_cod, '202A', 2,
+    (SELECT p_cod FROM Hotel WHERE p_nombre = 'Park Hyatt Tokyo' LIMIT 1),
+    (SELECT th_cod FROM Tipo_Habitacion WHERE th_nombre = 'Habitación Accesible' LIMIT 1) FROM s;
+
+-- Hesperia Valencia - Conectada
+WITH s AS (INSERT INTO Servicio (s_costo, s_millas_otorgar) VALUES (180.00, 360) RETURNING s_cod)
+INSERT INTO Habitacion (s_cod, ha_numero, ha_capacidad, hotel_p_cod, tipo_habitacion_th_cod)
+SELECT s_cod, '308-309', 4,
+    (SELECT p_cod FROM Hotel WHERE p_nombre = 'Hesperia WTC' LIMIT 1),
+    (SELECT th_cod FROM Tipo_Habitacion WHERE th_nombre = 'Habitación Conectada' LIMIT 1) FROM s;	
+
+INSERT INTO Etiqueta (et_nombre) VALUES
+    ('Lujo'),
+    ('Aventura'),
+    ('Familiar'),
+    ('Negocios'),
+    ('Ecoturismo'),
+    ('Romántico'),
+    ('Playa'),
+    ('Mascotas'),
+    ('Gastronómico'),
+    ('Económico');
+
+INSERT INTO Eti_Cli (cliente_c_cod, etiqueta_et_cod) VALUES
+    ((SELECT c_cod FROM Cliente WHERE c_ci = 15890123), (SELECT et_cod FROM Etiqueta WHERE et_nombre = 'Aventura')),
+	((SELECT c_cod FROM Cliente WHERE c_ci = 15890123), (SELECT et_cod FROM Etiqueta WHERE et_nombre = 'Familiar')),
+    ((SELECT c_cod FROM Cliente WHERE c_ci = 24567123), (SELECT et_cod FROM Etiqueta WHERE et_nombre = 'Playa')),
+    ((SELECT c_cod FROM Cliente WHERE c_ci = 14560981), (SELECT et_cod FROM Etiqueta WHERE et_nombre = 'Negocios')),
+    ((SELECT c_cod FROM Cliente WHERE c_ci = 19876543), (SELECT et_cod FROM Etiqueta WHERE et_nombre = 'Familiar')),
+    ((SELECT c_cod FROM Cliente WHERE c_ci = 25678901), (SELECT et_cod FROM Etiqueta WHERE et_nombre = 'Lujo')),
+	((SELECT c_cod FROM Cliente WHERE c_ci = 25678901), (SELECT et_cod FROM Etiqueta WHERE et_nombre = 'Familiar')),
+	((SELECT c_cod FROM Cliente WHERE c_ci = 25678901), (SELECT et_cod FROM Etiqueta WHERE et_nombre = 'Ecoturismo')),
+    ((SELECT c_cod FROM Cliente WHERE c_ci = 20456789), (SELECT et_cod FROM Etiqueta WHERE et_nombre = 'Gastronómico')),
+    ((SELECT c_cod FROM Cliente WHERE c_ci = 16234567), (SELECT et_cod FROM Etiqueta WHERE et_nombre = 'Ecoturismo')),
+    ((SELECT c_cod FROM Cliente WHERE c_ci = 21450987), (SELECT et_cod FROM Etiqueta WHERE et_nombre = 'Económico')),
+    ((SELECT c_cod FROM Cliente WHERE c_ci = 25123456), (SELECT et_cod FROM Etiqueta WHERE et_nombre = 'Romántico')),
+    ((SELECT c_cod FROM Cliente WHERE c_ci = 20987123), (SELECT et_cod FROM Etiqueta WHERE et_nombre = 'Mascotas'));	
+
+INSERT INTO Eti_Ser (servicio_s_cod, etiqueta_et_cod) VALUES
+    ((SELECT s_cod FROM Vuelo WHERE v_cod_vue = 'IB6674' LIMIT 1), (SELECT et_cod FROM Etiqueta WHERE et_nombre = 'Negocios')),
+    ((SELECT s_cod FROM Vuelo WHERE v_cod_vue = 'Y4900' LIMIT 1), (SELECT et_cod FROM Etiqueta WHERE et_nombre = 'Económico')),
+    ((SELECT s_cod FROM Habitacion WHERE ha_numero = 'PH-01' LIMIT 1), (SELECT et_cod FROM Etiqueta WHERE et_nombre = 'Lujo')),
+    ((SELECT s_cod FROM Habitacion WHERE ha_numero = '105' LIMIT 1), (SELECT et_cod FROM Etiqueta WHERE et_nombre = 'Familiar')),
+    ((SELECT s_cod FROM Viaje WHERE barco_mt_cod = (SELECT mt_cod FROM Barco WHERE b_nombre = 'Costa Toscana' LIMIT 1) LIMIT 1), (SELECT et_cod FROM Etiqueta WHERE et_nombre = 'Romántico')),
+    ((SELECT s_cod FROM Servicio_Adicional WHERE sa_nombre = 'Excursión Salto Ángel' LIMIT 1), (SELECT et_cod FROM Etiqueta WHERE et_nombre = 'Ecoturismo')),
+    ((SELECT s_cod FROM Servicio_Adicional WHERE sa_nombre LIKE 'Entrada 1 Día%' LIMIT 1), (SELECT et_cod FROM Etiqueta WHERE et_nombre = 'Familiar')),
+    ((SELECT s_cod FROM Servicio_Adicional WHERE sa_nombre = 'Alquiler SUV Semanal' LIMIT 1), (SELECT et_cod FROM Etiqueta WHERE et_nombre = 'Aventura')),
+    ((SELECT s_cod FROM Traslado WHERE transporte_terrestre_p_cod = (SELECT p_cod FROM Transporte_Terrestre WHERE p_nombre = 'Greyhound Lines') LIMIT 1), (SELECT et_cod FROM Etiqueta WHERE et_nombre = 'Económico')),
+    ((SELECT s_cod FROM Viaje WHERE barco_mt_cod = (SELECT mt_cod FROM Barco WHERE b_nombre = 'Symphony of the Seas' LIMIT 1) LIMIT 1), (SELECT et_cod FROM Etiqueta WHERE et_nombre = 'Playa'));	
+
+INSERT INTO Telefono (t_cod_pais, t_cod_area, t_numero, cliente_c_cod, operador_turistico_p_cod) VALUES
+    (58, 0414, 5891234, (SELECT c_cod FROM Cliente WHERE c_ci = 15890123 LIMIT 1), NULL),
+    (58, 0424, 8765432, (SELECT c_cod FROM Cliente WHERE c_ci = 24567123 LIMIT 1), NULL),
+    (58, 0212, 5551830, (SELECT c_cod FROM Cliente WHERE c_ci = 16234567 LIMIT 1), NULL),
+    (58, 0412, 9988776, (SELECT c_cod FROM Cliente WHERE c_ci = 14560981 LIMIT 1), NULL),
+    (58, 0416, 3332211, (SELECT c_cod FROM Cliente WHERE c_ci = 25123456 LIMIT 1), NULL),
+    (1, 800, 6543131, NULL, (SELECT p_cod FROM Operador_Turistico WHERE p_nombre = 'Hertz Car Rental' LIMIT 1)),
+    (1, 714, 7814636, NULL, (SELECT p_cod FROM Operador_Turistico WHERE p_nombre = 'Disneyland Park' LIMIT 1)),
+    (58, 0286, 9620456, NULL, (SELECT p_cod FROM Operador_Turistico WHERE p_nombre = 'Parque Nacional Canaima' LIMIT 1)),
+    (49, 511, 5660000, NULL, (SELECT p_cod FROM Operador_Turistico WHERE p_nombre = 'TUI Group' LIMIT 1)),
+    (55, 21, 3003000, NULL, (SELECT p_cod FROM Operador_Turistico WHERE p_nombre = 'Localiza' LIMIT 1));
+
+WITH nueva_promo AS (
+    INSERT INTO Promocion (pr_nombre, pr_porcentaje, aerolinea_p_cod)
+    VALUES ('Black Flydays', 20, (SELECT p_cod FROM Aerolinea WHERE p_nombre = 'Iberia' LIMIT 1))
+    RETURNING pr_cod, pr_porcentaje
+)
+INSERT INTO Pro_Ser (promocion_pr_cod, servicio_s_cod, ps_monto)
+	SELECT np.pr_cod, v.s_cod, (s.s_costo * np.pr_porcentaje / 100.0)
+	FROM nueva_promo np, Vuelo v
+	JOIN Servicio s ON v.s_cod = s.s_cod
+	WHERE v.v_cod_vue = 'IB6674' LIMIT 1;	
+
+WITH nueva_promo AS (
+    INSERT INTO Promocion (pr_nombre, pr_porcentaje, hotel_p_cod)
+    VALUES ('Staycation Caracas', 15, (SELECT p_cod FROM Hotel WHERE p_nombre = 'Hotel Eurobuilding' LIMIT 1))
+    RETURNING pr_cod, pr_porcentaje
+)
+INSERT INTO Pro_Ser (promocion_pr_cod, servicio_s_cod, ps_monto)
+	SELECT np.pr_cod, h.s_cod, (s.s_costo * np.pr_porcentaje / 100.0)
+	FROM nueva_promo np, Habitacion h
+	JOIN Servicio s ON h.s_cod = s.s_cod
+	WHERE h.ha_numero = '505' AND h.hotel_p_cod = (SELECT p_cod FROM Hotel WHERE p_nombre = 'Hotel Eurobuilding') LIMIT 1;
+
+WITH nueva_promo AS (
+    INSERT INTO Promocion (pr_nombre, pr_porcentaje, crucero_p_cod)
+    VALUES ('Sail Away Special', 10, (SELECT p_cod FROM Crucero WHERE p_nombre = 'Royal Caribbean Int.' LIMIT 1))
+    RETURNING pr_cod, pr_porcentaje
+)
+INSERT INTO Pro_Ser (promocion_pr_cod, servicio_s_cod, ps_monto)
+	SELECT np.pr_cod, vi.s_cod, (s.s_costo * np.pr_porcentaje / 100.0)
+	FROM nueva_promo np, Viaje vi
+	JOIN Servicio s ON vi.s_cod = s.s_cod
+	WHERE vi.barco_mt_cod = (SELECT mt_cod FROM Barco WHERE b_nombre = 'Symphony of the Seas') LIMIT 1;	
+
+WITH nueva_promo AS (
+    INSERT INTO Promocion (pr_nombre, pr_porcentaje, transporte_terrestre_p_cod)
+    VALUES ('Ruta Nacional', 5, (SELECT p_cod FROM Transporte_Terrestre WHERE p_nombre = 'Rodovias de Venezuela' LIMIT 1))
+    RETURNING pr_cod, pr_porcentaje
+)
+INSERT INTO Pro_Ser (promocion_pr_cod, servicio_s_cod, ps_monto)
+	SELECT np.pr_cod, t.s_cod, (s.s_costo * np.pr_porcentaje / 100.0)
+	FROM nueva_promo np, Traslado t
+	JOIN Servicio s ON t.s_cod = s.s_cod
+	WHERE t.transporte_terrestre_p_cod = (SELECT p_cod FROM Transporte_Terrestre WHERE p_nombre = 'Rodovias de Venezuela') LIMIT 1;	
+
+WITH nueva_promo AS (
+    INSERT INTO Promocion (pr_nombre, pr_porcentaje, operador_turistico_p_cod)
+    VALUES ('Aventura Selva', 20, (SELECT p_cod FROM Operador_Turistico WHERE p_nombre = 'Parque Nacional Canaima' LIMIT 1))
+    RETURNING pr_cod, pr_porcentaje
+)
+INSERT INTO Pro_Ser (promocion_pr_cod, servicio_s_cod, ps_monto)
+	SELECT np.pr_cod, sa.s_cod, (s.s_costo * np.pr_porcentaje / 100.0)
+	FROM nueva_promo np, Servicio_Adicional sa
+	JOIN Servicio s ON sa.s_cod = s.s_cod
+	WHERE sa.sa_nombre = 'Excursión Salto Ángel' LIMIT 1;	
+
+WITH nueva_promo AS (
+    INSERT INTO Promocion (pr_nombre, pr_porcentaje, aerolinea_p_cod)
+    VALUES ('Venta Anual Volaris', 30, (SELECT p_cod FROM Aerolinea WHERE p_nombre = 'Volaris' LIMIT 1))
+    RETURNING pr_cod, pr_porcentaje
+)
+INSERT INTO Pro_Ser (promocion_pr_cod, servicio_s_cod, ps_monto)
+	SELECT np.pr_cod, v.s_cod, (s.s_costo * np.pr_porcentaje / 100.0)
+	FROM nueva_promo np, Vuelo v
+	JOIN Servicio s ON v.s_cod = s.s_cod
+	WHERE v.v_cod_vue = 'Y4900' LIMIT 1;	
+
+WITH nueva_promo AS (
+    INSERT INTO Promocion (pr_nombre, pr_porcentaje, hotel_p_cod)
+    VALUES ('Altura VIP', 10, (SELECT p_cod FROM Hotel WHERE p_nombre = 'Hotel Humboldt' LIMIT 1))
+    RETURNING pr_cod, pr_porcentaje
+)
+INSERT INTO Pro_Ser (promocion_pr_cod, servicio_s_cod, ps_monto)
+	SELECT np.pr_cod, h.s_cod, (s.s_costo * np.pr_porcentaje / 100.0)
+	FROM nueva_promo np, Habitacion h
+	JOIN Servicio s ON h.s_cod = s.s_cod
+	WHERE h.ha_numero = 'PH-01' LIMIT 1;	
+
+WITH nueva_promo AS (
+    INSERT INTO Promocion (pr_nombre, pr_porcentaje, crucero_p_cod)
+    VALUES ('Mediterráneo Azul', 15, (SELECT p_cod FROM Crucero WHERE p_nombre = 'Costa Cruceros' LIMIT 1))
+    RETURNING pr_cod, pr_porcentaje
+)
+INSERT INTO Pro_Ser (promocion_pr_cod, servicio_s_cod, ps_monto)
+	SELECT np.pr_cod, vi.s_cod, (s.s_costo * np.pr_porcentaje / 100.0)
+	FROM nueva_promo np, Viaje vi
+	JOIN Servicio s ON vi.s_cod = s.s_cod
+	WHERE vi.barco_mt_cod = (SELECT mt_cod FROM Barco WHERE b_nombre = 'Costa Toscana') LIMIT 1;	
+
+WITH nueva_promo AS (
+    INSERT INTO Promocion (pr_nombre, pr_porcentaje, transporte_terrestre_p_cod)
+    VALUES ('USA Pass', 10, (SELECT p_cod FROM Transporte_Terrestre WHERE p_nombre = 'Greyhound Lines' LIMIT 1))
+    RETURNING pr_cod, pr_porcentaje
+)
+INSERT INTO Pro_Ser (promocion_pr_cod, servicio_s_cod, ps_monto)
+	SELECT np.pr_cod, t.s_cod, (s.s_costo * np.pr_porcentaje / 100.0)
+	FROM nueva_promo np, Traslado t
+	JOIN Servicio s ON t.s_cod = s.s_cod
+	WHERE t.transporte_terrestre_p_cod = (SELECT p_cod FROM Transporte_Terrestre WHERE p_nombre = 'Greyhound Lines') LIMIT 1;
+
+WITH nueva_promo AS (
+    INSERT INTO Promocion (pr_nombre, pr_porcentaje, operador_turistico_p_cod)
+    VALUES ('Magia Familiar', 5, (SELECT p_cod FROM Operador_Turistico WHERE p_nombre = 'Disneyland Park' LIMIT 1))
+    RETURNING pr_cod, pr_porcentaje
+)
+INSERT INTO Pro_Ser (promocion_pr_cod, servicio_s_cod, ps_monto)
+	SELECT np.pr_cod, sa.s_cod, (s.s_costo * np.pr_porcentaje / 100.0)
+	FROM nueva_promo np, Servicio_Adicional sa
+	JOIN Servicio s ON sa.s_cod = s.s_cod
+	WHERE sa.sa_nombre LIKE 'Entrada 1 Día%' LIMIT 1;	
+
+INSERT INTO Restriccion_Paquete (rp_caracteristica, rp_operador, rp_valor_restriccion) VALUES
+    ('c_edo_civil', '=', 'CASADO'),
+    ('EDAD', '>=', '18'),
+    ('c_edo_civil', '=', 'SOLTERO'),
+    ('EDAD', '>=', '60'),
+    ('c_sexo', '=', 'F'),
+    ('c_sexo', '=', 'M'),
+    ('PAIS', '=', 'Venezuela'),
+    ('EDAD', 'BETWEEN', '18 AND 25'),
+    ('EDAD', '<=', '12'),
+    ('PAIS', 'IN', '("España", "Italia", "Alemania", "Francia", "Portugal")');	
+
+WITH pkg AS (
+    INSERT INTO Paquete_Turistico (pt_cant_personas, pt_nombre, pt_descripcion, pt_costo, pt_costo_millas, restriccion_paquete_rp_cod)
+    VALUES (2, 'Luna de Miel en las Alturas', 'Fin de semana romántico en la cima del Avila con todo incluido.', 500.00, 1000, 
+    (SELECT rp_cod FROM Restriccion_Paquete WHERE rp_valor_restriccion = 'CASADO' LIMIT 1))
+    RETURNING pt_cod
+)
+INSERT INTO Paq_Ser (paquete_turistico_pt_cod, servicio_s_cod)
+	SELECT pkg.pt_cod, s.s_cod FROM pkg, Servicio s
+	LEFT JOIN Habitacion h ON s.s_cod = h.s_cod
+	LEFT JOIN Servicio_Adicional sa ON s.s_cod = sa.s_cod
+	WHERE (h.ha_numero = 'PH-01') -- Suite Humboldt
+	   OR (sa.sa_nombre = 'Subida en Teleférico');
+
+WITH pkg AS (
+    INSERT INTO Paquete_Turistico (pt_cant_personas, pt_nombre, pt_descripcion, pt_costo, pt_costo_millas, restriccion_paquete_rp_cod)
+    VALUES (4, 'Sueño Californiano Familiar', 'Viaje inolvidable a Los Angeles para 4 personas.', 1100.00, 2200, NULL)
+    RETURNING pt_cod
+)
+INSERT INTO Paq_Ser (paquete_turistico_pt_cod, servicio_s_cod)
+	SELECT pkg.pt_cod, s.s_cod FROM pkg, Servicio s
+	LEFT JOIN Vuelo v ON s.s_cod = v.s_cod
+	LEFT JOIN Servicio_Adicional sa ON s.s_cod = sa.s_cod
+	LEFT JOIN Habitacion h ON s.s_cod = h.s_cod
+	WHERE (v.v_cod_vue = 'Y4900') -- Vuelo Volaris
+	   OR (sa.sa_nombre LIKE 'Entrada 1 Día%') -- Disney
+	   OR (h.ha_numero = '204'); -- Beverly Hills Hotel
+
+WITH pkg AS (
+    INSERT INTO Paquete_Turistico (pt_cant_personas, pt_nombre, pt_descripcion, pt_costo, pt_costo_millas, restriccion_paquete_rp_cod)
+    VALUES (1, 'Aventura en la Selva', 'Expedición extrema al Salto Ángel.', 450.00, 900, 
+    (SELECT rp_cod FROM Restriccion_Paquete WHERE rp_caracteristica = 'EDAD' AND rp_operador = '>=' LIMIT 1))
+    RETURNING pt_cod
+)
+INSERT INTO Paq_Ser (paquete_turistico_pt_cod, servicio_s_cod)
+	SELECT pkg.pt_cod, sa.s_cod FROM pkg, Servicio_Adicional sa
+	WHERE sa.sa_nombre = 'Excursión Salto Ángel';
+
+WITH pkg AS (
+    INSERT INTO Paquete_Turistico (pt_cant_personas, pt_nombre, pt_descripcion, pt_costo, pt_costo_millas, restriccion_paquete_rp_cod)
+    VALUES (2, 'Experiencia Tokio Total', 'Inmersión cultural y lujo en la capital japonesa.', 1800.00, 3600, NULL)
+    RETURNING pt_cod
+)
+INSERT INTO Paq_Ser (paquete_turistico_pt_cod, servicio_s_cod)
+	SELECT pkg.pt_cod, s.s_cod FROM pkg, Servicio s
+	LEFT JOIN Vuelo v ON s.s_cod = v.s_cod
+	LEFT JOIN Habitacion h ON s.s_cod = h.s_cod
+	LEFT JOIN Servicio_Adicional sa ON s.s_cod = sa.s_cod
+	WHERE (v.v_cod_vue = 'JL016') -- Vuelo JAL
+	   OR (h.ha_numero = '202A') -- Park Hyatt
+	   OR (sa.sa_nombre = 'City Tour Tokyo');
+
+WITH pkg AS (
+    INSERT INTO Paquete_Turistico (pt_cant_personas, pt_nombre, pt_descripcion, pt_costo, pt_costo_millas, restriccion_paquete_rp_cod)
+    VALUES (2, 'Carioca Escape', 'Playa, sol y libertad para recorrer Rio.', 600.00, 1200, NULL)
+    RETURNING pt_cod
+)
+INSERT INTO Paq_Ser (paquete_turistico_pt_cod, servicio_s_cod)
+	SELECT pkg.pt_cod, s.s_cod FROM pkg, Servicio s
+	LEFT JOIN Habitacion h ON s.s_cod = h.s_cod
+	LEFT JOIN Servicio_Adicional sa ON s.s_cod = sa.s_cod
+	WHERE (h.ha_numero = '402') -- Copacabana Palace
+	   OR (sa.sa_nombre = 'Alquiler Compacto'); -- Localiza
+
+WITH pkg AS (
+    INSERT INTO Paquete_Turistico (pt_cant_personas, pt_nombre, pt_descripcion, pt_costo, pt_costo_millas, restriccion_paquete_rp_cod)
+    VALUES (1, 'Solteros en el Pacífico', 'Fiesta y diversión a bordo por la costa oeste.', 800.00, 1600, 
+    (SELECT rp_cod FROM Restriccion_Paquete WHERE rp_valor_restriccion = 'SOLTERO' LIMIT 1))
+    RETURNING pt_cod
+)
+INSERT INTO Paq_Ser (paquete_turistico_pt_cod, servicio_s_cod)
+	SELECT pkg.pt_cod, vi.s_cod FROM pkg, Viaje vi
+	JOIN Barco b ON vi.barco_mt_cod = b.mt_cod
+	WHERE b.b_nombre = 'Carnival Vista';
+
+WITH pkg AS (
+    INSERT INTO Paquete_Turistico (pt_cant_personas, pt_nombre, pt_descripcion, pt_costo, pt_costo_millas, restriccion_paquete_rp_cod)
+    VALUES (1, 'Eurotrip Express', 'Conexión rápida Caracas - Madrid - Barcelona.', 900.00, 1800, NULL)
+    RETURNING pt_cod
+)
+INSERT INTO Paq_Ser (paquete_turistico_pt_cod, servicio_s_cod)
+	SELECT pkg.pt_cod, v.s_cod FROM pkg, Vuelo v
+	WHERE v.v_cod_vue IN ('IB6674', 'VY1001');
+
+WITH pkg AS (
+    INSERT INTO Paquete_Turistico (pt_cant_personas, pt_nombre, pt_descripcion, pt_costo, pt_costo_millas, restriccion_paquete_rp_cod)
+    VALUES (2, 'Relax Dorado en Lisboa', 'Estadía tranquila diseñada para adultos mayores.', 220.00, 440, 
+    (SELECT rp_cod FROM Restriccion_Paquete WHERE rp_caracteristica = 'EDAD' AND rp_valor_restriccion = '60' LIMIT 1))
+    RETURNING pt_cod
+)
+INSERT INTO Paq_Ser (paquete_turistico_pt_cod, servicio_s_cod)
+	SELECT pkg.pt_cod, h.s_cod FROM pkg, Habitacion h
+	WHERE h.ha_numero = '105'; -- Pestana
+
+
+WITH pkg AS (
+    INSERT INTO Paquete_Turistico (pt_cant_personas, pt_nombre, pt_descripcion, pt_costo, pt_costo_millas, restriccion_paquete_rp_cod)
+    VALUES (1, 'Ejecutivo Nacional', 'Logística resuelta para su viaje de negocios a la capital.', 140.00, 280, 
+    (SELECT rp_cod FROM Restriccion_Paquete WHERE rp_valor_restriccion = 'Venezuela' LIMIT 1))
+    RETURNING pt_cod
+)
+INSERT INTO Paq_Ser (paquete_turistico_pt_cod, servicio_s_cod)
+	SELECT pkg.pt_cod, s.s_cod FROM pkg, Servicio s
+	LEFT JOIN Traslado t ON s.s_cod = t.s_cod
+	LEFT JOIN Habitacion h ON s.s_cod = h.s_cod
+	LEFT JOIN Transporte_Terrestre tt ON t.transporte_terrestre_p_cod = tt.p_cod
+	WHERE (tt.p_nombre = 'Aeroexpresos Ejecutivos')
+	   OR (h.ha_numero = '101'); -- Eurobuilding Individual
+
+WITH pkg AS (
+    INSERT INTO Paquete_Turistico (pt_cant_personas, pt_nombre, pt_descripcion, pt_costo, pt_costo_millas, restriccion_paquete_rp_cod)
+    VALUES (1, 'Diversión Warner', 'Full day en el parque temático.', 55.00, 110, NULL)
+    RETURNING pt_cod
+)
+INSERT INTO Paq_Ser (paquete_turistico_pt_cod, servicio_s_cod)
+	SELECT pkg.pt_cod, sa.s_cod FROM pkg, Servicio_Adicional sa
+	WHERE sa.sa_nombre = 'Entrada General';	
+
+INSERT INTO Eti_Paq (etiqueta_et_cod, paquete_turistico_pt_cod) VALUES
+    ((SELECT et_cod FROM Etiqueta WHERE et_nombre = 'Romántico' LIMIT 1), (SELECT pt_cod FROM Paquete_Turistico WHERE pt_nombre = 'Luna de Miel en las Alturas' LIMIT 1)),
+    ((SELECT et_cod FROM Etiqueta WHERE et_nombre = 'Familiar' LIMIT 1), (SELECT pt_cod FROM Paquete_Turistico WHERE pt_nombre = 'Sueño Californiano Familiar' LIMIT 1)),
+    ((SELECT et_cod FROM Etiqueta WHERE et_nombre = 'Aventura' LIMIT 1), (SELECT pt_cod FROM Paquete_Turistico WHERE pt_nombre = 'Aventura en la Selva' LIMIT 1)),
+    ((SELECT et_cod FROM Etiqueta WHERE et_nombre = 'Ecoturismo' LIMIT 1), (SELECT pt_cod FROM Paquete_Turistico WHERE pt_nombre = 'Aventura en la Selva' LIMIT 1)),
+    ((SELECT et_cod FROM Etiqueta WHERE et_nombre = 'Lujo' LIMIT 1), (SELECT pt_cod FROM Paquete_Turistico WHERE pt_nombre = 'Experiencia Tokio Total' LIMIT 1)),
+    ((SELECT et_cod FROM Etiqueta WHERE et_nombre = 'Playa' LIMIT 1), (SELECT pt_cod FROM Paquete_Turistico WHERE pt_nombre = 'Carioca Escape' LIMIT 1)),
+    ((SELECT et_cod FROM Etiqueta WHERE et_nombre = 'Aventura' LIMIT 1), (SELECT pt_cod FROM Paquete_Turistico WHERE pt_nombre = 'Solteros en el Pacífico' LIMIT 1)),
+    ((SELECT et_cod FROM Etiqueta WHERE et_nombre = 'Negocios' LIMIT 1), (SELECT pt_cod FROM Paquete_Turistico WHERE pt_nombre = 'Ejecutivo Nacional' LIMIT 1)),
+    ((SELECT et_cod FROM Etiqueta WHERE et_nombre = 'Gastronómico' LIMIT 1), (SELECT pt_cod FROM Paquete_Turistico WHERE pt_nombre = 'Relax Dorado en Lisboa' LIMIT 1)),
+    ((SELECT et_cod FROM Etiqueta WHERE et_nombre = 'Familiar' LIMIT 1), (SELECT pt_cod FROM Paquete_Turistico WHERE pt_nombre = 'Diversión Warner' LIMIT 1));
+
+INSERT INTO Compra (co_fecha_hora, co_monto_total, co_millas_a_agregar, co_compensacion_huella, co_estado, cliente_c_cod)
+	SELECT 
+	    ('2025-01-01'::timestamp + (random() * (interval '45 days'))),
+	    0,
+	    0,
+	    CASE WHEN random() > 0.5 THEN ROUND((random() * 20 + 5)::numeric, 2) ELSE 0.00 END,
+	    'FINALIZADO',
+	    c_cod
+	FROM Cliente;	
+
+-- Insertar Viajero 1 por cada Compra
+INSERT INTO Viajero (via_p_nombre, via_s_nombre, via_p_apellido, via_s_apellido, via_correo, via_fecha_nacimiento)
+	SELECT 
+	    'ViajeroA', 
+	    CAST(co_cod AS VARCHAR), -- Guardamos el ID de compra en el segundo nombre para vincularlo luego
+	    'ApellidoA', 
+	    'Genérico', 
+	    'viajeroA_' || co_cod || '@email.com', 
+	    '1990-01-01'
+	FROM Compra;
+
+-- Insertar Viajero 2 por cada Compra
+INSERT INTO Viajero (via_p_nombre, via_s_nombre, via_p_apellido, via_s_apellido, via_correo, via_fecha_nacimiento)
+	SELECT 
+	    'ViajeroB', 
+	    CAST(co_cod AS VARCHAR), 
+	    'ApellidoB', 
+	    'Genérico', 
+	    'viajeroB_' || co_cod || '@email.com', 
+	    '1995-05-15'
+	FROM Compra;
+
+-- Insertar Vuelo
+INSERT INTO Boleto_Vuelo (compra_co_cod, vuelo_s_cod, res_costo_sub_total, res_anulado, bv_cant_pasajeros, clase_asiento_ca_cod, tasa_cambio_tca_cod)
+	SELECT c.co_cod,
+	    (SELECT s_cod FROM Vuelo WHERE v_cod_vue = 'IB6674' LIMIT 1), -- Vuelo a Caracas
+	    850.00 * 2 + (SELECT ca_costo FROM Clase_Asiento WHERE ca_nombre = 'Economy Standard' LIMIT 1),
+	    FALSE,
+	    2,
+	    (SELECT ca_cod FROM Clase_Asiento WHERE ca_nombre = 'Economy Standard' LIMIT 1),
+	    (SELECT tca_cod FROM Tasa_Cambio WHERE tca_divisa_origen = 'USD' AND tca_fecha_hora_fin IS NULL LIMIT 1)
+		FROM Compra c WHERE c.co_cod % 5 = 0;
+
+-- Insertar Hotel
+INSERT INTO Detalle_Hospedaje (compra_co_cod, habitacion_s_cod, res_costo_sub_total, res_anulado, dh_cant_noches, dh_fecha_hora_check_in, dh_fecha_hora_check_out, dh_fecha_hora_out_real, tasa_cambio_tca_cod)
+	SELECT c.co_cod,
+	    (SELECT s_cod FROM Habitacion WHERE ha_numero = '101' LIMIT 1), -- Eurobuilding
+	    240.00,
+	    FALSE,
+	    2,
+	    c.co_fecha_hora + interval '1 day',
+	    c.co_fecha_hora + interval '3 days',
+	    NULL,
+	    (SELECT tca_cod FROM Tasa_Cambio WHERE tca_divisa_origen = 'USD' AND tca_fecha_hora_fin IS NULL LIMIT 1)
+	FROM Compra c WHERE c.co_cod % 5 = 0;
+
+-- Insertar Vuelo
+INSERT INTO Boleto_Vuelo (compra_co_cod, vuelo_s_cod, res_costo_sub_total, res_anulado, bv_cant_pasajeros, clase_asiento_ca_cod, tasa_cambio_tca_cod)
+	SELECT 
+	    c.co_cod,
+	    (SELECT s_cod FROM Vuelo WHERE v_cod_vue = 'AA100' LIMIT 1),
+	    600.00 * 2 + (SELECT ca_costo FROM Clase_Asiento WHERE ca_nombre = 'Economy Plus' LIMIT 1),
+	    FALSE,
+	    2,
+	    (SELECT ca_cod FROM Clase_Asiento WHERE ca_nombre = 'Economy Plus' LIMIT 1),
+	    (SELECT tca_cod FROM Tasa_Cambio WHERE tca_divisa_origen = 'USD' AND tca_fecha_hora_fin IS NULL LIMIT 1)
+	FROM Compra c WHERE c.co_cod % 5 = 1;
+
+-- Insertar Traslado
+INSERT INTO Detalle_Traslado (compra_co_cod, traslado_s_cod, res_costo_sub_total, res_anulado, dt_fecha_hora, automovil_mt_cod, tasa_cambio_tca_cod)
+	SELECT 
+	    c.co_cod,
+	    (SELECT s_cod FROM Traslado WHERE transporte_terrestre_p_cod = (SELECT p_cod FROM Transporte_Terrestre WHERE p_nombre = 'Greyhound Lines' LIMIT 1) LIMIT 1),
+	    50.00 + ((SELECT a_costo_por_km FROM Automovil WHERE transporte_terrestre_p_cod = (SELECT p_cod FROM Transporte_Terrestre WHERE p_nombre = 'Greyhound Lines' LIMIT 1) LIMIT 1)*(SELECT t_distancia_km FROM Traslado WHERE transporte_terrestre_p_cod = (SELECT p_cod FROM Transporte_Terrestre WHERE p_nombre = 'Greyhound Lines' LIMIT 1) LIMIT 1)),
+	    FALSE,
+	    c.co_fecha_hora + interval '5 hours',
+	    (SELECT mt_cod FROM Automovil WHERE transporte_terrestre_p_cod = (SELECT p_cod FROM Transporte_Terrestre WHERE p_nombre = 'Greyhound Lines' LIMIT 1) LIMIT 1),
+	    (SELECT tca_cod FROM Tasa_Cambio WHERE tca_divisa_origen = 'USD' AND tca_fecha_hora_fin IS NULL LIMIT 1)
+	FROM Compra c WHERE c.co_cod % 5 = 1;
+
+
+-- Insertar Vuelo (Conexión)
+INSERT INTO Boleto_Vuelo (compra_co_cod, vuelo_s_cod, res_costo_sub_total, res_anulado, bv_cant_pasajeros, clase_asiento_ca_cod, tasa_cambio_tca_cod)
+	SELECT 
+	    c.co_cod,
+	    (SELECT s_cod FROM Vuelo WHERE v_cod_vue = 'Y4900' LIMIT 1),
+	    250.00 * 2 + (SELECT ca_costo FROM Clase_Asiento WHERE ca_nombre = 'Economy Basic' LIMIT 1),
+	    FALSE,
+	    2,
+	    (SELECT ca_cod FROM Clase_Asiento WHERE ca_nombre = 'Economy Basic' LIMIT 1),
+	    (SELECT tca_cod FROM Tasa_Cambio WHERE tca_divisa_origen = 'USD' AND tca_fecha_hora_fin IS NULL LIMIT 1)
+	FROM Compra c WHERE c.co_cod % 5 = 2;
+
+-- Insertar Crucero
+INSERT INTO Boleto_Viaje (compra_co_cod, viaje_s_cod, res_costo_sub_total, res_anulado, bvi_cant_pasajeros, tipo_camarote_tc_cod, servicio_barco_sb_cod, tasa_cambio_tca_cod)
+	SELECT 
+	    c.co_cod,
+	    (SELECT s_cod FROM Viaje WHERE barco_mt_cod = (SELECT mt_cod FROM Barco WHERE b_nombre = 'Symphony of the Seas' LIMIT 1) LIMIT 1),
+	    1200.00 * 2 + (SELECT sb_costo FROM Servicio_Barco WHERE sb_descripcion LIKE 'Paquete de Bebidas%' LIMIT 1) + (SELECT tc_costo FROM Tipo_Camarote WHERE tc_nombre = 'Balcón Deluxe' LIMIT 1),
+	    FALSE,
+	    2,
+	    (SELECT tc_cod FROM Tipo_Camarote WHERE tc_nombre = 'Balcón Deluxe' LIMIT 1),
+	    (SELECT sb_cod FROM Servicio_Barco WHERE sb_descripcion LIKE 'Paquete de Bebidas%' LIMIT 1),
+	    (SELECT tca_cod FROM Tasa_Cambio WHERE tca_divisa_origen = 'USD' AND tca_fecha_hora_fin IS NULL LIMIT 1)
+	FROM Compra c WHERE c.co_cod % 5 = 2;
+
+-- Insertar Vuelo
+INSERT INTO Boleto_Vuelo (compra_co_cod, vuelo_s_cod, res_costo_sub_total, res_anulado, bv_cant_pasajeros, clase_asiento_ca_cod, tasa_cambio_tca_cod)
+	SELECT 
+	    c.co_cod,
+	    (SELECT s_cod FROM Vuelo WHERE v_cod_vue = 'JL016' LIMIT 1),
+	    1200.00 * 2 + (SELECT ca_cod FROM Clase_Asiento WHERE ca_nombre = 'Economy Standard' LIMIT 1),
+	    FALSE,
+	    2,
+	    (SELECT ca_cod FROM Clase_Asiento WHERE ca_nombre = 'Economy Standard' LIMIT 1),
+	    (SELECT tca_cod FROM Tasa_Cambio WHERE tca_divisa_origen = 'USD' AND tca_fecha_hora_fin IS NULL LIMIT 1)
+	FROM Compra c WHERE c.co_cod % 5 = 3;
+
+-- Insertar Entrada Digital
+INSERT INTO Entrada_Digital (compra_co_cod, servicio_adicional_s_cod, res_costo_sub_total, res_anulado, ed_cant_personas, tasa_cambio_tca_cod)
+	SELECT 
+	    c.co_cod,
+	    (SELECT s_cod FROM Servicio_Adicional WHERE sa_nombre LIKE 'Entrada 1 Día%' LIMIT 1),
+	    150.00 * 2,
+	    FALSE,
+	    2,
+	    (SELECT tca_cod FROM Tasa_Cambio WHERE tca_divisa_origen = 'USD' AND tca_fecha_hora_fin IS NULL LIMIT 1)
+	FROM Compra c WHERE c.co_cod % 5 = 3;
+
+-- Insertar Hotel
+INSERT INTO Detalle_Hospedaje (compra_co_cod, habitacion_s_cod, res_costo_sub_total, res_anulado, dh_cant_noches, dh_fecha_hora_check_in, dh_fecha_hora_check_out, dh_fecha_hora_out_real, tasa_cambio_tca_cod)
+	SELECT 
+	    c.co_cod,
+	    (SELECT s_cod FROM Habitacion WHERE ha_numero = '402' LIMIT 1),
+	    450.00 * 3,
+	    FALSE,
+	    3,
+	    c.co_fecha_hora + interval '1 day',
+	    c.co_fecha_hora + interval '4 days',
+	    NULL,
+	    (SELECT tca_cod FROM Tasa_Cambio WHERE tca_divisa_origen = 'USD' AND tca_fecha_hora_fin IS NULL LIMIT 1)
+	FROM Compra c WHERE c.co_cod % 5 = 4;
+
+-- Insertar Traslado
+INSERT INTO Detalle_Traslado (compra_co_cod, traslado_s_cod, res_costo_sub_total, res_anulado, dt_fecha_hora, automovil_mt_cod, tasa_cambio_tca_cod)
+	SELECT 
+	    c.co_cod,
+	    (SELECT s_cod FROM Traslado WHERE transporte_terrestre_p_cod = (SELECT p_cod FROM Transporte_Terrestre WHERE p_nombre = 'Viação Itapemirim' LIMIT 1) LIMIT 1),
+	    55.00 + ((SELECT a_costo_por_km FROM Automovil WHERE transporte_terrestre_p_cod = (SELECT p_cod FROM Transporte_Terrestre WHERE p_nombre = 'Viação Itapemirim' LIMIT 1) LIMIT 1)*(SELECT t_distancia_km FROM Traslado WHERE transporte_terrestre_p_cod = (SELECT p_cod FROM Transporte_Terrestre WHERE p_nombre = 'Viação Itapemirim' LIMIT 1) LIMIT 1)),
+	    FALSE,
+	    c.co_fecha_hora + interval '2 hours',
+	    (SELECT mt_cod FROM Automovil WHERE transporte_terrestre_p_cod = (SELECT p_cod FROM Transporte_Terrestre WHERE p_nombre = 'Viação Itapemirim' LIMIT 1) LIMIT 1),
+	    (SELECT tca_cod FROM Tasa_Cambio WHERE tca_divisa_origen = 'USD' AND tca_fecha_hora_fin IS NULL LIMIT 1)
+	FROM Compra c WHERE c.co_cod % 5 = 4;	
+
+INSERT INTO Via_Res (viajero_via_cod, boleto_vuelo_co_cod, boleto_vuelo_s_cod)
+	SELECT 
+	    v.via_cod, bv.compra_co_cod, bv.vuelo_s_cod
+	FROM Boleto_Vuelo bv
+	JOIN Viajero v ON v.via_s_nombre = CAST(bv.compra_co_cod AS VARCHAR);
+
+INSERT INTO Via_Res (viajero_via_cod, detalle_traslado_co_cod, detalle_traslado_s_cod)
+	SELECT 
+	    v.via_cod, dt.compra_co_cod, dt.traslado_s_cod
+	FROM Detalle_Traslado dt
+	JOIN Viajero v ON v.via_s_nombre = CAST(dt.compra_co_cod AS VARCHAR);
+
+INSERT INTO Via_Res (viajero_via_cod, boleto_viaje_co_cod, boleto_viaje_s_cod)
+	SELECT 
+	    v.via_cod, bvi.compra_co_cod, bvi.viaje_s_cod
+	FROM Boleto_Viaje bvi
+	JOIN Viajero v ON v.via_s_nombre = CAST(bvi.compra_co_cod AS VARCHAR);
+
+INSERT INTO Via_Res (viajero_via_cod, entrada_digital_co_cod, entrada_digital_s_cod)
+	SELECT 
+	    v.via_cod, ed.compra_co_cod, ed.servicio_adicional_s_cod
+	FROM Entrada_Digital ed
+	JOIN Viajero v ON v.via_s_nombre = CAST(ed.compra_co_cod AS VARCHAR);
+
+INSERT INTO Via_Res (viajero_via_cod, detalle_hospedaje_co_cod, detalle_hospedaje_s_cod)
+	SELECT 
+	    v.via_cod, dh.compra_co_cod, dh.habitacion_s_cod
+	FROM Detalle_Hospedaje dh
+	JOIN Viajero v ON v.via_s_nombre = CAST(dh.compra_co_cod AS VARCHAR);	
+
+UPDATE Viajero SET (via_p_nombre, via_s_nombre, via_p_apellido, via_s_apellido, via_correo, via_fecha_nacimiento) = ('Ricky', 'Devy', 'Dover', null, 'rnoel0@boston.com', '1980-07-15') 								WHERE via_cod = 1;                                   
+UPDATE Viajero SET (via_p_nombre, via_s_nombre, via_p_apellido, via_s_apellido, via_correo, via_fecha_nacimiento) = ('Byrle', 'Morgun', 'Geharke', 'Bartleman', 'bbartleman1@spotify.com', '2005-10-03') 				WHERE via_cod = 2;
+UPDATE Viajero SET (via_p_nombre, via_s_nombre, via_p_apellido, via_s_apellido, via_correo, via_fecha_nacimiento) = ('Rurik', null, 'Gorst', null, 'rbuckner2@utexas.edu', '1993-12-11') 								WHERE via_cod = 3;
+UPDATE Viajero SET (via_p_nombre, via_s_nombre, via_p_apellido, via_s_apellido, via_correo, via_fecha_nacimiento) = ('Hastings', 'Redford', 'Brightwell', 'Hughlin', 'hhughlin3@blogs.com', '1992-09-23') 				WHERE via_cod = 4;
+UPDATE Viajero SET (via_p_nombre, via_s_nombre, via_p_apellido, via_s_apellido, via_correo, via_fecha_nacimiento) = ('Tammy', 'Joanna', 'Broadey', 'enzley', 'tenzley4@netvibes.com', '1993-04-20') 					WHERE via_cod = 5;
+UPDATE Viajero SET (via_p_nombre, via_s_nombre, via_p_apellido, via_s_apellido, via_correo, via_fecha_nacimiento) = ('Hector', 'Ingram', 'O''Caine', null, 'hvedeniktov5@dedecms.com', '2000-11-19')                    WHERE via_cod = 6;
+UPDATE Viajero SET (via_p_nombre, via_s_nombre, via_p_apellido, via_s_apellido, via_correo, via_fecha_nacimiento) = ('Jule', null, 'Amthor', null, 'jarnaudin6@360.cn', '1988-07-06')                                   WHERE via_cod = 7;
+UPDATE Viajero SET (via_p_nombre, via_s_nombre, via_p_apellido, via_s_apellido, via_correo, via_fecha_nacimiento) = ('Natale', null, 'Joseland', 'Lenz', 'nlenz7@pinterest.com', '1992-04-18')                          WHERE via_cod = 8;
+UPDATE Viajero SET (via_p_nombre, via_s_nombre, via_p_apellido, via_s_apellido, via_correo, via_fecha_nacimiento) = ('Elliott', null, 'Greenig', 'Gooderridge', 'egooderridge8@scientificamerican.com', '1989-12-18')   WHERE via_cod = 9;
+UPDATE Viajero SET (via_p_nombre, via_s_nombre, via_p_apellido, via_s_apellido, via_correo, via_fecha_nacimiento) = ('Huntlee', null, 'Rosenzwig', 'Teideman', 'hteideman9@reverbnation.com', '1996-11-11')             WHERE via_cod = 10;
+UPDATE Viajero SET (via_p_nombre, via_s_nombre, via_p_apellido, via_s_apellido, via_correo, via_fecha_nacimiento) = ('Shannon', 'Xena', 'Sharman', 'Parrin', 'sparrina@admin.ch', '1985-06-16')                         WHERE via_cod = 11;
+UPDATE Viajero SET (via_p_nombre, via_s_nombre, via_p_apellido, via_s_apellido, via_correo, via_fecha_nacimiento) = ('West', 'Sondra', 'Hawthorne', 'Marusic', 'wmarusicb@imgur.com', '1982-03-09')                     WHERE via_cod = 12;
+UPDATE Viajero SET (via_p_nombre, via_s_nombre, via_p_apellido, via_s_apellido, via_correo, via_fecha_nacimiento) = ('Ewan', null, 'Piken', null, 'eworboysc@hhs.gov', '1998-03-13')                                    WHERE via_cod = 13;
+UPDATE Viajero SET (via_p_nombre, via_s_nombre, via_p_apellido, via_s_apellido, via_correo, via_fecha_nacimiento) = ('Willem', 'Alanna', 'Darrigoe', 'Berthel', 'wbertheld@utexas.edu', '1987-08-20')                   WHERE via_cod = 14;
+UPDATE Viajero SET (via_p_nombre, via_s_nombre, via_p_apellido, via_s_apellido, via_correo, via_fecha_nacimiento) = ('Eddy', null, 'Hengoed', 'Ramlot', 'eramlote@techcrunch.com', '1992-07-22')                        WHERE via_cod = 15;
+UPDATE Viajero SET (via_p_nombre, via_s_nombre, via_p_apellido, via_s_apellido, via_correo, via_fecha_nacimiento) = ('Robby', null, 'Blaney', 'Loisi', 'rloisif@miitbeian.gov.cn', '1986-08-09')                        WHERE via_cod = 16;
+UPDATE Viajero SET (via_p_nombre, via_s_nombre, via_p_apellido, via_s_apellido, via_correo, via_fecha_nacimiento) = ('Matt', 'Gustav', 'Lombard', 'Crabbe', 'mcrabbeg@edublogs.org', '1983-09-29')                      WHERE via_cod = 17;
+UPDATE Viajero SET (via_p_nombre, via_s_nombre, via_p_apellido, via_s_apellido, via_correo, via_fecha_nacimiento) = ('Antonio', 'Ruby', 'Burdikin', 'Raubheim', 'araubheimh@huffingtonpost.com', '1999-03-20')          WHERE via_cod = 18;
+UPDATE Viajero SET (via_p_nombre, via_s_nombre, via_p_apellido, via_s_apellido, via_correo, via_fecha_nacimiento) = ('Carly', 'Northrup', 'Heinle', 'Helmke', 'chelmkei@jigsy.com', '2000-04-15')                       WHERE via_cod = 19;
+UPDATE Viajero SET (via_p_nombre, via_s_nombre, via_p_apellido, via_s_apellido, via_correo, via_fecha_nacimiento) = ('Bartholemy', null, 'Norville', 'Cribbin', 'bcribbinj@tripadvisor.com', '1986-08-10')              WHERE via_cod = 20;
+UPDATE Viajero SET (via_p_nombre, via_s_nombre, via_p_apellido, via_s_apellido, via_correo, via_fecha_nacimiento) = ('Yves', 'Rozalie', 'Deary', 'Fraschetti', 'yfraschettik@ameblo.jp', '1999-02-09')                  WHERE via_cod = 21;
+UPDATE Viajero SET (via_p_nombre, via_s_nombre, via_p_apellido, via_s_apellido, via_correo, via_fecha_nacimiento) = ('Lorenzo', 'Hilliary', 'Stickley', 'Wimbridge', 'lwimbridgel@ameblo.jp', '1980-10-26')             WHERE via_cod = 22;
+UPDATE Viajero SET (via_p_nombre, via_s_nombre, via_p_apellido, via_s_apellido, via_correo, via_fecha_nacimiento) = ('Winifield', 'Mordecai', 'Lauder', null, 'wdunseithm@goo.ne.jp', '1992-05-18')                     WHERE via_cod = 23;
+UPDATE Viajero SET (via_p_nombre, via_s_nombre, via_p_apellido, via_s_apellido, via_correo, via_fecha_nacimiento) = ('Kristian', 'Alta', 'Haking', 'Gillooly', 'kgilloolyn@jimdo.com', '1992-01-11')                    WHERE via_cod = 24;
+UPDATE Viajero SET (via_p_nombre, via_s_nombre, via_p_apellido, via_s_apellido, via_correo, via_fecha_nacimiento) = ('Lenci', 'Lila', 'Pays', 'Glendinning', 'lglendinningo@walmart.com', '1983-09-08')                 WHERE via_cod = 25;
+UPDATE Viajero SET (via_p_nombre, via_s_nombre, via_p_apellido, via_s_apellido, via_correo, via_fecha_nacimiento) = ('Davidson', null, 'Clayfield', null, 'dkennerp@about.me', '2002-02-18')                            WHERE via_cod = 26;
+UPDATE Viajero SET (via_p_nombre, via_s_nombre, via_p_apellido, via_s_apellido, via_correo, via_fecha_nacimiento) = ('Rawley', 'Edan', 'Czajkowska', 'Spatoni', 'rspatoniq@cbsnews.com', '1992-05-26')                  WHERE via_cod = 27;
+UPDATE Viajero SET (via_p_nombre, via_s_nombre, via_p_apellido, via_s_apellido, via_correo, via_fecha_nacimiento) = ('Spencer', 'Zola', 'Huttley', 'Chason', 'schasonr@oakley.com', '1985-08-18')                       WHERE via_cod = 28;
+UPDATE Viajero SET (via_p_nombre, via_s_nombre, via_p_apellido, via_s_apellido, via_correo, via_fecha_nacimiento) = ('Hobart', 'Jacques', 'Neeves', 'Reuther', 'hreuthers@dropbox.com', '1996-09-30')                   WHERE via_cod = 29;
+UPDATE Viajero SET (via_p_nombre, via_s_nombre, via_p_apellido, via_s_apellido, via_correo, via_fecha_nacimiento) = ('Codi', 'Harriet', 'Digg', 'Szachniewicz', 'cszachniewiczt@cafepress.com', '1983-02-24')           WHERE via_cod = 30;
+UPDATE Viajero SET (via_p_nombre, via_s_nombre, via_p_apellido, via_s_apellido, via_correo, via_fecha_nacimiento) = ('Archer', 'Celestina', 'Tanswell', 'Spillard', 'aspillardu@reverbnation.com', '1990-05-28')        WHERE via_cod = 31;
+UPDATE Viajero SET (via_p_nombre, via_s_nombre, via_p_apellido, via_s_apellido, via_correo, via_fecha_nacimiento) = ('Ban', null, 'Emmanuel', 'Zorzenoni', 'bzorzenoniv@google.com', '1980-06-12')                      WHERE via_cod = 32;
+UPDATE Viajero SET (via_p_nombre, via_s_nombre, via_p_apellido, via_s_apellido, via_correo, via_fecha_nacimiento) = ('Gaby', null, 'Stalley', 'Allport', 'gallportw@indiegogo.com', '1998-11-10')                       WHERE via_cod = 33;
+UPDATE Viajero SET (via_p_nombre, via_s_nombre, via_p_apellido, via_s_apellido, via_correo, via_fecha_nacimiento) = ('Shannan', 'Leyla', 'Abley', 'Rangell', 'srangellx@china.com.cn', '1995-08-19')                    WHERE via_cod = 34;
+UPDATE Viajero SET (via_p_nombre, via_s_nombre, via_p_apellido, via_s_apellido, via_correo, via_fecha_nacimiento) = ('Park', 'Kristoforo', 'Forte', 'Guymer', 'pguymery@i2i.jp', '1987-09-07')                          WHERE via_cod = 35;
+UPDATE Viajero SET (via_p_nombre, via_s_nombre, via_p_apellido, via_s_apellido, via_correo, via_fecha_nacimiento) = ('Orv', null, 'Smallman', 'Lenard', 'olenardz@seesaa.net', '1981-05-03')                            WHERE via_cod = 36;
+UPDATE Viajero SET (via_p_nombre, via_s_nombre, via_p_apellido, via_s_apellido, via_correo, via_fecha_nacimiento) = ('Clement', 'Graham', 'Shields', 'Duigan', 'cduigan10@w3.org', '1990-09-09')                        WHERE via_cod = 37;
+UPDATE Viajero SET (via_p_nombre, via_s_nombre, via_p_apellido, via_s_apellido, via_correo, via_fecha_nacimiento) = ('Forester', null, 'Durrett', 'Matteau', 'fmatteau11@cdbaby.com', '1988-12-08')                     WHERE via_cod = 38;
+UPDATE Viajero SET (via_p_nombre, via_s_nombre, via_p_apellido, via_s_apellido, via_correo, via_fecha_nacimiento) = ('Artemis', null, 'Zavattieri', 'Dogerty', 'adogerty12@nationalgeographic.com', '1998-10-10')       WHERE via_cod = 39;
+UPDATE Viajero SET (via_p_nombre, via_s_nombre, via_p_apellido, via_s_apellido, via_correo, via_fecha_nacimiento) = ('Jarid', 'Jackie', 'Cashmore', null, 'jingledew13@canalblog.com', '2002-01-17')                    WHERE via_cod = 40;
+UPDATE Viajero SET (via_p_nombre, via_s_nombre, via_p_apellido, via_s_apellido, via_correo, via_fecha_nacimiento) = ('Carrol', 'Nye', 'Keslake', null, 'cchittim14@networkadvertising.org', '2000-02-16')               WHERE via_cod = 41;
+UPDATE Viajero SET (via_p_nombre, via_s_nombre, via_p_apellido, via_s_apellido, via_correo, via_fecha_nacimiento) = ('Jacques', 'Skye', 'Jannings', 'Komorowski', 'jkomorowski15@cyberchimps.com', '2000-08-30')        WHERE via_cod = 42;
+UPDATE Viajero SET (via_p_nombre, via_s_nombre, via_p_apellido, via_s_apellido, via_correo, via_fecha_nacimiento) = ('Tore', 'Wilone', 'Durand', 'Dobell', 'tdobell16@arstechnica.com', '1997-06-18')                   WHERE via_cod = 43;
+UPDATE Viajero SET (via_p_nombre, via_s_nombre, via_p_apellido, via_s_apellido, via_correo, via_fecha_nacimiento) = ('Care', 'Heath', 'Retallick', 'Pilmoor', 'cpilmoor17@tuttocitta.it', '1988-09-05')                 WHERE via_cod = 44;
+UPDATE Viajero SET (via_p_nombre, via_s_nombre, via_p_apellido, via_s_apellido, via_correo, via_fecha_nacimiento) = ('Harv', null, 'Kleinpeltz', 'Etheridge', 'hetheridge18@salon.com', '2002-02-26')                   WHERE via_cod = 45;
+UPDATE Viajero SET (via_p_nombre, via_s_nombre, via_p_apellido, via_s_apellido, via_correo, via_fecha_nacimiento) = ('Reuben', 'Judd', 'Craxford', 'Chipp', 'rchipp19@irs.gov', '1987-11-22')                           WHERE via_cod = 46;
+UPDATE Viajero SET (via_p_nombre, via_s_nombre, via_p_apellido, via_s_apellido, via_correo, via_fecha_nacimiento) = ('Sigfried', 'Abramo', 'Walklot', 'Skipper', 'sskipper1a@wordpress.org', '1995-10-19')              WHERE via_cod = 47;
+UPDATE Viajero SET (via_p_nombre, via_s_nombre, via_p_apellido, via_s_apellido, via_correo, via_fecha_nacimiento) = ('Farleigh', 'Happy', 'Passingham', 'Lindholm', 'flindholm1b@census.gov', '1992-04-28')             WHERE via_cod = 48;
+UPDATE Viajero SET (via_p_nombre, via_s_nombre, via_p_apellido, via_s_apellido, via_correo, via_fecha_nacimiento) = ('Bertram', null, 'Torpie', 'Collerd', 'bcollerd1c@mapquest.com', '1996-10-11')                     WHERE via_cod = 49;
+UPDATE Viajero SET (via_p_nombre, via_s_nombre, via_p_apellido, via_s_apellido, via_correo, via_fecha_nacimiento) = ('Ursula', 'Brit', 'Checketts', 'Hanbury', 'uhanbury0@netvibes.com', '2005-05-14')                  WHERE via_cod = 50;
+UPDATE Viajero SET (via_p_nombre, via_s_nombre, via_p_apellido, via_s_apellido, via_correo, via_fecha_nacimiento) = ('Maressa', 'Adelina', 'Squeers', 'Pockett', 'mpockett1@upenn.edu', '2004-11-18')                   WHERE via_cod = 51;
+UPDATE Viajero SET (via_p_nombre, via_s_nombre, via_p_apellido, via_s_apellido, via_correo, via_fecha_nacimiento) = ('Flss', 'Didi', 'Brightling', 'Menico', 'fmenico2@paginegialle.it', '1998-06-18')                  WHERE via_cod = 52;
+UPDATE Viajero SET (via_p_nombre, via_s_nombre, via_p_apellido, via_s_apellido, via_correo, via_fecha_nacimiento) = ('Ingunna', 'Joya', 'Mertgen', 'Suett', 'isuett3@paypal.com', '1992-05-23')                         WHERE via_cod = 53;
+UPDATE Viajero SET (via_p_nombre, via_s_nombre, via_p_apellido, via_s_apellido, via_correo, via_fecha_nacimiento) = ('Marysa', 'Luella', 'Stallibrass', 'Handasyde', 'mhandasyde4@netvibes.com', '1995-08-13')          WHERE via_cod = 54;
+UPDATE Viajero SET (via_p_nombre, via_s_nombre, via_p_apellido, via_s_apellido, via_correo, via_fecha_nacimiento) = ('Bridie', null, 'Bettenay', null, 'bjendrys5@bandcamp.com', '1987-09-30')                          WHERE via_cod = 55;
+UPDATE Viajero SET (via_p_nombre, via_s_nombre, via_p_apellido, via_s_apellido, via_correo, via_fecha_nacimiento) = ('Leah', 'Abner', 'Gheorghe', 'Hazelgreave', 'lhazelgreave6@issuu.com', '2001-09-13')               WHERE via_cod = 56;
+UPDATE Viajero SET (via_p_nombre, via_s_nombre, via_p_apellido, via_s_apellido, via_correo, via_fecha_nacimiento) = ('Katharina', 'Nanette', 'Tumioto', 'Hugnin', 'khugnin7@pen.io', '2005-08-22')                      WHERE via_cod = 57;
+UPDATE Viajero SET (via_p_nombre, via_s_nombre, via_p_apellido, via_s_apellido, via_correo, via_fecha_nacimiento) = ('Maible', 'Stanley', 'Mathon', 'Dobby', 'mdobby8@wired.com', '1988-07-18')                         WHERE via_cod = 58;
+UPDATE Viajero SET (via_p_nombre, via_s_nombre, via_p_apellido, via_s_apellido, via_correo, via_fecha_nacimiento) = ('Lilia', 'Jamill', 'Laughnan', 'Bannester', 'lbannester9@globo.com', '1989-08-13')                 WHERE via_cod = 59;
+UPDATE Viajero SET (via_p_nombre, via_s_nombre, via_p_apellido, via_s_apellido, via_correo, via_fecha_nacimiento) = ('Andrei', 'Carmita', 'Symcock', 'Witten', 'awittena@vk.com', '1992-05-10')                         WHERE via_cod = 60;
+UPDATE Viajero SET (via_p_nombre, via_s_nombre, via_p_apellido, via_s_apellido, via_correo, via_fecha_nacimiento) = ('Mariejeanne', null, 'Rivard', 'Gioani', 'mgioanib@istockphoto.com', '1981-03-26')                 WHERE via_cod = 61;
+UPDATE Viajero SET (via_p_nombre, via_s_nombre, via_p_apellido, via_s_apellido, via_correo, via_fecha_nacimiento) = ('Herminia', 'Peirce', 'Shearwood', 'Portwaine', 'hportwainec@jugem.jp', '1995-05-01')              WHERE via_cod = 62;
+UPDATE Viajero SET (via_p_nombre, via_s_nombre, via_p_apellido, via_s_apellido, via_correo, via_fecha_nacimiento) = ('Ranee', null, 'Bompass', 'Walczak', 'rwalczakd@free.fr', '2000-01-04')                            WHERE via_cod = 63;
+UPDATE Viajero SET (via_p_nombre, via_s_nombre, via_p_apellido, via_s_apellido, via_correo, via_fecha_nacimiento) = ('Zulema', null, 'Leney', 'Yeaman', 'zyeamane@mozilla.com', '2001-12-23')                           WHERE via_cod = 64;
+UPDATE Viajero SET (via_p_nombre, via_s_nombre, via_p_apellido, via_s_apellido, via_correo, via_fecha_nacimiento) = ('Vanni', 'Inglebert', 'Timeby', 'Cargill', 'vcargillf@auda.org.au', '1986-02-24')                  WHERE via_cod = 65;
+UPDATE Viajero SET (via_p_nombre, via_s_nombre, via_p_apellido, via_s_apellido, via_correo, via_fecha_nacimiento) = ('Saidee', 'Gwyn', 'Coultas', 'Ellsworthe', 'sellswortheg@biglobe.ne.jp', '1993-09-28')             WHERE via_cod = 66;
+UPDATE Viajero SET (via_p_nombre, via_s_nombre, via_p_apellido, via_s_apellido, via_correo, via_fecha_nacimiento) = ('Bria', 'Brear', 'Hooke', 'Goslin', 'bgoslinh@pbs.org', '2003-01-17')                              WHERE via_cod = 67;
+UPDATE Viajero SET (via_p_nombre, via_s_nombre, via_p_apellido, via_s_apellido, via_correo, via_fecha_nacimiento) = ('Ilka', 'Ivar', 'Roscoe', 'Robb', 'irobbi@1688.com', '1991-08-11')                                 WHERE via_cod = 68;
+UPDATE Viajero SET (via_p_nombre, via_s_nombre, via_p_apellido, via_s_apellido, via_correo, via_fecha_nacimiento) = ('Marcelia', 'Fenelia', 'Filippucci', null, 'mgrandj@freewebs.com', '1990-03-27')                   WHERE via_cod = 69;
+UPDATE Viajero SET (via_p_nombre, via_s_nombre, via_p_apellido, via_s_apellido, via_correo, via_fecha_nacimiento) = ('Valida', null, 'McKinna', null, 'vsimpkissk@samsung.com', '1999-02-27')                           WHERE via_cod = 70;
+UPDATE Viajero SET (via_p_nombre, via_s_nombre, via_p_apellido, via_s_apellido, via_correo, via_fecha_nacimiento) = ('Marian', 'Kattie', 'Langrick', 'Tregian', 'mtregianl@mail.ru', '1998-11-05')                      WHERE via_cod = 71;
+UPDATE Viajero SET (via_p_nombre, via_s_nombre, via_p_apellido, via_s_apellido, via_correo, via_fecha_nacimiento) = ('Marcia', null, 'Cooper', 'Runnicles', 'mrunniclesm@epa.gov', '2004-10-24')                        WHERE via_cod = 72;
+UPDATE Viajero SET (via_p_nombre, via_s_nombre, via_p_apellido, via_s_apellido, via_correo, via_fecha_nacimiento) = ('Julita', null, 'Crumpe', 'Rubinovici', 'jrubinovicin@shop-pro.jp', '1996-09-15')                  WHERE via_cod = 73;
+UPDATE Viajero SET (via_p_nombre, via_s_nombre, via_p_apellido, via_s_apellido, via_correo, via_fecha_nacimiento) = ('Darcy', 'Torrin', 'Paszek', null, 'dshallo@theglobeandmail.com', '1983-07-27')                    WHERE via_cod = 74;
+UPDATE Viajero SET (via_p_nombre, via_s_nombre, via_p_apellido, via_s_apellido, via_correo, via_fecha_nacimiento) = ('Delcina', null, 'Poon', 'Trusse', 'dtrussep@bing.com', '1991-03-22')                              WHERE via_cod = 75;
+UPDATE Viajero SET (via_p_nombre, via_s_nombre, via_p_apellido, via_s_apellido, via_correo, via_fecha_nacimiento) = ('Fanchette', 'Mirabella', 'Hanshawe', 'Perrygo', 'fperrygoq@jiathis.com', '1996-06-18')            WHERE via_cod = 76;
+UPDATE Viajero SET (via_p_nombre, via_s_nombre, via_p_apellido, via_s_apellido, via_correo, via_fecha_nacimiento) = ('Timmi', null, 'Sibley', 'Yesenin', 'tyeseninr@ustream.tv', '1991-01-16')                          WHERE via_cod = 77;
+UPDATE Viajero SET (via_p_nombre, via_s_nombre, via_p_apellido, via_s_apellido, via_correo, via_fecha_nacimiento) = ('Barbe', 'Nettie', 'Pietri', 'Thring', 'bthrings@columbia.edu', '2000-11-21')                      WHERE via_cod = 78;
+UPDATE Viajero SET (via_p_nombre, via_s_nombre, via_p_apellido, via_s_apellido, via_correo, via_fecha_nacimiento) = ('Cherry', null, 'Rosenstock', 'Dartan', 'cdartant@amazon.de', '1984-01-26')                        WHERE via_cod = 79;
+UPDATE Viajero SET (via_p_nombre, via_s_nombre, via_p_apellido, via_s_apellido, via_correo, via_fecha_nacimiento) = ('Jermaine', 'Orelie', 'Quigg', 'Fearby', 'jfearbyu@who.int', '1997-10-15')                         WHERE via_cod = 80;
+UPDATE Viajero SET (via_p_nombre, via_s_nombre, via_p_apellido, via_s_apellido, via_correo, via_fecha_nacimiento) = ('Wendie', null, 'Kruschev', 'Meneur', 'wmeneurv@time.com', '1986-09-16')                           WHERE via_cod = 81;
+UPDATE Viajero SET (via_p_nombre, via_s_nombre, via_p_apellido, via_s_apellido, via_correo, via_fecha_nacimiento) = ('Amelie', 'Lurleen', 'Edison', 'Buston', 'abustonw@tumblr.com', '1997-10-21')                      WHERE via_cod = 82;
+UPDATE Viajero SET (via_p_nombre, via_s_nombre, via_p_apellido, via_s_apellido, via_correo, via_fecha_nacimiento) = ('Jsandye', 'Alyson', 'Ladel', null, 'joveyx@scribd.com', '2002-02-06')                             WHERE via_cod = 83;
+UPDATE Viajero SET (via_p_nombre, via_s_nombre, via_p_apellido, via_s_apellido, via_correo, via_fecha_nacimiento) = ('Abbye', null, 'Ben', 'Cressy', 'acressyy@bandcamp.com', '1983-02-26')                             WHERE via_cod = 84;
+UPDATE Viajero SET (via_p_nombre, via_s_nombre, via_p_apellido, via_s_apellido, via_correo, via_fecha_nacimiento) = ('Lurette', 'Kimmi', 'Beltzner', 'Prestner', 'lprestnerz@dell.com', '2005-09-06')                   WHERE via_cod = 85;
+UPDATE Viajero SET (via_p_nombre, via_s_nombre, via_p_apellido, via_s_apellido, via_correo, via_fecha_nacimiento) = ('Merissa', 'Niven', 'Goudard', 'Van Velden', 'mvanvelden10@youtube.com', '1991-01-16')             WHERE via_cod = 86;
+UPDATE Viajero SET (via_p_nombre, via_s_nombre, via_p_apellido, via_s_apellido, via_correo, via_fecha_nacimiento) = ('Marketa', 'Lonnie', 'Garton', 'Gligorijevic', 'mgligorijevic11@biglobe.ne.jp', '1995-11-26')      WHERE via_cod = 87;
+UPDATE Viajero SET (via_p_nombre, via_s_nombre, via_p_apellido, via_s_apellido, via_correo, via_fecha_nacimiento) = ('Elbertina', null, 'Balcombe', null, 'ethreadgould12@ning.com', '1995-07-20')                      WHERE via_cod = 88;
+UPDATE Viajero SET (via_p_nombre, via_s_nombre, via_p_apellido, via_s_apellido, via_correo, via_fecha_nacimiento) = ('Xylia', null, 'Yurkin', 'Delahunty', 'xdelahunty13@apache.org', '1997-11-17')                     WHERE via_cod = 89;
+UPDATE Viajero SET (via_p_nombre, via_s_nombre, via_p_apellido, via_s_apellido, via_correo, via_fecha_nacimiento) = ('Janna', 'Cross', 'Heal', 'Kubala', 'jkubala14@disqus.com', '2004-04-16')                          WHERE via_cod = 90;
+UPDATE Viajero SET (via_p_nombre, via_s_nombre, via_p_apellido, via_s_apellido, via_correo, via_fecha_nacimiento) = ('Carmelina', 'Daveen', 'Cunrado', 'Trahar', 'ctrahar15@wisc.edu', '2003-06-07')                    WHERE via_cod = 91;
+UPDATE Viajero SET (via_p_nombre, via_s_nombre, via_p_apellido, via_s_apellido, via_correo, via_fecha_nacimiento) = ('Lucine', 'Connie', 'Bartlomiejczyk', 'Urwen', 'lurwen16@spotify.com', '1996-02-05')               WHERE via_cod = 92;
+UPDATE Viajero SET (via_p_nombre, via_s_nombre, via_p_apellido, via_s_apellido, via_correo, via_fecha_nacimiento) = ('Ermina', null, 'McComb', null, 'emarriott17@goo.ne.jp', '2001-05-09')                             WHERE via_cod = 93;
+UPDATE Viajero SET (via_p_nombre, via_s_nombre, via_p_apellido, via_s_apellido, via_correo, via_fecha_nacimiento) = ('Ronny', 'Erasmus', 'Gaffey', 'Scarsbrick', 'rscarsbrick18@uiuc.edu', '1998-11-30')                WHERE via_cod = 94;
+UPDATE Viajero SET (via_p_nombre, via_s_nombre, via_p_apellido, via_s_apellido, via_correo, via_fecha_nacimiento) = ('Cacilie', 'Ragnar', 'Tresler', 'Danaher', 'cdanaher19@comcast.net', '1985-12-17')                 WHERE via_cod = 95;
+UPDATE Viajero SET (via_p_nombre, via_s_nombre, via_p_apellido, via_s_apellido, via_correo, via_fecha_nacimiento) = ('Florida', null, 'Seviour', 'Graffin', 'fgraffin1a@plala.or.jp', '2001-03-21')                     WHERE via_cod = 96;
+UPDATE Viajero SET (via_p_nombre, via_s_nombre, via_p_apellido, via_s_apellido, via_correo, via_fecha_nacimiento) = ('Olive', 'Carlye', 'Cubbinelli', 'Goman', 'ogoman1b@vistaprint.com', '1986-11-12')                 WHERE via_cod = 97;
+UPDATE Viajero SET (via_p_nombre, via_s_nombre, via_p_apellido, via_s_apellido, via_correo, via_fecha_nacimiento) = ('Lexis', 'Sherwin', 'Harlick', null, 'lkasting1c@cbsnews.com', '1983-01-21')                       WHERE via_cod = 98;
+
+WITH Calculos_Compra AS (
+    SELECT 
+        co_cod_calc,
+        SUM(monto_parcial) AS total_monto_calculado,
+        SUM(millas_parcial) AS total_millas_calculadas
+    FROM (
+        -- BOLETO VUELO
+        SELECT 
+            compra_co_cod AS co_cod_calc, 
+            res_costo_sub_total AS monto_parcial, 
+            s.s_millas_otorgar AS millas_parcial
+        FROM Boleto_Vuelo bv
+        JOIN Servicio s ON bv.vuelo_s_cod = s.s_cod
+
+        UNION ALL
+
+        -- BOLETO VIAJE
+        SELECT 
+            compra_co_cod, 
+            res_costo_sub_total, 
+            s.s_millas_otorgar
+        FROM Boleto_Viaje bvi
+        JOIN Servicio s ON bvi.viaje_s_cod = s.s_cod
+
+        UNION ALL
+
+        -- DETALLE TRASLADO
+        SELECT 
+            compra_co_cod, 
+            res_costo_sub_total, 
+            s.s_millas_otorgar
+        FROM Detalle_Traslado dt
+        JOIN Servicio s ON dt.traslado_s_cod = s.s_cod
+
+        UNION ALL
+
+        -- DETALLE HOSPEDAJE
+        SELECT 
+            compra_co_cod, 
+            res_costo_sub_total, 
+            s.s_millas_otorgar
+        FROM Detalle_Hospedaje dh
+        JOIN Servicio s ON dh.habitacion_s_cod = s.s_cod
+
+        UNION ALL
+
+        -- ENTRADA DIGITAL
+        SELECT 
+            compra_co_cod, 
+            res_costo_sub_total, 
+            s.s_millas_otorgar
+        FROM Entrada_Digital ed
+        JOIN Servicio s ON ed.servicio_adicional_s_cod = s.s_cod
+    ) t
+    GROUP BY co_cod_calc
+)
+UPDATE Compra c SET co_monto_total = calc.total_monto_calculado + c.co_compensacion_huella, co_millas_a_agregar = calc.total_millas_calculadas
+FROM Calculos_Compra calc
+WHERE c.co_cod = calc.co_cod_calc;
+
+INSERT INTO Deseo_Paquete VALUES (1, 1), (1, 7), (10, 4), (10, 5), (3, 49), (4, 49), (2, 27), (6, 36), (9, 33), (2, 2);
+INSERT INTO Deseo_Servicio VALUES (9, 1), (10, 1), (11, 1), (23, 49), (17, 31), (18, 25), (7, 7), (20, 40), (21, 40), (10, 10);
+
+INSERT INTO Tipo_Documento (td_nombre) VALUES
+    ('Pasaporte'),
+    ('Cédula de Identidad'),
+    ('Visa de Turista'),
+    ('Licencia de Conducir'),
+    ('Certificado de Vacunación Internacional'),
+    ('Seguro de Viaje'),
+    ('Permiso de Viaje para Menores'),
+    ('Tarjeta de Embarque (Boarding Pass)'),
+    ('Comprobante de Pago'),
+    ('Constancia de Reserva');
+
+INSERT INTO Documento (do_descripcion, do_nombre_archivo, tipo_documento_td_cod, cliente_c_cod) VALUES
+    ('Escaneo página principal pasaporte vigente', 'pasaporte_pguarulla.pdf', 
+     (SELECT td_cod FROM Tipo_Documento WHERE td_nombre = 'Pasaporte' LIMIT 1),
+     (SELECT c_cod FROM Cliente WHERE c_ci = 15890123 LIMIT 1)),
+
+    ('Visa B1/B2 aprobada para viaje a Los Angeles', 'visa_usa_aurbaneja.jpg', 
+     (SELECT td_cod FROM Tipo_Documento WHERE td_nombre = 'Visa de Turista' LIMIT 1),
+     (SELECT c_cod FROM Cliente WHERE c_ci = 24567123 LIMIT 1)),
+
+    ('Cédula laminada vigente', 'cedula_sbolivar.png', 
+     (SELECT td_cod FROM Tipo_Documento WHERE td_nombre = 'Cédula de Identidad' LIMIT 1),
+     (SELECT c_cod FROM Cliente WHERE c_ci = 16234567 LIMIT 1)),
+
+    ('Licencia de conducir de 3ra grado', 'licencia_mtorres.pdf', 
+     (SELECT td_cod FROM Tipo_Documento WHERE td_nombre = 'Licencia de Conducir' LIMIT 1),
+     (SELECT c_cod FROM Cliente WHERE c_ci = 14560981 LIMIT 1)),
+
+    ('Certificado internacional para viaje a Brasil', 'fiebre_amarilla_mnieves.pdf', 
+     (SELECT td_cod FROM Tipo_Documento WHERE td_nombre = 'Certificado de Vacunación Internacional' LIMIT 1),
+     (SELECT c_cod FROM Cliente WHERE c_ci = 19876543 LIMIT 1)),
+
+    ('Póliza de seguro cobertura amplia Europa', 'seguro_placava.pdf', 
+     (SELECT td_cod FROM Tipo_Documento WHERE td_nombre = 'Seguro de Viaje' LIMIT 1),
+     (SELECT c_cod FROM Cliente WHERE c_ci = 25678901 LIMIT 1)),
+
+    ('Boleto aéreo digital ida y vuelta', 'boarding_dpastora.pdf', 
+     (SELECT td_cod FROM Tipo_Documento WHERE td_nombre = 'Tarjeta de Embarque (Boarding Pass)' LIMIT 1),
+     (SELECT c_cod FROM Cliente WHERE c_ci = 20456789 LIMIT 1)),
+
+    ('Permiso notariado para viaje con un solo padre', 'permiso_menor_ydiaz.jpg', 
+     (SELECT td_cod FROM Tipo_Documento WHERE td_nombre = 'Permiso de Viaje para Menores' LIMIT 1),
+     (SELECT c_cod FROM Cliente WHERE c_ci = 21450987 LIMIT 1)),
+
+    ('Comprobante de transferencia bancaria paquete turístico', 'pago_msaenz.png', 
+     (SELECT td_cod FROM Tipo_Documento WHERE td_nombre = 'Comprobante de Pago' LIMIT 1),
+     (SELECT c_cod FROM Cliente WHERE c_ci = 25123456 LIMIT 1)),
+
+    ('Pasaporte prórroga activa', 'pasaporte_lbarinas.pdf', 
+     (SELECT td_cod FROM Tipo_Documento WHERE td_nombre = 'Pasaporte' LIMIT 1),
+     (SELECT c_cod FROM Cliente WHERE c_ci = 20987123 LIMIT 1));	
+
+INSERT INTO Banco (ba_nombre) VALUES
+    ('Banco de Venezuela'),
+    ('Banesco'),
+    ('Banco Mercantil'),
+    ('BBVA Provincial'),
+    ('Bancamiga'),
+    ('Banco Nacional de Crédito (BNC)'),
+    ('Bank of America'),
+    ('JPMorgan Chase'),
+    ('Wells Fargo'),
+    ('Santander');	 
+
+INSERT INTO Reembolso (ree_razon, ree_fecha_hora, boleto_vuelo_co_cod, boleto_vuelo_s_cod, 
+												  detalle_traslado_co_cod, detalle_traslado_s_cod, 
+												  boleto_viaje_co_cod, boleto_viaje_s_cod, 
+												  entrada_digital_co_cod, entrada_digital_s_cod, 
+												  detalle_hospedaje_co_cod, detalle_hospedaje_s_cod) VALUES
+    ('Cancelación voluntaria del cliente por motivos personales', '2025-11-05 09:30:00', null, null, 21, 13, null, null, null, null, null, null),
+    ('Servicio cancelado por el operador debido a mantenimiento', '2025-11-10 14:15:00', null, null, null, null, null, null, null, null, 45, 41),
+    ('Error en el cobro duplicado de la tarjeta de crédito', '2025-11-12 11:00:00', 10, 1, null, null, null, null, null, null, null, null),
+    ('Emergencia médica comprobada del titular', '2025-11-20 08:45:00', null, null, 4, 19, null, null, null, null, null, null),
+    ('Cambio de itinerario mayor a 4 horas no aceptado', '2025-11-25 16:20:00', null, null, null, null, null, null, 3, 32, null, null),
+    ('Fuerza mayor / Condiciones climáticas adversas', '2025-12-01 10:10:00', null, null, null, null, null, null, 8, 32, null, null),
+    ('Reembolso parcial por servicio incompleto', '2025-12-05 13:00:00', null, null, null, null, null, null, 23, 32, null, null),
+    ('Denegación de visado o documentos de entrada', '2025-12-08 09:00:00', 21, 2, null, null, null, null, null, null, null, null),
+    ('Sobreventa (Overbooking) por parte del proveedor', '2025-12-12 18:30:00', 18, 3, null, null, null, null, null, null, null, null),
+    ('Desistimiento dentro del plazo legal de retracto', '2025-12-15 15:00:00', null, null, 46, 13, null, null, null, null, null, null);
+
+INSERT INTO Queja (q_descripcion, q_resuelta, empleado_e_cod, boleto_vuelo_co_cod, boleto_vuelo_s_cod, 
+												  			  detalle_traslado_co_cod, detalle_traslado_s_cod, 
+												  			  boleto_viaje_co_cod, boleto_viaje_s_cod, 
+												 			  entrada_digital_co_cod, entrada_digital_s_cod, 
+												  			  detalle_hospedaje_co_cod, detalle_hospedaje_s_cod) VALUES
+    ('Retraso significativo en el horario de inicio del servicio sin previo aviso.', TRUE, 1, null, null, null, null, null, null, null, null, 45, 41),
+    ('Las instalaciones no cumplían con los estándares de higiene mostrados en fotos.', FALSE, 1, null, null, 4, 19, null, null, null, null, null, null),
+    ('El personal de atención tuvo un trato descortés al momento del registro.', TRUE, 3, 18, 3, null, null, null, null, null, null, null, null),
+    ('Se realizaron cobros adicionales no especificados en la reserva original.', FALSE, 4, 7, 10, null, null, null, null, null, null, null, null),
+    ('Pérdida temporal de equipaje o pertenencias bajo custodia del operador.', TRUE, 8, null, null, null, null, 32, 21, null, null, null, null),
+    ('El aire acondicionado o climatización no funcionaba correctamente.', TRUE, 5, 38, 3, null, null, null, null, null, null, null, null),
+    ('La comida ofrecida estaba en mal estado o no correspondía al menú.', FALSE, 5, null, null, null, null, null, null, 28, 32, null, null),
+    ('Ruidos excesivos impidieron el descanso durante el servicio.', TRUE, 5, null, null, null, null, null, null, 23, 32, null, null),
+    ('No se entregaron los beneficios VIP prometidos en el paquete.', FALSE, 7, null, null, null, null, 22, 21, null, null, null, null),
+    ('Dificultad para acceder a las instalaciones (falta de accesibilidad).', TRUE, 10, null, null, null, null, null, null, null, null, 5, 41);
+
+INSERT INTO Resena (r_calificacion, r_comentario, boleto_vuelo_co_cod, boleto_vuelo_s_cod, 
+												  detalle_traslado_co_cod, detalle_traslado_s_cod, 
+												  boleto_viaje_co_cod, boleto_viaje_s_cod, 
+												  entrada_digital_co_cod, entrada_digital_s_cod, 
+												  detalle_hospedaje_co_cod, detalle_hospedaje_s_cod) VALUES
+    (10, 'Una experiencia inolvidable, todo salió perfecto y el servicio fue de primera.', null, null, null, null, null, null, null, null, 9, 46),
+    (8, 'Muy buen servicio en general, aunque el proceso de check-in fue un poco lento.', null, null, null, null, null, null, null, null, 10, 41),
+    (5, 'La experiencia fue promedio. Cumplieron con lo básico pero no hubo nada especial.', 15, 1, null, null, null, null, null, null, null, null),
+    (2, 'Terrible organización. Nadie sabía darnos información y perdimos mucho tiempo.', 20, 1, null, null, null, null, null, null, null, null),
+    (9, 'Excelente relación calidad-precio. Sin duda volvería a contratar este servicio.', null, null, 29, 19, null, null, null, null, null, null),
+    (7, 'El lugar es bonito y cómodo, pero la atención al cliente podría mejorar.', 33, 3, null, null, null, null, null, null, null, null),
+    (0, 'La peor experiencia de mi vida. Todo salió mal desde el principio. No lo recomiendo.', null, null, null, null, 7, 21, null, null, null, null),
+    (10, 'Superó mis expectativas. La atención a los detalles marcó la diferencia.', null, null, 16, 13, null, null, null, null, null, null),
+    (6, 'Aceptable, pero las instalaciones se ven un poco descuidadas para el precio.', null, null, null, null, null, null, null, null, 35, 41),
+    (4, 'No volvería. Hubo muchos problemas de logística que arruinaron el momento.', 22, 10, null, null, null, null, null, null, null, null);	
+
+INSERT INTO Metodo_Pago (Cliente_c_cod, mp_tipo, t_numero, t_cod_seguridad, t_nombre_titular, t_fecha_vencimiento, t_Banco_cod, t_emisor) VALUES
+    (1, 'TARJETA', 4123456789012345, 123, 'PEDRO GUARULLA', '2028-12-01', (SELECT ba_cod FROM Banco WHERE ba_nombre = 'Banco de Venezuela' LIMIT 1), 'VISA'),
+    (2, 'TARJETA', 5432109876543210, 456, 'PATRICIA LACAVA', '2029-06-30', (SELECT ba_cod FROM Banco WHERE ba_nombre = 'Bank of America' LIMIT 1), 'MASTERCARD');
+
+INSERT INTO Metodo_Pago (Cliente_c_cod, mp_tipo, c_codigo_cuenta, c_numero, c_Banco_cod, c_fecha_emision) VALUES
+    (3, 'CHEQUE', 010500001122334, 5000001, (SELECT ba_cod FROM Banco WHERE ba_nombre = 'Banco Mercantil' LIMIT 1), '2025-11-01'),
+    (4, 'CHEQUE', 010800009988776, 9000002, (SELECT ba_cod FROM Banco WHERE ba_nombre = 'BBVA Provincial' LIMIT 1), '2025-11-05');
+
+INSERT INTO Metodo_Pago (Cliente_c_cod, mp_tipo, de_num_referencia, de_num_destino, de_Banco_cod) VALUES
+    (5, 'DEPOSITO', 111222333, 013400001234567, (SELECT ba_cod FROM Banco WHERE ba_nombre = 'Banesco' LIMIT 1)),
+    (6, 'DEPOSITO', 444555666, 019100009876543, (SELECT ba_cod FROM Banco WHERE ba_nombre = 'Banco Nacional de Crédito (BNC)' LIMIT 1));
+
+INSERT INTO Metodo_Pago (Cliente_c_cod, mp_tipo, od_num_referencia) VALUES
+    (7, 'OPERACION_DIGITAL', 987654321),
+    (8, 'OPERACION_DIGITAL', 123456789);
+
+INSERT INTO Metodo_Pago (Cliente_c_cod, mp_tipo, u_hash_id, u_direccion_billetera) VALUES
+    (9, 'USDT', '0xabc123def4567890abcdef1234567890abcdef12', 'TR7NHqjeKQxGTCi8q8ZY4pL8otSzgjLj6t'),
+    (10, 'USDT', '0x999888777666555444333222111000aaabbbccc', 'T9yD14Nj9j7xAB4dbGeiX9h8ipGzTz8t');
+
+INSERT INTO Metodo_Pago (cliente_c_cod, mp_tipo, de_num_referencia, de_num_destino, de_banco_cod) VALUES	
+	(11, 'DEPOSITO', 188571306, 600447932188082, 4),
+	(12, 'DEPOSITO', 502203270, 814668413468281, 5),
+	(13, 'DEPOSITO', 404729062, 958386752295964, 7),
+	(14, 'DEPOSITO', 622550378, 532395037731326, 3),
+	(15, 'DEPOSITO', 206461737, 362772377633043, 7),
+	(16, 'DEPOSITO', 606589268, 783313382558405, 10),
+	(17, 'DEPOSITO', 199041825, 326456347774908, 7),
+	(18, 'DEPOSITO', 819086855, 944425687993620, 4),
+	(19, 'DEPOSITO', 297806845, 233525313485802, 9),
+	(20, 'DEPOSITO', 789317165, 493688292757358, 9),
+	(21, 'DEPOSITO', 643731915, 144742617181517, 6),
+	(22, 'DEPOSITO', 475982407, 573554413725175, 8),
+	(23, 'DEPOSITO', 919201536, 253507437359908, 7),
+	(24, 'DEPOSITO', 294496244, 525083746040916, 6),
+	(25, 'DEPOSITO', 813540037, 356680983931447, 6),
+	(26, 'DEPOSITO', 345857280, 825869263129911, 5),
+	(27, 'DEPOSITO', 580645054, 965297549753028, 6),
+	(28, 'DEPOSITO', 957654618, 627924603385419, 7),
+	(29, 'DEPOSITO', 279815869, 148830136186485, 6),
+	(30, 'DEPOSITO', 913450030, 836392466072077, 3);
+
+INSERT INTO Metodo_Pago (cliente_c_cod, mp_tipo, od_num_referencia) VALUES
+	(31, 'OPERACION_DIGITAL', 486895067),
+	(32, 'OPERACION_DIGITAL', 616172069),
+	(33, 'OPERACION_DIGITAL', 913582373),
+	(34, 'OPERACION_DIGITAL', 302960660),
+	(35, 'OPERACION_DIGITAL', 609001691),
+	(36, 'OPERACION_DIGITAL', 389130750),
+	(37, 'OPERACION_DIGITAL', 438245829),
+	(38, 'OPERACION_DIGITAL', 449906763),
+	(39, 'OPERACION_DIGITAL', 492291221),
+	(40, 'OPERACION_DIGITAL', 185941812),
+	(41, 'OPERACION_DIGITAL', 960375375),
+	(42, 'OPERACION_DIGITAL', 917005061),
+	(43, 'OPERACION_DIGITAL', 587375157),
+	(44, 'OPERACION_DIGITAL', 639911171),
+	(45, 'OPERACION_DIGITAL', 796423056),
+	(46, 'OPERACION_DIGITAL', 128311401),
+	(47, 'OPERACION_DIGITAL', 982834726),
+	(48, 'OPERACION_DIGITAL', 881190331),
+	(49, 'OPERACION_DIGITAL', 752560150);
+
+INSERT INTO Pago 
+SELECT co.co_monto_total, co.co_fecha_hora, co.co_cod, mp.mp_cod 
+FROM Compra co, Cliente c, Metodo_Pago mp
+WHERE mp.mp_cod NOT BETWEEN 1 AND 49 AND c.c_cod = co.cliente_c_cod AND c.c_cod = mp.cliente_c_cod;  
+
+INSERT INTO Auditoria (a_tipo_accion_realizada, a_tabla_afectada, a_fecha_hora, a_descripcion, usuario_u_cod) VALUES
+    ('INSERT', 'Cliente', '2025-11-01 10:15:00', 'Registro de nuevo cliente: Pedro Guarulla desde formulario web', 1),
+    ('UPDATE', 'Vuelo', '2025-11-02 08:30:00', 'Actualización de hora de salida vuelo IB6674 por retraso operativo', 1),
+    ('DELETE', 'Boleto_Vuelo', '2025-11-03 14:20:00', 'Eliminación física de reserva temporal no pagada #1005', 2),
+    ('UPDATE', 'Tasa_Cambio', '2025-11-05 09:00:00', 'Actualización diaria de tasa USD/VES a 60.50', 3),
+    ('INSERT', 'Reembolso', '2025-11-06 11:45:00', 'Generación automática de nota de crédito por anulación de vuelo', 1),
+    ('UPDATE', 'Habitacion', '2025-11-08 16:10:00', 'Cambio de estado a Mantenimiento: Habitación 505 Eurobuilding', 2),
+    ('INSERT', 'Paquete_Turistico', '2025-11-10 10:00:00', 'Creación de nuevo paquete promocional: Luna de Miel en las Alturas', 3),
+    ('UPDATE', 'Cliente', '2025-11-12 13:25:00', 'Actualización de datos de contacto (Correo) para cliente Ana Urbaneja', 1),
+    ('DELETE', 'Promocion', '2025-11-15 23:59:00', 'Eliminación lógica de promoción vencida: Black Flydays', 2),
+    ('INSERT', 'Queja', '2025-11-18 09:15:00', 'Registro de incidente reportado por cliente en mostrador', 2);
+
+INSERT INTO Metodo_Pago (cliente_c_cod, mp_tipo, od_num_referencia) VALUES
+	(1, 'OPERACION_DIGITAL', 9283174019),
+	(1, 'OPERACION_DIGITAL', 9283174020),
+	(1, 'OPERACION_DIGITAL', 8783174020),
+	(2, 'OPERACION_DIGITAL', 0192833315),
+	(2, 'OPERACION_DIGITAL', 8411118532),
+	(3, 'OPERACION_DIGITAL', 7774391751),
+	(3, 'OPERACION_DIGITAL', 1442983016),
+	(4, 'OPERACION_DIGITAL', 7749289921),
+	(4, 'OPERACION_DIGITAL', 8433332855),
+	(5, 'OPERACION_DIGITAL', 9283339221),
+	(5, 'OPERACION_DIGITAL', 8447392885);
+
+INSERT INTO Cuota (cu_monto, cu_fecha_hora_final, compra_co_cod) VALUES 
+	(3173.44, '2025-02-07 17:30:39.529598', 1),
+	(3173.44, '2025-03-07 17:30:39.529598', 1),
+	(1607.50, '2025-02-14 00:34:53.015431', 2),
+	(1607.50, '2025-03-14 00:34:53.015431', 2),
+	(1351.00, '2025-02-06 12:36:52.928483', 3),
+	(1351.00, '2025-03-06 12:36:52.928483', 3),
+	(3581.61, '2025-02-24 02:05:25.263141', 4),
+	(3581.61, '2025-03-24 02:05:25.263141', 4),
+	(990.00, '2025-02-24 21:09:36.910572', 5),
+	(990.00, '2025-03-24 21:09:36.910572', 5);
+
+INSERT INTO Pago_Cuota VALUES
+	(1586.72, '2025-02-01 15:00:00', 1, (SELECT mp_cod FROM Metodo_Pago WHERE od_num_referencia = 9283174019)),
+	(1586.72, '2025-02-01 15:07:00', 1, (SELECT mp_cod FROM Metodo_Pago WHERE od_num_referencia = 9283174020)),
+	(3173.44, '2025-02-16 17:24:38', 2, (SELECT mp_cod FROM Metodo_Pago WHERE od_num_referencia = 8783174020)),
+	(1607.50, '2025-02-10 08:17:03', 3, (SELECT mp_cod FROM Metodo_Pago WHERE od_num_referencia = 0192833315)),
+	(1607.50, '2025-02-28 09:45:26', 4, (SELECT mp_cod FROM Metodo_Pago WHERE od_num_referencia = 8411118532)),
+	(1351.00, '2025-02-05 12:12:42', 5, (SELECT mp_cod FROM Metodo_Pago WHERE od_num_referencia = 7774391751)),
+	(1351.00, '2025-02-28 13:04:45', 6, (SELECT mp_cod FROM Metodo_Pago WHERE od_num_referencia = 1442983016)),
+	(3581.61, '2025-02-01 17:22:41', 7, (SELECT mp_cod FROM Metodo_Pago WHERE od_num_referencia = 7749289921)),
+	(3581.61, '2025-02-28 15:07:04', 8, (SELECT mp_cod FROM Metodo_Pago WHERE od_num_referencia = 8433332855)),
+	(990.00, '2025-02-01 17:22:41', 9, (SELECT mp_cod FROM Metodo_Pago WHERE od_num_referencia = 9283339221)),
+	(990.00, '2025-02-28 15:07:04', 10, (SELECT mp_cod FROM Metodo_Pago WHERE od_num_referencia = 8447392885));
+	

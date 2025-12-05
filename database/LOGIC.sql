@@ -2,88 +2,6 @@
 -- STORE PROCEDURES Y FUNCIONES
 -- ===================================================
 
--- Obtener la jerarquía completa de un lugar específico (hacia arriba)
-CREATE OR REPLACE FUNCTION fn_obtener_ancestros_lugar(p_lugar_cod INT)
-	RETURNS TABLE(
-	    l_cod INT,
-	    l_nombre VARCHAR,
-	    l_tipo VARCHAR,
-	    nivel INT
-	) AS $$
-	WITH RECURSIVE lugar_jerarquia AS (
-	    -- Caso base: obtener el lugar especificado
-	    SELECT l.l_cod, l.l_nombre, l.l_tipo, l.Lugar_l_cod, 0 AS nivel
-	    FROM Lugar l
-	    WHERE l.l_cod = p_lugar_cod
-	    
-	    UNION ALL
-	    
-	    -- Caso recursivo: obtener los ancestros
-	    SELECT l.l_cod, l.l_nombre, l.l_tipo, l.Lugar_l_cod, lj.nivel + 1
-	    FROM Lugar l
-	    INNER JOIN lugar_jerarquia lj ON l.l_cod = lj.Lugar_l_cod
-	    WHERE lj.nivel < 10 -- Límite de recursión para evitar loops infinitos
-	)
-	SELECT lj.l_cod, lj.l_nombre, lj.l_tipo, lj.nivel
-	FROM lugar_jerarquia lj
-	ORDER BY lj.nivel ASC;
-	$$ LANGUAGE SQL;
-
--- Obtener todos los descendientes de un lugar (hacia abajo)
-CREATE OR REPLACE FUNCTION fn_obtener_descendientes_lugar(p_lugar_cod INT)
-	RETURNS TABLE(
-	    l_cod INT,
-	    l_nombre VARCHAR,
-	    l_tipo VARCHAR,
-	    nivel INT
-	) AS $$
-	WITH RECURSIVE lugar_jerarquia AS (
-	    -- Caso base: obtener el lugar especificado
-	    SELECT l.l_cod, l.l_nombre, l.l_tipo, l.Lugar_l_cod, 0 AS nivel
-	    FROM Lugar l
-	    WHERE l.l_cod = p_lugar_cod
-	    
-	    UNION ALL
-	    
-	    -- Caso recursivo: obtener los descendientes
-	    SELECT l.l_cod, l.l_nombre, l.l_tipo, l.Lugar_l_cod, lj.nivel + 1
-	    FROM Lugar l
-	    INNER JOIN lugar_jerarquia lj ON l.Lugar_l_cod = lj.l_cod
-	    WHERE lj.nivel < 10 -- Límite de recursión
-	)
-	SELECT lj.l_cod, lj.l_nombre, lj.l_tipo, lj.nivel
-	FROM lugar_jerarquia lj
-	ORDER BY lj.nivel ASC;
-	$$ LANGUAGE SQL;
-
--- Obtener la ruta completa de un lugar (camino completo desde la raíz)
-CREATE OR REPLACE FUNCTION fn_obtener_ruta_lugar(p_lugar_cod INT)
-	RETURNS TEXT AS $$
-	DECLARE
-	    v_ruta TEXT := '';
-	BEGIN
-	    WITH RECURSIVE lugar_ruta AS (
-	        -- Caso base
-	        SELECT l.l_cod, l.l_nombre, l.l_tipo, l.Lugar_l_cod, 0 AS nivel
-	        FROM Lugar l
-	        WHERE l.l_cod = p_lugar_cod
-	        
-	        UNION ALL
-	        
-	        -- Caso recursivo
-	        SELECT l.l_cod, l.l_nombre, l.l_tipo, l.Lugar_l_cod, lr.nivel + 1
-	        FROM Lugar l
-	        INNER JOIN lugar_ruta lr ON l.l_cod = lr.Lugar_l_cod
-	        WHERE lr.nivel < 10
-	    )
-	    SELECT STRING_AGG(lr.l_nombre, ' -> ' ORDER BY lr.nivel DESC)
-	    INTO v_ruta
-	    FROM lugar_ruta lr;
-	    
-	    RETURN COALESCE(v_ruta, 'Lugar no encontrado');
-	END;
-	$$ LANGUAGE plpgsql;
-
 -- Listar todos los lugares con su información de jerarquía
 CREATE OR REPLACE FUNCTION fn_buscar_lugares(
     p_limite INT DEFAULT 100,
@@ -102,7 +20,6 @@ CREATE OR REPLACE FUNCTION fn_buscar_lugares(
 				ELSE (SELECT l2.l_nombre FROM Lugar l2 WHERE l2.l_cod = l.Lugar_l_cod)
 			END AS padre_nombre
 		FROM Lugar l
-		ORDER BY l.l_tipo, l.l_nombre
 		LIMIT p_limite
 		OFFSET p_offset;
 	$$ LANGUAGE SQL;
@@ -132,7 +49,7 @@ CREATE OR REPLACE FUNCTION fn_buscar_hijos_lugar(p_lugar_cod INT)
 	$$;	
 
 -- Obtener un lugar por nombre
-CREATE OR REPLACE FUNCTION fn_buscar_lugar_por_nombre(p_nombre VARCHAR)
+CREATE OR REPLACE FUNCTION fn_buscar_lugar_por_nombre(p_nombre VARCHAR, p_tipo VARCHAR)
 	RETURNS TABLE (
 		cod INT,
 		nombre VARCHAR,
@@ -144,7 +61,7 @@ CREATE OR REPLACE FUNCTION fn_buscar_lugar_por_nombre(p_nombre VARCHAR)
 	BEGIN
 		RETURN QUERY SELECT l.l_cod, l.l_nombre, l.l_tipo, l2.l_nombre
 		FROM Lugar l, Lugar l2
-		WHERE LOWER(l.l_nombre) LIKE LOWER('%' || p_nombre || '%') AND l2.l_cod = l.lugar_l_cod;
+		WHERE LOWER(l.l_nombre) LIKE LOWER('%' || p_nombre || '%') AND LOWER(l.l_tipo) = LOWER(l_tipo) AND l2.l_cod = l.lugar_l_cod;
 	END;
 	$$;
 
@@ -400,28 +317,6 @@ CREATE OR REPLACE FUNCTION fn_cliente_existe_por_ci(p_ci INT)
 	END;
 	$$ LANGUAGE plpgsql;
 
--- ============================================================================
--- REGISTER: Crear Cliente + Usuario + Método de Pago Millas
--- ============================================================================
-
--- CREATE OR REPLACE PROCEDURE sp_crear_pago_millas()
-CREATE OR REPLACE FUNCTION fn_crear_pago_millas()
-	RETURNS TRIGGER 
-	AS $$
-	BEGIN
-	    -- Crear Millas asociadas al Cliente.
-	    INSERT INTO Metodo_Pago (Cliente_c_cod, m_cant_acumulada, m_Cliente_cod, mp_tipo)
-	    VALUES (NEW.c_cod, 0, NEW.c_cod, 'MILLA'); 
-	    RETURN NEW;
-	END;
-	$$ LANGUAGE plpgsql;
-
--- Trigger automatico para las millas de los clientes
-CREATE TRIGGER tr_nuevo_cliente_millas
-	AFTER INSERT ON Cliente
-	FOR EACH ROW
-	EXECUTE FUNCTION fn_crear_pago_millas();
-
 -- Registro del cliente
 CREATE OR REPLACE PROCEDURE sp_registrar_cliente(
     p_username VARCHAR,
@@ -435,6 +330,8 @@ CREATE OR REPLACE PROCEDURE sp_registrar_cliente(
     p_fecha_nacimiento DATE,
     p_sexo CHAR,
     p_estado_civil VARCHAR,
+	p_direccion VARCHAR,
+	p_lugar_cod INT,
     OUT p_cliente_cod INT,
     OUT p_usuario_cod INT,
     OUT p_mensaje VARCHAR
@@ -449,7 +346,12 @@ CREATE OR REPLACE PROCEDURE sp_registrar_cliente(
 	    p_mensaje := 'OK';
 	    
 	    -- Validaciones iniciales
-	    IF fn_email_existe(p_correo) THEN
+		IF NOT fn_existe_lugar(p_lugar_cod) THEN
+	        p_mensaje := 'ERROR: El lugar indicado no existe';
+	        RAISE EXCEPTION '%', p_mensaje;
+	    END IF;
+		
+		IF fn_email_existe(p_correo) THEN
 	        p_mensaje := 'ERROR: El email ya está registrado';
 	        RAISE EXCEPTION '%', p_mensaje;
 	    END IF;
@@ -480,7 +382,7 @@ CREATE OR REPLACE PROCEDURE sp_registrar_cliente(
 	    	    
 	    BEGIN
 	        -- Crear Cliente
-	        INSERT INTO Cliente (c_CI, c_p_nombre, c_s_nombre, c_p_apellido, c_s_apellido, c_fecha_nacimiento, c_sexo, c_edo_civil) 
+	        INSERT INTO Cliente (c_CI, c_p_nombre, c_s_nombre, c_p_apellido, c_s_apellido, c_fecha_nacimiento, c_sexo, c_edo_civil, c_direccion, lugar_l_cod) 
 			VALUES (
 	            p_ci,
 	            p_primer_nombre,
@@ -489,7 +391,9 @@ CREATE OR REPLACE PROCEDURE sp_registrar_cliente(
 	            p_segundo_apellido,
 	            p_fecha_nacimiento,
 	            p_sexo,
-	            p_estado_civil
+	            p_estado_civil,
+				p_direccion,
+				p_lugar_cod
 	        ) RETURNING c_cod INTO v_cliente_cod;
 	        
 	        p_cliente_cod := v_cliente_cod;
@@ -514,9 +418,7 @@ CREATE OR REPLACE PROCEDURE sp_registrar_cliente(
 	END;
 	$$;
 
--- ============================================================================
 -- LOGIN: Validar credenciales y retornar información del usuario
--- ============================================================================
 CREATE OR REPLACE PROCEDURE sp_login_usuario(
     p_username_o_email VARCHAR,
     p_clave VARCHAR,
@@ -557,9 +459,7 @@ CREATE OR REPLACE PROCEDURE sp_login_usuario(
 	END;
 	$$;
 
--- ============================================================================
 -- OBTENER INFORMACIÓN COMPLETA DEL CLIENTE
--- ============================================================================
 CREATE OR REPLACE PROCEDURE sp_obtener_cliente_por_usuario(
     p_usuario_cod INT,
     OUT p_cliente_cod INT,
@@ -569,6 +469,7 @@ CREATE OR REPLACE PROCEDURE sp_obtener_cliente_por_usuario(
     OUT p_fecha_nacimiento DATE,
     OUT p_sexo CHAR,
     OUT p_estado_civil VARCHAR,
+	OUT p_direccion VARCHAR,
     OUT p_millas_disponibles BIGINT
 )
 	LANGUAGE plpgsql
@@ -583,6 +484,7 @@ CREATE OR REPLACE PROCEDURE sp_obtener_cliente_por_usuario(
 	        c.c_fecha_nacimiento,
 	        c.c_sexo,
 	        c.c_edo_civil,
+			c.c_direccion,
 	        COALESCE(mp.m_cant_acumulada, 0)
 	    INTO 
 	        p_cliente_cod,
@@ -592,6 +494,7 @@ CREATE OR REPLACE PROCEDURE sp_obtener_cliente_por_usuario(
 	        p_fecha_nacimiento,
 	        p_sexo,
 	        p_estado_civil,
+			p_direccion,
 	        p_millas_disponibles
 	    FROM Usuario u
 	    INNER JOIN Cliente c ON u.Cliente_c_cod = c.c_cod
@@ -600,9 +503,7 @@ CREATE OR REPLACE PROCEDURE sp_obtener_cliente_por_usuario(
 	END;
 	$$;
 
--- ============================================================================
 -- VALIDAR PERMISOS DEL USUARIO
--- ============================================================================
 CREATE OR REPLACE FUNCTION fn_validar_permiso_usuario(
     p_usuario_cod INT,
     p_rol_requerido VARCHAR
@@ -617,9 +518,7 @@ CREATE OR REPLACE FUNCTION fn_validar_permiso_usuario(
 	END;
 	$$ LANGUAGE plpgsql;
 
--- ============================================================================
 -- CAMBIAR CONTRASEÑA
--- ============================================================================
 CREATE OR REPLACE PROCEDURE sp_cambiar_clave_usuario(
     p_usuario_cod INT,
     p_clave_actual VARCHAR,
@@ -785,7 +684,7 @@ CREATE OR REPLACE FUNCTION fn_crear_rol_con_permisos(
 	RETURNS TABLE (
 	    exito BOOLEAN,
 	    codigo_error INT,
-	    mensaje VARCHAR,
+	    mensaje TEXT,
 	    id_rol_creado INT,
 	    nombre_rol VARCHAR,
 	    permisos_asignados INT
@@ -803,7 +702,7 @@ CREATE OR REPLACE FUNCTION fn_crear_rol_con_permisos(
 	        SELECT 
 	            FALSE::BOOLEAN,
 	            1::INT,
-	            'El nombre del rol no puede estar vacío'::VARCHAR,
+	            'El nombre del rol no puede estar vacío',
 	            NULL::INT,
 	            NULL::VARCHAR,
 	            0::INT;
@@ -820,7 +719,7 @@ CREATE OR REPLACE FUNCTION fn_crear_rol_con_permisos(
 	        SELECT 
 	            FALSE::BOOLEAN,
 	            2::INT,
-	            'Ya existe un rol con ese nombre'::VARCHAR,
+	            'Ya existe un rol con ese nombre',
 	            NULL::INT,
 	            NULL::VARCHAR,
 	            0::INT;
@@ -1180,30 +1079,30 @@ CREATE OR REPLACE FUNCTION fn_validar_proveedor_servicio(
 )
 	RETURNS BOOLEAN AS $$
 	BEGIN
-	    CASE p_tipo_proveedor
-	        WHEN 'Aerolinea' THEN
+	    CASE UPPER(p_tipo_proveedor)
+	        WHEN 'AEROLINEA' THEN
 	            RETURN EXISTS (
 	                SELECT 1 FROM Vuelo v
 	                WHERE v.s_cod = p_id_servicio
 	            );
-	        WHEN 'Crucero' THEN
+	        WHEN 'CRUCERO' THEN
 	            RETURN EXISTS (
 	                SELECT 1 FROM Viaje v
 	                WHERE v.s_cod = p_id_servicio
 	            );
-	        WHEN 'Transporte' THEN
+	        WHEN 'TRANSPORTE' THEN
 	            RETURN EXISTS (
 	                SELECT 1 FROM Traslado t
 	                WHERE t.s_cod = p_id_servicio
 	                AND t.Transporte_Terrestre_p_cod = p_id_proveedor
 	            );
-	        WHEN 'Hotel' THEN
+	        WHEN 'HOTEL' THEN
 	            RETURN EXISTS (
 	                SELECT 1 FROM Habitacion h
 	                WHERE h.s_cod = p_id_servicio
 	                AND h.Hotel_p_cod = p_id_proveedor
 	            );
-	        WHEN 'Operador' THEN
+	        WHEN 'OPERADOR' THEN
 	            RETURN EXISTS (
 	                SELECT 1 FROM Servicio_Adicional sa
 	                WHERE sa.s_cod = p_id_servicio
@@ -1226,7 +1125,7 @@ CREATE OR REPLACE FUNCTION fn_registrar_promocion(
 	RETURNS TABLE (
 	    exito BOOLEAN,
 	    codigo_error INT,
-	    mensaje VARCHAR,
+	    mensaje TEXT,
 	    id_promocion INT
 	) AS $$
 	DECLARE
@@ -1243,46 +1142,46 @@ CREATE OR REPLACE FUNCTION fn_registrar_promocion(
 	BEGIN
 	    -- Validaciones iniciales
 	    IF p_porcentaje NOT BETWEEN 1 AND 90 THEN
-	        RETURN QUERY SELECT false, 101, 'El porcentaje debe estar entre 1 y 90', NULL;
+	        RETURN QUERY SELECT false, 101, 'El porcentaje debe estar entre 1 y 90', NULL::int;
 	        RETURN;
 	    END IF;
 	
 	    IF p_nombre IS NULL OR TRIM(p_nombre) = '' THEN
-	        RETURN QUERY SELECT false, 102, 'El nombre de la promoción no puede estar vacío', NULL;
+	        RETURN QUERY SELECT false, 102, 'El nombre de la promoción no puede estar vacío', NULL::int;
 	        RETURN;
 	    END IF;
 	
 	    IF p_servicios_ids IS NULL OR ARRAY_LENGTH(p_servicios_ids, 1) = 0 THEN
-	        RETURN QUERY SELECT false, 103, 'Debe proporcionar al menos un servicio para la promoción', NULL;
+	        RETURN QUERY SELECT false, 103, 'Debe proporcionar al menos un servicio para la promoción', NULL::int;
 	        RETURN;
 	    END IF;
 	
 	    -- Validar que el tipo de proveedor sea válido
-	    IF p_tipo_proveedor NOT IN ('Aerolinea', 'Crucero', 'Transporte', 'Hotel', 'Operador') THEN
-	        RETURN QUERY SELECT false, 104, 'Tipo de proveedor inválido', NULL;
+	    IF UPPER(p_tipo_proveedor) NOT IN ('AEROLINEA', 'CRUCERO', 'TRANSPORTE', 'HOTEL', 'OPERADOR') THEN
+	        RETURN QUERY SELECT false, 104, 'Tipo de proveedor inválido', NULL::int;
 	        RETURN;
 	    END IF;
 	
 	    BEGIN
 	        -- Crear la promoción según el tipo de proveedor
-	        CASE p_tipo_proveedor
-	            WHEN 'Aerolinea' THEN
+	        CASE UPPER(p_tipo_proveedor)
+	            WHEN 'AEROLINEA' THEN
 	                INSERT INTO Promocion (pr_nombre, pr_porcentaje, Aerolinea_p_cod)
 	                VALUES (p_nombre, p_porcentaje, p_id_proveedor)
 	                RETURNING pr_cod INTO v_id_promocion;
-	            WHEN 'Crucero' THEN
+	            WHEN 'CRUCERO' THEN
 	                INSERT INTO Promocion (pr_nombre, pr_porcentaje, Crucero_p_cod)
 	                VALUES (p_nombre, p_porcentaje, p_id_proveedor)
 	                RETURNING pr_cod INTO v_id_promocion;
-	            WHEN 'Transporte' THEN
+	            WHEN 'TRANSPORTE' THEN
 	                INSERT INTO Promocion (pr_nombre, pr_porcentaje, Transporte_Terrestre_p_cod)
 	                VALUES (p_nombre, p_porcentaje, p_id_proveedor)
 	                RETURNING pr_cod INTO v_id_promocion;
-	            WHEN 'Hotel' THEN
+	            WHEN 'HOTEL' THEN
 	                INSERT INTO Promocion (pr_nombre, pr_porcentaje, Hotel_p_cod)
 	                VALUES (p_nombre, p_porcentaje, p_id_proveedor)
 	                RETURNING pr_cod INTO v_id_promocion;
-	            WHEN 'Operador' THEN
+	            WHEN 'OPERADOR' THEN
 	                INSERT INTO Promocion (pr_nombre, pr_porcentaje, Operador_Turistico_p_cod)
 	                VALUES (p_nombre, p_porcentaje, p_id_proveedor)
 	                RETURNING pr_cod INTO v_id_promocion;
@@ -1294,7 +1193,7 @@ CREATE OR REPLACE FUNCTION fn_registrar_promocion(
 	            -- Validar que el servicio existe
 	            IF NOT EXISTS (SELECT 1 FROM Servicio WHERE s_cod = v_id_servicio) THEN
 	                DELETE FROM Promocion WHERE pr_cod = v_id_promocion;
-	                RETURN QUERY SELECT false, 105, 'Servicio con código ' || v_id_servicio || ' no existe', NULL;
+	                RETURN QUERY SELECT false, 105, 'Servicio con código ' || v_id_servicio || ' no existe', NULL::int;
 	                RETURN;
 	            END IF;
 	
@@ -1306,21 +1205,21 @@ CREATE OR REPLACE FUNCTION fn_registrar_promocion(
 	            
 	            IF v_tipo_proveedor_servicio IS NULL THEN
 	                DELETE FROM Promocion WHERE pr_cod = v_id_promocion;
-	                RETURN QUERY SELECT false, 106, 'No se pudo determinar el proveedor del servicio ' || v_id_servicio, NULL;
+	                RETURN QUERY SELECT false, 106, 'No se pudo determinar el proveedor del servicio ' || v_id_servicio, NULL::int;
 	                RETURN;
 	            END IF;
 	
 	            -- Validar que el tipo de proveedor del servicio coincida
-	            IF v_tipo_proveedor_servicio != p_tipo_proveedor THEN
+	            IF UPPER(v_tipo_proveedor_servicio) != UPPER(p_tipo_proveedor) THEN
 	                DELETE FROM Promocion WHERE pr_cod = v_id_promocion;
-	                RETURN QUERY SELECT false, 107, 'El servicio ' || v_id_servicio || ' no pertenece a un ' || p_tipo_proveedor, NULL;
+	                RETURN QUERY SELECT false, 107, 'El servicio ' || v_id_servicio || ' no pertenece a un ' || p_tipo_proveedor, NULL::int;
 	                RETURN;
 	            END IF;
 	
 	            -- Validar que el proveedor del servicio sea el mismo que el de la promoción
 	            IF NOT fn_validar_proveedor_servicio(v_id_servicio, p_id_proveedor, p_tipo_proveedor) THEN
 	                DELETE FROM Promocion WHERE pr_cod = v_id_promocion;
-	                RETURN QUERY SELECT false, 108, 'El servicio ' || v_id_servicio || ' no pertenece al proveedor especificado', NULL;
+	                RETURN QUERY SELECT false, 108, 'El servicio ' || v_id_servicio || ' no pertenece al proveedor especificado', NULL::int;
 	                RETURN;
 	            END IF;
 	
@@ -1335,7 +1234,7 @@ CREATE OR REPLACE FUNCTION fn_registrar_promocion(
 	        RETURN QUERY SELECT true, 0, 'Promoción registrada exitosamente con ' || ARRAY_LENGTH(p_servicios_ids, 1) || ' servicios', v_id_promocion;
 	
 	    EXCEPTION WHEN OTHERS THEN
-	        RETURN QUERY SELECT false, 999, 'Error al registrar promoción: ' || SQLERRM, NULL;
+	        RETURN QUERY SELECT false, 999, 'Error al registrar promoción: ' || SQLERRM, NULL::int;
 	    END;
 	
 	END;
@@ -1379,11 +1278,11 @@ CREATE OR REPLACE FUNCTION fn_obtener_promocion(
 	        p.pr_nombre,
 	        p.pr_porcentaje,
 	        CASE 
-	            WHEN p.Aerolinea_p_cod IS NOT NULL THEN 'Aerolinea'
-	            WHEN p.Crucero_p_cod IS NOT NULL THEN 'Crucero'
-	            WHEN p.Transporte_Terrestre_p_cod IS NOT NULL THEN 'Transporte'
-	            WHEN p.Hotel_p_cod IS NOT NULL THEN 'Hotel'
-	            WHEN p.Operador_Turistico_p_cod IS NOT NULL THEN 'Operador'
+	            WHEN p.Aerolinea_p_cod IS NOT NULL THEN 'Aerolinea'::VARCHAR
+	            WHEN p.Crucero_p_cod IS NOT NULL THEN 'Crucero'::VARCHAR
+	            WHEN p.Transporte_Terrestre_p_cod IS NOT NULL THEN 'Transporte'::VARCHAR
+	            WHEN p.Hotel_p_cod IS NOT NULL THEN 'Hotel'::VARCHAR
+	            WHEN p.Operador_Turistico_p_cod IS NOT NULL THEN 'Operador'::VARCHAR
 	        END,
 	        COALESCE(p.Aerolinea_p_cod, p.Crucero_p_cod, p.Transporte_Terrestre_p_cod, p.Hotel_p_cod, p.Operador_Turistico_p_cod),
 	        COALESCE(a.p_nombre, c.p_nombre, tt.p_nombre, h.p_nombre, ot.p_nombre),
@@ -1543,7 +1442,7 @@ CREATE OR REPLACE FUNCTION fn_quitar_servicios_promocion(
 	RETURNS TABLE (
 	    exito BOOLEAN,
 	    codigo_error INT,
-	    mensaje VARCHAR,
+	    mensaje TEXT,
 	    servicios_eliminados INT
 	) AS $$
 	DECLARE
@@ -1553,13 +1452,13 @@ CREATE OR REPLACE FUNCTION fn_quitar_servicios_promocion(
 	BEGIN
 	    -- Validar que la promoción existe
 	    IF NOT EXISTS (SELECT 1 FROM Promocion WHERE pr_cod = p_id_promocion) THEN
-	        RETURN QUERY SELECT false, 301, 'La promoción con código ' || p_id_promocion || ' no existe', NULL;
+	        RETURN QUERY SELECT false, 301, 'La promoción con código ' || p_id_promocion || ' no existe', NULL::INT;
 	        RETURN;
 	    END IF;
 	
 	    -- Validar servicios no vacío
 	    IF p_servicios_ids IS NULL OR ARRAY_LENGTH(p_servicios_ids, 1) = 0 THEN
-	        RETURN QUERY SELECT false, 302, 'Debe proporcionar al menos un servicio', NULL;
+	        RETURN QUERY SELECT false, 302, 'Debe proporcionar al menos un servicio', NULL::INT;
 	        RETURN;
 	    END IF;
 	
@@ -1569,7 +1468,7 @@ CREATE OR REPLACE FUNCTION fn_quitar_servicios_promocion(
 	
 	        -- Validar que no sea el último servicio (una promoción debe tener al menos 1 servicio)
 	        IF v_total_servicios - ARRAY_LENGTH(p_servicios_ids, 1) < 1 THEN
-	            RETURN QUERY SELECT false, 303, 'Una promoción debe tener al menos un servicio. Actualmente tiene ' || v_total_servicios, NULL;
+	            RETURN QUERY SELECT false, 303, 'Una promoción debe tener al menos un servicio. Actualmente tiene ' || v_total_servicios, NULL::INT;
 	            RETURN;
 	        END IF;
 	
@@ -1578,7 +1477,7 @@ CREATE OR REPLACE FUNCTION fn_quitar_servicios_promocion(
 	        LOOP
 	            -- Validar que el servicio está en la promoción
 	            IF NOT EXISTS (SELECT 1 FROM Pro_Ser WHERE Promocion_pr_cod = p_id_promocion AND Servicio_s_cod = v_id_servicio) THEN
-	                RETURN QUERY SELECT false, 304, 'El servicio ' || v_id_servicio || ' no está asociado a esta promoción', NULL;
+	                RETURN QUERY SELECT false, 304, 'El servicio ' || v_id_servicio || ' no está asociado a esta promoción', NULL::INT;
 	                RETURN;
 	            END IF;
 	
@@ -1592,7 +1491,7 @@ CREATE OR REPLACE FUNCTION fn_quitar_servicios_promocion(
 	        RETURN QUERY SELECT true, 0, 'Se eliminaron ' || v_contador || ' servicios exitosamente', v_contador;
 	
 	    EXCEPTION WHEN OTHERS THEN
-	        RETURN QUERY SELECT false, 999, 'Error al eliminar servicios: ' || SQLERRM, NULL;
+	        RETURN QUERY SELECT false, 999, 'Error al eliminar servicios: ' || SQLERRM, NULL::INT;
 	    END;
 	
 	END;
@@ -1607,14 +1506,14 @@ CREATE OR REPLACE FUNCTION fn_actualizar_promocion(
 	RETURNS TABLE (
 	    exito BOOLEAN,
 	    codigo_error INT,
-	    mensaje VARCHAR
+	    mensaje TEXT
 	) AS $$
 	DECLARE
 	    v_cambios_realizados INT := 0;
 	BEGIN
 	    -- Validar que la promoción existe
 	    IF NOT EXISTS (SELECT 1 FROM Promocion WHERE pr_cod = p_id_promocion) THEN
-	        RETURN QUERY SELECT false, 401, 'La promoción con código ' || p_id_promocion || ' no existe';
+	        RETURN QUERY SELECT false, 401, ('La promoción con código ' || p_id_promocion || ' no existe');
 	        RETURN;
 	    END IF;
 	
@@ -1649,10 +1548,10 @@ CREATE OR REPLACE FUNCTION fn_actualizar_promocion(
 	            RETURN;
 	        END IF;
 	
-	        RETURN QUERY SELECT true, 0, 'Promoción actualizada exitosamente. ' || v_cambios_realizados || ' campo(s) modificado(s)';
+	        RETURN QUERY SELECT true, 0, ('Promoción actualizada exitosamente. ' || v_cambios_realizados || ' campo(s) modificado(s)');
 	
 	    EXCEPTION WHEN OTHERS THEN
-	        RETURN QUERY SELECT false, 999, 'Error al actualizar promoción: ' || SQLERRM;
+	        RETURN QUERY SELECT false, 999, ('Error al actualizar promoción: ' || SQLERRM);
 	    END;
 	
 	END;
@@ -1665,7 +1564,7 @@ CREATE OR REPLACE FUNCTION fn_eliminar_promocion(
 	RETURNS TABLE (
 	    exito BOOLEAN,
 	    codigo_error INT,
-	    mensaje VARCHAR
+	    mensaje TEXT
 	) AS $$
 	DECLARE
 	    v_nombre_promocion VARCHAR;
@@ -1694,3 +1593,432 @@ CREATE OR REPLACE FUNCTION fn_eliminar_promocion(
 	
 	END;
 	$$ LANGUAGE plpgsql;	
+
+-- ============================================================================
+-- CRUD DE PAQUETE TURISTICO
+-- ============================================================================
+
+-- -- CREAR PAQUETE TURISTICO
+-- CREATE OR REPLACE PROCEDURE sp_crear_paquete_turistico(
+--     p_nombre VARCHAR,
+--     p_descripcion VARCHAR,
+--     p_cant_personas INT,
+--     p_costo NUMERIC,
+--     p_costo_millas INT,
+-- 	p_servicios_ids INT[],
+--     p_rp_cod INT DEFAULT NULL,
+-- 	OUT p_paquete_nuevo INT
+-- 	)
+-- 	AS $$
+-- 	DECLARE
+-- 	    v_pt_cod INT;
+-- 	    v_rp_cod INT;
+-- 		v_s_cod INT;
+-- 	BEGIN
+-- 	    -- Validar datos de entrada
+-- 	    IF p_nombre IS NULL OR p_nombre = '' THEN
+-- 	        RAISE EXCEPTION 'El nombre del paquete es requerido';
+-- 	    END IF;
+	
+-- 	    IF p_cant_personas <= 0 THEN
+-- 	        RAISE EXCEPTION 'Deben ser mas de 0 personas';
+-- 	    END IF;
+	
+-- 	    IF p_costo < 0 OR p_costo_millas < 0 THEN
+-- 	        RAISE EXCEPTION 'Los costos no pueden ser negativos';
+-- 	    END IF;
+	
+-- 	    -- Gestionar restricción del paquete si se proporciona
+-- 	    v_rp_cod := NULL;
+-- 	    IF p_rp_cod IS NOT NULL THEN
+-- 	        -- Verificar si la restricción ya existe
+-- 	        SELECT rp_cod INTO v_rp_cod
+-- 	        FROM Restriccion_Paquete
+-- 	        WHERE rp_cod = p_rp_cod;
+	
+-- 	        -- Si no existe, crear nueva restricción
+-- 	        IF v_rp_cod IS NULL THEN
+-- 	            RAISE EXCEPTION 'No existe la restriccion';
+-- 	        END IF;
+-- 	    END IF;
+	
+-- 	    -- Crear el paquete turístico
+-- 	    INSERT INTO Paquete_Turistico (
+-- 	        pt_nombre,
+-- 	        pt_descripcion,
+-- 	        pt_cant_personas,
+-- 	        pt_costo,
+-- 	        pt_costo_millas,
+-- 	        Restriccion_Paquete_rp_cod
+-- 	    ) VALUES (
+-- 	        p_nombre,
+-- 	        p_descripcion,
+-- 	        p_cant_personas,
+-- 	        p_costo,
+-- 	        p_costo_millas,
+-- 	        v_rp_cod
+-- 	    )
+-- 	    RETURNING pt_cod INTO v_pt_cod;
+
+-- 		-- Procesar cada servicio
+-- 		IF p_servicios_ids IS NOT NULL AND ARRAY_LENGTH(p_servicios_ids, 1) > 0 THEN
+-- 			FOREACH v_s_cod IN ARRAY p_servicios_id
+-- 			LOOP
+-- 				-- Validar que el servicio existe
+-- 				IF NOT EXISTS (SELECT 1 FROM Servicio WHERE s_cod = v_s_cod) THEN
+-- 					DELETE FROM Paquete_Turistico WHERE pt_cod = v_pt_cod;
+-- 					RAISE EXCEPTION 'Servicio con codigo % no existe', v_s_cod;
+-- 				END IF;
+	
+-- 				INSERT INTO Paq_Ser VALUES (v_pt_cod, v_s_cod);
+-- 			END LOOP;
+-- 		END IF;
+	
+-- 	    RAISE NOTICE 'Paquete creado exitosamente con código: %', p_paquete_nuevo;
+-- 	END;
+-- 	$$ LANGUAGE plpgsql;
+
+-- -- LISTAR TODOS LOS PAQUETES TURISTICOS
+-- CREATE OR REPLACE FUNCTION fn_listar_paquetes_turisticos()
+-- 	RETURNS TABLE (
+-- 	    pt_cod INT,
+-- 	    pt_nombre VARCHAR,
+-- 	    pt_descripcion VARCHAR,
+-- 	    pt_cant_personas INT,
+-- 	    pt_costo NUMERIC,
+-- 	    pt_costo_millas INT,
+-- 	    cantidad_servicios INT
+-- 	) AS $$
+-- 	BEGIN
+-- 	    RETURN QUERY
+-- 	    SELECT
+-- 	        p.pt_cod,
+-- 	        p.pt_nombre,
+-- 	        p.pt_descripcion,
+-- 	        p.pt_cant_personas,
+-- 	        p.pt_costo,
+-- 	        p.pt_costo_millas,
+-- 	        COUNT(ps.Servicio_s_cod)::INT AS cantidad_servicios
+-- 	    FROM Paquete_Turistico p
+-- 	    LEFT JOIN Paq_Ser ps ON p.pt_cod = ps.Paquete_Turistico_pt_cod
+-- 	    ORDER BY p.pt_cod;
+-- 	END;
+-- 	$$ LANGUAGE plpgsql;
+
+-- -- OBTENER PAQUETE TURISTICO POR ID CON DETALLES COMPLETOS
+-- CREATE OR REPLACE FUNCTION fn_obtener_paquete_por_id(
+--     p_pt_cod INT
+-- )
+-- 	RETURNS TABLE (
+-- 	    exito BOOLEAN,
+-- 	    codigo_error INT,
+-- 	    mensaje VARCHAR,
+-- 	    paquete_json JSON
+-- 	) AS $$
+-- 	DECLARE
+-- 	    v_paquete_json JSON;
+-- 	BEGIN
+-- 	    IF p_pt_cod IS NULL OR p_pt_cod <= 0 THEN
+-- 	        RETURN QUERY SELECT FALSE, 1, 'ID del paquete inválido'::VARCHAR, NULL::JSON;
+-- 	        RETURN;
+-- 	    END IF;
+	
+-- 	    SELECT JSON_BUILD_OBJECT(
+-- 	        'pt_cod', p.pt_cod,
+-- 	        'pt_nombre', p.pt_nombre,
+-- 	        'pt_descripcion', p.pt_descripcion,
+-- 	        'pt_cant_personas', p.pt_cant_personas,
+-- 	        'pt_costo', p.pt_costo,
+-- 	        'pt_costo_millas', p.pt_costo_millas
+-- 	        'servicios', (
+-- 	            SELECT COALESCE(JSON_AGG(JSON_BUILD_OBJECT(
+-- 	                's_cod', s.s_cod,
+-- 	                's_costo', s.s_costo
+-- 	            ) ORDER BY s.s_cod), '[]'::JSON)
+-- 	            FROM Paq_Ser ps
+-- 	            JOIN Servicio s ON ps.Servicio_s_cod = s.s_cod
+-- 	            WHERE ps.Paquete_Turistico_pt_cod = p.pt_cod
+-- 	        ),
+-- 	        'cantidad_servicios', (
+-- 	            SELECT COUNT(*)::INT FROM Paq_Ser WHERE Paquete_Turistico_pt_cod = p.pt_cod
+-- 	        )
+-- 	    ) INTO v_paquete_json
+-- 	    FROM Paquete_Turistico p
+-- 	    WHERE p.pt_cod = p_pt_cod;
+	
+-- 	    IF v_paquete_json IS NULL THEN
+-- 	        RETURN QUERY SELECT FALSE, 2, 'Paquete turístico no encontrado'::VARCHAR, NULL::JSON;
+-- 	        RETURN;
+-- 	    END IF;
+	
+-- 	    RETURN QUERY SELECT TRUE, 0, 'Paquete obtenido exitosamente'::VARCHAR, v_paquete_json;
+	
+-- 	EXCEPTION WHEN OTHERS THEN
+-- 	    RETURN QUERY SELECT FALSE, 500, 'Error al obtener paquete: ' || SQLERRM, NULL::JSON;
+-- 	END;
+-- 	$$ LANGUAGE plpgsql;
+
+-- -- ACTUALIZAR PAQUETE TURISTICO
+-- CREATE OR REPLACE PROCEDURE sp_actualizar_paquete_turistico(
+--     OUT mensaje VARCHAR,
+-- 	p_pt_cod INT,
+--     p_nombre VARCHAR DEFAULT NULL,
+--     p_descripcion VARCHAR DEFAULT NULL,
+--     p_cant_personas INT DEFAULT NULL,
+--     p_costo NUMERIC DEFAULT NULL,
+--     p_costo_millas INT DEFAULT NULL,
+--     p_rp_cod INT DEFAULT NULL
+-- )
+-- 	AS $$
+-- 	DECLARE
+-- 	    v_nombre_actual VARCHAR;
+-- 	    v_rp_cod INT;
+-- 	BEGIN
+-- 	    -- Validar que el paquete existe
+-- 	    SELECT pt_nombre INTO v_nombre_actual FROM Paquete_Turistico WHERE pt_cod = p_pt_cod;
+	
+-- 	    IF v_nombre_actual IS NULL THEN
+-- 			RAISE EXCEPTION 'No se encontro el paquete';
+-- 	    END IF;
+	
+-- 	    -- Validar datos si se proporcionan
+-- 	    IF p_cant_personas IS NOT NULL AND p_cant_personas <= 0 THEN
+-- 	        RAISE EXCEPTION 'La cantidad de personas debe ser mayor a 0';
+-- 	    END IF;
+	
+-- 	    IF (p_costo IS NOT NULL AND p_costo < 0) OR (p_costo_millas IS NOT NULL AND p_costo_millas < 0) THEN
+-- 	        RAISE EXCEPTION 'Los costos no puede ser negativos';
+-- 	    END IF;
+	
+-- 	    -- Gestionar restricción si se proporciona
+-- 	    IF p_rp_cod IS NOT NULL AND NOT (SELECT 1 FROM Restriccion_Paquete WHERE rp_cod = p_rp_cod) THEN
+-- 	        RAISE EXCEPTION 'La restriccion no existe';
+-- 	    END IF;
+	
+-- 	    -- Actualizar el paquete
+-- 	    UPDATE Paquete_Turistico
+-- 	    SET
+-- 	        pt_nombre = COALESCE(p_nombre, pt_nombre),
+-- 	        pt_descripcion = COALESCE(p_descripcion, pt_descripcion),
+-- 	        pt_cant_personas = COALESCE(p_cant_personas, pt_cant_personas),
+-- 	        pt_costo = COALESCE(p_costo, pt_costo),
+-- 	        pt_costo_millas = COALESCE(p_costo_millas, pt_costo_millas),
+-- 	        Restriccion_Paquete_rp_cod = COALESCE(v_rp_cod, Restriccion_Paquete_rp_cod)
+-- 	    WHERE pt_cod = p_pt_cod;
+
+-- 		mensaje:= 'Paquete actualizado';
+		
+-- 	    RAISE NOTICE 'Actualizado correctamente';
+-- 	END;
+-- 	$$ LANGUAGE plpgsql;
+
+-- -- ELIMINAR PAQUETE TURISTICO
+-- CREATE OR REPLACE FUNCTION sp_eliminar_paquete_turistico(
+--     p_pt_cod INT
+-- )
+-- RETURNS TABLE (
+--     exito BOOLEAN,
+--     codigo_error INT,
+--     mensaje VARCHAR
+-- ) AS $$
+-- BEGIN
+--     IF p_pt_cod IS NULL OR p_pt_cod <= 0 THEN
+--         RETURN QUERY SELECT FALSE, 1, 'ID del paquete inválido'::VARCHAR;
+--         RETURN;
+--     END IF;
+
+--     -- Verificar si el paquete existe
+--     IF NOT EXISTS (SELECT 1 FROM Paquete_Turistico WHERE pt_cod = p_pt_cod) THEN
+--         RETURN QUERY SELECT FALSE, 2, 'Paquete turístico no encontrado'::VARCHAR;
+--         RETURN;
+--     END IF;
+
+--     -- Eliminar los servicios asociados
+--     DELETE FROM Paq_Ser WHERE Paquete_Turistico_pt_cod = p_pt_cod;
+
+--     -- Eliminar el paquete
+--     DELETE FROM Paquete_Turistico WHERE pt_cod = p_pt_cod;
+
+--     RETURN QUERY SELECT TRUE, 0, 'Paquete eliminado exitosamente'::VARCHAR;
+
+-- EXCEPTION WHEN OTHERS THEN
+--     RETURN QUERY SELECT FALSE, 500, 'Error al eliminar paquete: ' || SQLERRM;
+-- END;
+-- $$ LANGUAGE plpgsql;
+
+-- -- ============================================================================
+-- -- 6. AGREGAR SERVICIO AL PAQUETE
+-- -- ============================================================================
+-- CREATE OR REPLACE FUNCTION sp_agregar_servicio_paquete(
+--     p_pt_cod INTEGER,
+--     p_s_cod INTEGER
+-- )
+-- RETURNS TABLE (
+--     exito BOOLEAN,
+--     codigo_error INTEGER,
+--     mensaje VARCHAR
+-- ) AS $$
+-- DECLARE
+--     v_cant_servicios INTEGER;
+-- BEGIN
+--     -- Validar paquete
+--     IF NOT EXISTS (SELECT 1 FROM Paquete_Turistico WHERE pt_cod = p_pt_cod) THEN
+--         RETURN QUERY SELECT FALSE, 1, 'Paquete turístico no encontrado'::VARCHAR;
+--         RETURN;
+--     END IF;
+
+--     -- Validar servicio
+--     IF NOT EXISTS (SELECT 1 FROM Servicio WHERE s_cod = p_s_cod) THEN
+--         RETURN QUERY SELECT FALSE, 2, 'Servicio no encontrado'::VARCHAR;
+--         RETURN;
+--     END IF;
+
+--     -- Verificar si el servicio ya está en el paquete
+--     IF EXISTS (SELECT 1 FROM Paq_Ser WHERE Paquete_Turistico_pt_cod = p_pt_cod AND Servicio_s_cod = p_s_cod) THEN
+--         RETURN QUERY SELECT FALSE, 3, 'El servicio ya está asociado a este paquete'::VARCHAR;
+--         RETURN;
+--     END IF;
+
+--     -- Agregar el servicio
+--     INSERT INTO Paq_Ser (Paquete_Turistico_pt_cod, Servicio_s_cod)
+--     VALUES (p_pt_cod, p_s_cod);
+
+--     RETURN QUERY SELECT TRUE, 0, 'Servicio agregado al paquete exitosamente'::VARCHAR;
+
+-- EXCEPTION WHEN OTHERS THEN
+--     RETURN QUERY SELECT FALSE, 500, 'Error al agregar servicio: ' || SQLERRM;
+-- END;
+-- $$ LANGUAGE plpgsql;
+
+-- -- ============================================================================
+-- -- 7. QUITAR SERVICIO DEL PAQUETE
+-- -- ============================================================================
+-- CREATE OR REPLACE FUNCTION sp_quitar_servicio_paquete(
+--     p_pt_cod INTEGER,
+--     p_s_cod INTEGER
+-- )
+-- RETURNS TABLE (
+--     exito BOOLEAN,
+--     codigo_error INTEGER,
+--     mensaje VARCHAR
+-- ) AS $$
+-- BEGIN
+--     -- Validar paquete
+--     IF NOT EXISTS (SELECT 1 FROM Paquete_Turistico WHERE pt_cod = p_pt_cod) THEN
+--         RETURN QUERY SELECT FALSE, 1, 'Paquete turístico no encontrado'::VARCHAR;
+--         RETURN;
+--     END IF;
+
+--     -- Verificar si el servicio está en el paquete
+--     IF NOT EXISTS (SELECT 1 FROM Paq_Ser WHERE Paquete_Turistico_pt_cod = p_pt_cod AND Servicio_s_cod = p_s_cod) THEN
+--         RETURN QUERY SELECT FALSE, 2, 'El servicio no está asociado a este paquete'::VARCHAR;
+--         RETURN;
+--     END IF;
+
+--     -- Quitar el servicio
+--     DELETE FROM Paq_Ser
+--     WHERE Paquete_Turistico_pt_cod = p_pt_cod AND Servicio_s_cod = p_s_cod;
+
+--     RETURN QUERY SELECT TRUE, 0, 'Servicio removido del paquete exitosamente'::VARCHAR;
+
+-- EXCEPTION WHEN OTHERS THEN
+--     RETURN QUERY SELECT FALSE, 500, 'Error al quitar servicio: ' || SQLERRM;
+-- END;
+-- $$ LANGUAGE plpgsql;
+
+-- -- ============================================================================
+-- -- 8. OBTENER SERVICIOS DE UN PAQUETE
+-- -- ============================================================================
+-- CREATE OR REPLACE FUNCTION sp_obtener_servicios_paquete(
+--     p_pt_cod INTEGER
+-- )
+-- RETURNS TABLE (
+--     exito BOOLEAN,
+--     codigo_error INTEGER,
+--     mensaje VARCHAR,
+--     servicios_json JSON
+-- ) AS $$
+-- DECLARE
+--     v_servicios_json JSON;
+--     v_paquete_existe BOOLEAN;
+-- BEGIN
+--     -- Validar que el paquete existe
+--     SELECT EXISTS (SELECT 1 FROM Paquete_Turistico WHERE pt_cod = p_pt_cod) INTO v_paquete_existe;
+
+--     IF NOT v_paquete_existe THEN
+--         RETURN QUERY SELECT FALSE, 1, 'Paquete turístico no encontrado'::VARCHAR, NULL::JSON;
+--         RETURN;
+--     END IF;
+
+--     -- Obtener servicios del paquete
+--     SELECT COALESCE(JSON_AGG(JSON_BUILD_OBJECT(
+--         's_cod', s.s_cod,
+--         's_costo', s.s_costo,
+--         'servicio_tipo', CASE
+--             WHEN sa.s_cod IS NOT NULL THEN 'Servicio Adicional'
+--             WHEN vf.s_cod IS NOT NULL THEN 'Vuelo'
+--             WHEN dt.s_cod IS NOT NULL THEN 'Traslado'
+--             WHEN bv.s_cod IS NOT NULL THEN 'Boleto Viaje'
+--             WHEN ed.s_cod IS NOT NULL THEN 'Entrada Digital'
+--             WHEN dh.s_cod IS NOT NULL THEN 'Hospedaje'
+--             ELSE 'Servicio Genérico'
+--         END,
+--         'descripcion', CASE
+--             WHEN sa.s_cod IS NOT NULL THEN sa.sa_descripcion
+--             WHEN vf.s_cod IS NOT NULL THEN vf.vuelo_descripcion
+--             WHEN dt.s_cod IS NOT NULL THEN dt.dt_descripcion
+--             WHEN ed.s_cod IS NOT NULL THEN ed.ed_descripcion
+--             WHEN dh.s_cod IS NOT NULL THEN dh.dh_descripcion
+--             ELSE 'Sin descripción'
+--         END
+--     ) ORDER BY s.s_cod), '[]'::JSON)
+--     INTO v_servicios_json
+--     FROM Paq_Ser ps
+--     JOIN Servicio s ON ps.Servicio_s_cod = s.s_cod
+--     LEFT JOIN Servicio_Adicional sa ON s.s_cod = sa.s_cod
+--     LEFT JOIN Vuelo vf ON s.s_cod = vf.s_cod
+--     LEFT JOIN Detalle_Traslado dt ON s.s_cod = dt.s_cod
+--     LEFT JOIN Boleto_Viaje bv ON s.s_cod = bv.s_cod
+--     LEFT JOIN Entrada_Digital ed ON s.s_cod = ed.s_cod
+--     LEFT JOIN Detalle_Hospedaje dh ON s.s_cod = dh.s_cod
+--     WHERE ps.Paquete_Turistico_pt_cod = p_pt_cod;
+
+--     RETURN QUERY SELECT TRUE, 0, 'Servicios obtenidos exitosamente'::VARCHAR, v_servicios_json;
+
+-- EXCEPTION WHEN OTHERS THEN
+--     RETURN QUERY SELECT FALSE, 500, 'Error al obtener servicios: ' || SQLERRM, NULL::JSON;
+-- END;
+-- $$ LANGUAGE plpgsql;
+
+-- -- ============================================================================
+-- -- 9. BUSCAR PAQUETES POR NOMBRE
+-- -- ============================================================================
+-- CREATE OR REPLACE FUNCTION sp_buscar_paquetes_por_nombre(
+--     p_nombre VARCHAR
+-- )
+-- RETURNS TABLE (
+--     pt_cod INTEGER,
+--     pt_nombre VARCHAR,
+--     pt_descripcion VARCHAR,
+--     pt_cant_personas INTEGER,
+--     pt_costo NUMERIC,
+--     pt_costo_millas INTEGER,
+--     cantidad_servicios INTEGER
+-- ) AS $$
+-- BEGIN
+--     RETURN QUERY
+--     SELECT
+--         p.pt_cod,
+--         p.pt_nombre,
+--         p.pt_descripcion,
+--         p.pt_cant_personas,
+--         p.pt_costo,
+--         p.pt_costo_millas,
+--         COUNT(ps.Servicio_s_cod)::INTEGER AS cantidad_servicios
+--     FROM Paquete_Turistico p
+--     LEFT JOIN Paq_Ser ps ON p.pt_cod = ps.Paquete_Turistico_pt_cod
+--     WHERE p.pt_nombre ILIKE '%' || p_nombre || '%'
+--     GROUP BY p.pt_cod
+--     ORDER BY p.pt_nombre;
+-- END;
+-- $$ LANGUAGE plpgsql;	

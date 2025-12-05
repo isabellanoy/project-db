@@ -200,6 +200,7 @@ CREATE TABLE Compra (
     co_monto_total NUMERIC(15,2) NOT NULL,
     co_millas_a_agregar INT NOT NULL,
     co_compensacion_huella NUMERIC(12,2),
+	co_estado VARCHAR(20) NOT NULL,
     Cliente_c_cod INT NOT NULL
 );
 
@@ -289,8 +290,8 @@ COMMENT ON COLUMN Detalle_Traslado.dt_fecha_hora IS 'Fecha y hora del traslado s
 
 CREATE TABLE Documento (
     do_cod SERIAL NOT NULL,
-    do_descripcion VARCHAR(50) NOT NULL,
-    do_nombre_archivo VARCHAR(50) NOT NULL,
+    do_descripcion VARCHAR(100) NOT NULL,
+    do_nombre_archivo VARCHAR(100) NOT NULL,
     Tipo_Documento_td_cod INT NOT NULL,
     Cliente_c_cod INT NOT NULL
 );
@@ -301,17 +302,6 @@ ALTER SEQUENCE documento_do_cod_seq RESTART WITH 1;
 COMMENT ON COLUMN Documento.do_cod IS 'identificacion del documento';
 COMMENT ON COLUMN Documento.do_descripcion IS 'Descripcion sobre el documento';
 COMMENT ON COLUMN Documento.do_nombre_archivo IS 'Nombre del archivo con la imagen del doc';
-
-CREATE TABLE Emisor (
-    em_cod SERIAL NOT NULL,
-    em_nombre VARCHAR(50) NOT NULL
-);
-
-ALTER TABLE Emisor ADD CONSTRAINT Emisor_PK PRIMARY KEY (em_cod);
-ALTER SEQUENCE emisor_em_cod_seq RESTART WITH 1;
-
-COMMENT ON COLUMN Emisor.em_cod IS 'Identificador del emisor';
-COMMENT ON COLUMN Emisor.em_nombre IS 'Nombre del emisor';
 
 CREATE TABLE Empleado (
     e_cod SERIAL NOT NULL,
@@ -380,7 +370,7 @@ ALTER TABLE Eti_Ser ADD CONSTRAINT Eti_Ser_PK PRIMARY KEY (Etiqueta_et_cod, Serv
 
 CREATE TABLE Habitacion (
     s_cod INT NOT NULL,
-    ha_numero INT NOT NULL,
+    ha_numero VARCHAR(10) NOT NULL,
     ha_capacidad INT NOT NULL,
     Hotel_p_cod INT NOT NULL,
     Tipo_Habitacion_th_cod INT NOT NULL
@@ -440,7 +430,7 @@ CREATE TABLE Metodo_Pago (
 	t_nombre_titular VARCHAR(50),
 	t_fecha_vencimiento DATE,
 	t_Banco_cod INT,
-	t_Emisor_cod INT,
+	t_emisor VARCHAR(50),
 	c_codigo_cuenta BIGINT,
 	c_numero BIGINT,
 	c_Banco_cod INT,
@@ -536,7 +526,7 @@ CREATE TABLE Paquete_Turistico (
     pt_descripcion VARCHAR(200) NOT NULL,
     pt_costo NUMERIC(12,2) NOT NULL,
     pt_costo_millas INT NOT NULL,
-    Tipo_Paquete_tp_cod INT NOT NULL
+    Restriccion_Paquete_rp_cod INT
 );
 
 ALTER TABLE Paquete_Turistico ADD CONSTRAINT Paquete_Turistico_PK PRIMARY KEY (pt_cod);
@@ -592,9 +582,8 @@ COMMENT ON COLUMN Pro_Ser.ps_monto IS 'Costo sobre la promocion aplicado el desc
 
 CREATE TABLE Queja (
     q_cod SERIAL NOT NULL,
-    q_descripcion VARCHAR(50) NOT NULL,
+    q_descripcion VARCHAR(200) NOT NULL,
     q_resuelta BOOLEAN,
-    Cliente_c_cod INT NOT NULL,
 	Empleado_e_cod INT NOT NULL,
 	Boleto_Vuelo_co_cod INT,
 	Boleto_Vuelo_s_cod INT,
@@ -617,6 +606,7 @@ COMMENT ON COLUMN Queja.q_resuelta IS 'Para dterminar si está o no resuelta la 
 
 CREATE TABLE Reembolso (
     ree_cod SERIAL NOT NULL,
+	ree_razon VARCHAR(200) NOT NULL,
     ree_fecha_hora TIMESTAMP NOT NULL,
 	Boleto_Vuelo_co_cod INT,
 	Boleto_Vuelo_s_cod INT,
@@ -639,8 +629,7 @@ COMMENT ON COLUMN Reembolso.ree_fecha_hora IS 'Fecha y hora de la solicitud del 
 CREATE TABLE Resena (
     r_cod SERIAL NOT NULL,
     r_calificacion NUMERIC(2) NOT NULL,
-    r_comentario VARCHAR(100) NOT NULL,
-    Cliente_c_cod INT NOT NULL,
+    r_comentario VARCHAR(200) NOT NULL,
 	Boleto_Vuelo_co_cod INT,
 	Boleto_Vuelo_s_cod INT,
 	Detalle_Traslado_co_cod INT,
@@ -698,7 +687,9 @@ COMMENT ON COLUMN Restaurante.re_calificacion IS 'Calificacion del restaurante';
 
 CREATE TABLE Restriccion_Paquete (
 	rp_cod SERIAL NOT NULL,
-	rp_caracteristica VARCHAR(50) NOT NULL
+	rp_caracteristica VARCHAR(50) NOT NULL,
+	rp_operador VARCHAR(20) NOT NULL,
+	rp_valor_restriccion VARCHAR(100) NOT NULL
 );
 
 ALTER TABLE Restriccion_Paquete ADD CONSTRAINT Restriccion_Paquete_PK PRIMARY KEY (rp_cod);
@@ -1049,7 +1040,6 @@ ALTER TABLE Metodo_Pago ADD CONSTRAINT Metodo_Pago_Cliente_Millas_FK FOREIGN KEY
 ALTER TABLE Metodo_Pago ADD CONSTRAINT Metodo_Pago_Banco1_FK FOREIGN KEY (t_Banco_cod) REFERENCES Banco (ba_cod);
 ALTER TABLE Metodo_Pago ADD CONSTRAINT Metodo_Pago_Banco2_FK FOREIGN KEY (c_Banco_cod) REFERENCES Banco (ba_cod);
 ALTER TABLE Metodo_Pago ADD CONSTRAINT Metodo_Pago_Banco3_FK FOREIGN KEY (de_Banco_cod) REFERENCES Banco (ba_cod);
-ALTER TABLE Metodo_Pago ADD CONSTRAINT Metodo_Pago_Emisor_FK FOREIGN KEY (t_Emisor_cod) REFERENCES Emisor (em_cod);
 ALTER TABLE Modelo ADD CONSTRAINT Modelo_Marca_FK FOREIGN KEY (Marca_mav_cod) REFERENCES Marca (mav_cod);
 ALTER TABLE Nota_Credito ADD CONSTRAINT Nota_Credito_Metodo_Pago_FK FOREIGN KEY (Metodo_Pago_mp_cod) REFERENCES Metodo_Pago (mp_cod);
 ALTER TABLE Nota_Credito ADD CONSTRAINT Nota_Credito_Reembolso_FK FOREIGN KEY (Reembolso_ree_cod) REFERENCES Reembolso (ree_cod);
@@ -1058,6 +1048,7 @@ ALTER TABLE Pago ADD CONSTRAINT Pago_Compra_FK FOREIGN KEY (Compra_co_cod) REFER
 ALTER TABLE Pago ADD CONSTRAINT Pago_Metodo_Pago_FK FOREIGN KEY (Metodo_Pago_mp_cod) REFERENCES Metodo_Pago (mp_cod);
 ALTER TABLE Pago_Cuota ADD CONSTRAINT Pago_Cuota_Cuota_FK FOREIGN KEY (Cuota_cu_cod) REFERENCES Cuota (cu_cod);
 ALTER TABLE Pago_Cuota ADD CONSTRAINT Pago_Cuota_Metodo_Pago_FK FOREIGN KEY (Metodo_Pago_mp_cod) REFERENCES Metodo_Pago (mp_cod);
+ALTER TABLE Paquete_Turistico ADD CONSTRAINT Paquete_Turistico_Restriccion_FK FOREIGN KEY (Restriccion_Paquete_rp_cod) REFERENCES Restriccion_Paquete (rp_cod);
 ALTER TABLE Paq_Ser ADD CONSTRAINT Paq_Ser_Paquete_Turistico_FK FOREIGN KEY (Paquete_Turistico_pt_cod) REFERENCES Paquete_Turistico (pt_cod);
 ALTER TABLE Paq_Ser ADD CONSTRAINT Paq_Ser_Servicio_FK FOREIGN KEY (Servicio_s_cod) REFERENCES Servicio (s_cod);
 ALTER TABLE Promocion ADD CONSTRAINT Promocion_Aerolinea_FK FOREIGN KEY (Aerolinea_p_cod) REFERENCES Aerolinea (p_cod);
@@ -1067,30 +1058,27 @@ ALTER TABLE Promocion ADD CONSTRAINT Promocion_Turistico_FK FOREIGN KEY (Operado
 ALTER TABLE Promocion ADD CONSTRAINT Promocion_Hotel_FK FOREIGN KEY (Hotel_p_cod) REFERENCES Hotel (p_cod);
 ALTER TABLE Pro_Ser ADD CONSTRAINT Pro_Ser_Promocion_FK FOREIGN KEY (Promocion_pr_cod) REFERENCES Promocion (pr_cod);
 ALTER TABLE Pro_Ser ADD CONSTRAINT Pro_Ser_Servicio_FK FOREIGN KEY (Servicio_s_cod) REFERENCES Servicio (s_cod);
-ALTER TABLE Queja ADD CONSTRAINT Queja_Cliente_FK FOREIGN KEY (Cliente_c_cod) REFERENCES Cliente (c_cod);
 ALTER TABLE Queja ADD CONSTRAINT Queja_Empleado_FK FOREIGN KEY (Empleado_e_cod) REFERENCES Empleado (e_cod);
 ALTER TABLE Queja ADD CONSTRAINT Queja_Boleto_Vuelo_FK FOREIGN KEY (Boleto_Vuelo_co_cod, Boleto_Vuelo_s_cod) REFERENCES Boleto_Vuelo (Compra_co_cod, Vuelo_s_cod);
 ALTER TABLE Queja ADD CONSTRAINT Queja_Detalle_Traslado_FK FOREIGN KEY (Detalle_Traslado_co_cod, Detalle_Traslado_s_cod) REFERENCES Detalle_Traslado (Compra_co_cod, Traslado_s_cod);
 ALTER TABLE Queja ADD CONSTRAINT Queja_Boleto_Viaje_FK FOREIGN KEY (Boleto_Viaje_co_cod, Boleto_Viaje_s_cod) REFERENCES Boleto_Viaje (Compra_co_cod, Viaje_s_cod);
 ALTER TABLE Queja ADD CONSTRAINT Queja_Entrada_Digital_FK FOREIGN KEY (Entrada_Digital_co_cod, Entrada_Digital_s_cod) REFERENCES Entrada_Digital (Compra_co_cod, Servicio_Adicional_s_cod);
 ALTER TABLE Queja ADD CONSTRAINT Queja_Detalle_Hospedaje_FK FOREIGN KEY (Detalle_Hospedaje_co_cod, Detalle_Hospedaje_s_cod) REFERENCES Detalle_Hospedaje (Compra_co_cod, Habitacion_s_cod);
-ALTER TABLE Reembolso ADD CONSTRAINT Reembolso_Boleto_Vuelo_FK FOREIGN KEY (Boleto_Vuelo_co_cod, Boleto_Vuelo_s_cod) REFERENCES Boleto_Vuelo (Compra_co_cod, Vuelo_s_cod);
-ALTER TABLE Reembolso ADD CONSTRAINT Reembolso_Detalle_Traslado_FK FOREIGN KEY (Detalle_Traslado_co_cod, Detalle_Traslado_s_cod) REFERENCES Detalle_Traslado (Compra_co_cod, Traslado_s_cod);
-ALTER TABLE Reembolso ADD CONSTRAINT Reembolso_Boleto_Viaje_FK FOREIGN KEY (Boleto_Viaje_co_cod, Boleto_Viaje_s_cod) REFERENCES Boleto_Viaje (Compra_co_cod, Viaje_s_cod);
-ALTER TABLE Reembolso ADD CONSTRAINT Reembolso_Entrada_Digital_FK FOREIGN KEY (Entrada_Digital_co_cod, Entrada_Digital_s_cod) REFERENCES Entrada_Digital (Compra_co_cod, Servicio_Adicional_s_cod);
-ALTER TABLE Reembolso ADD CONSTRAINT Reembolso_Detalle_Hospedaje_FK FOREIGN KEY (Detalle_Hospedaje_co_cod, Detalle_Hospedaje_s_cod) REFERENCES Detalle_Hospedaje (Compra_co_cod, Habitacion_s_cod);
-ALTER TABLE Resena ADD CONSTRAINT Resena_Cliente_FK FOREIGN KEY (Cliente_c_cod) REFERENCES Cliente (c_cod);
-ALTER TABLE Resena ADD CONSTRAINT Resena_Boleto_Vuelo_FK FOREIGN KEY (Boleto_Vuelo_co_cod, Boleto_Vuelo_s_cod) REFERENCES Boleto_Vuelo (Compra_co_cod, Vuelo_s_cod);
-ALTER TABLE Resena ADD CONSTRAINT Resena_Detalle_Traslado_FK FOREIGN KEY (Detalle_Traslado_co_cod, Detalle_Traslado_s_cod) REFERENCES Detalle_Traslado (Compra_co_cod, Traslado_s_cod);
-ALTER TABLE Resena ADD CONSTRAINT Resena_Boleto_Viaje_FK FOREIGN KEY (Boleto_Viaje_co_cod, Boleto_Viaje_s_cod) REFERENCES Boleto_Viaje (Compra_co_cod, Viaje_s_cod);
-ALTER TABLE Resena ADD CONSTRAINT Resena_Entrada_Digital_FK FOREIGN KEY (Entrada_Digital_co_cod, Entrada_Digital_s_cod) REFERENCES Entrada_Digital (Compra_co_cod, Servicio_Adicional_s_cod);
-ALTER TABLE Resena ADD CONSTRAINT Resena_Detalle_Hospedaje_FK FOREIGN KEY (Detalle_Hospedaje_co_cod, Detalle_Hospedaje_s_cod) REFERENCES Detalle_Hospedaje (Compra_co_cod, Habitacion_s_cod);
-ALTER TABLE Res_Pro_Ser ADD CONSTRAINT Res_Pro_Ser_Pro_Ser_FK FOREIGN KEY (Pro_Ser_Promocion_pr_cod, Pro_Ser_Servicio_s_cod) REFERENCES Pro_Ser (Promocion_pr_cod, Servicio_s_cod);
 ALTER TABLE Res_Pro_Ser ADD CONSTRAINT Res_Pro_Ser_Boleto_Vuelo_FK FOREIGN KEY (Boleto_Vuelo_co_cod, Boleto_Vuelo_s_cod) REFERENCES Boleto_Vuelo (Compra_co_cod, Vuelo_s_cod);
 ALTER TABLE Res_Pro_Ser ADD CONSTRAINT Res_Pro_Ser_Detalle_Traslado_FK FOREIGN KEY (Detalle_Traslado_co_cod, Detalle_Traslado_s_cod) REFERENCES Detalle_Traslado (Compra_co_cod, Traslado_s_cod);
 ALTER TABLE Res_Pro_Ser ADD CONSTRAINT Res_Pro_Ser_Boleto_Viaje_FK FOREIGN KEY (Boleto_Viaje_co_cod, Boleto_Viaje_s_cod) REFERENCES Boleto_Viaje (Compra_co_cod, Viaje_s_cod);
 ALTER TABLE Res_Pro_Ser ADD CONSTRAINT Res_Pro_Ser_Entrada_Digital_FK FOREIGN KEY (Entrada_Digital_co_cod, Entrada_Digital_s_cod) REFERENCES Entrada_Digital (Compra_co_cod, Servicio_Adicional_s_cod);
 ALTER TABLE Res_Pro_Ser ADD CONSTRAINT Res_Pro_Ser_Detalle_Hospedaje_FK FOREIGN KEY (Detalle_Hospedaje_co_cod, Detalle_Hospedaje_s_cod) REFERENCES Detalle_Hospedaje (Compra_co_cod, Habitacion_s_cod);
+ALTER TABLE Reembolso ADD CONSTRAINT Reembolso_Boleto_Vuelo_FK FOREIGN KEY (Boleto_Vuelo_co_cod, Boleto_Vuelo_s_cod) REFERENCES Boleto_Vuelo (Compra_co_cod, Vuelo_s_cod);
+ALTER TABLE Reembolso ADD CONSTRAINT Reembolso_Detalle_Traslado_FK FOREIGN KEY (Detalle_Traslado_co_cod, Detalle_Traslado_s_cod) REFERENCES Detalle_Traslado (Compra_co_cod, Traslado_s_cod);
+ALTER TABLE Reembolso ADD CONSTRAINT Reembolso_Boleto_Viaje_FK FOREIGN KEY (Boleto_Viaje_co_cod, Boleto_Viaje_s_cod) REFERENCES Boleto_Viaje (Compra_co_cod, Viaje_s_cod);
+ALTER TABLE Reembolso ADD CONSTRAINT Reembolso_Entrada_Digital_FK FOREIGN KEY (Entrada_Digital_co_cod, Entrada_Digital_s_cod) REFERENCES Entrada_Digital (Compra_co_cod, Servicio_Adicional_s_cod);
+ALTER TABLE Reembolso ADD CONSTRAINT Reembolso_Detalle_Hospedaje_FK FOREIGN KEY (Detalle_Hospedaje_co_cod, Detalle_Hospedaje_s_cod) REFERENCES Detalle_Hospedaje (Compra_co_cod, Habitacion_s_cod);
+ALTER TABLE Resena ADD CONSTRAINT Resena_Boleto_Vuelo_FK FOREIGN KEY (Boleto_Vuelo_co_cod, Boleto_Vuelo_s_cod) REFERENCES Boleto_Vuelo (Compra_co_cod, Vuelo_s_cod);
+ALTER TABLE Resena ADD CONSTRAINT Resena_Detalle_Traslado_FK FOREIGN KEY (Detalle_Traslado_co_cod, Detalle_Traslado_s_cod) REFERENCES Detalle_Traslado (Compra_co_cod, Traslado_s_cod);
+ALTER TABLE Resena ADD CONSTRAINT Resena_Boleto_Viaje_FK FOREIGN KEY (Boleto_Viaje_co_cod, Boleto_Viaje_s_cod) REFERENCES Boleto_Viaje (Compra_co_cod, Viaje_s_cod);
+ALTER TABLE Resena ADD CONSTRAINT Resena_Entrada_Digital_FK FOREIGN KEY (Entrada_Digital_co_cod, Entrada_Digital_s_cod) REFERENCES Entrada_Digital (Compra_co_cod, Servicio_Adicional_s_cod);
+ALTER TABLE Resena ADD CONSTRAINT Resena_Detalle_Hospedaje_FK FOREIGN KEY (Detalle_Hospedaje_co_cod, Detalle_Hospedaje_s_cod) REFERENCES Detalle_Hospedaje (Compra_co_cod, Habitacion_s_cod);
 ALTER TABLE Restaurante ADD CONSTRAINT Restaurante_Ambiente_FK FOREIGN KEY (Ambiente_am_cod) REFERENCES Ambiente (am_cod);
 ALTER TABLE Restaurante ADD CONSTRAINT Restaurante_Lugar_FK FOREIGN KEY (Lugar_l_cod) REFERENCES Lugar (l_cod);
 ALTER TABLE Rol_Per ADD CONSTRAINT Rol_Per_Permiso_FK FOREIGN KEY (Permiso_pe_cod) REFERENCES Permiso (pe_cod);
@@ -1141,10 +1129,94 @@ ALTER TABLE Vuelo ADD CONSTRAINT Vuelo_Servicio_FK FOREIGN KEY (s_cod) REFERENCE
 ALTER TABLE Cliente ADD CONSTRAINT Check_sexo CHECK(UPPER(c_sexo) IN ('M', 'F'));
 ALTER TABLE Cliente ADD CONSTRAINT Check_edo_civil CHECK(UPPER(c_edo_civil) IN ('SOLTERO', 'CASADO'));
 ALTER TABLE Cliente ADD CONSTRAINT Check_CI CHECK(c_CI BETWEEN 5000000 AND 150000000);
+ALTER TABLE Compra ADD CONSTRAINT Estado_Compra_Check CHECK(UPPER(co_estado) IN ('EN PROCESO', 'FINANCIADO', 'FINALIZADO'));
 ALTER TABLE Empleado ADD CONSTRAINT Check_CI CHECK(e_CI BETWEEN 5000000 AND 150000000);
 ALTER TABLE Lugar ADD CONSTRAINT Check_tipo_lugar CHECK(UPPER(l_tipo) IN ('CONTINENTE', 'PAIS', 'EDO/PROVINCIA', 'CIUDAD', 'MUNICIPIO', 'PARROQUIA'));
 ALTER TABLE Marca ADD CONSTRAINT Check_Tipo_Vehiculo CHECK(UPPER(mav_tipo_vehiculo) IN ('AEREO', 'MARITIMO', 'TERRESTRE'));  
 ALTER TABLE Metodo_Pago ADD CONSTRAINT Check_Tipo_Met_Pago CHECK(UPPER(mp_tipo) IN ('TARJETA', 'CHEQUE', 'DEPOSITO', 'OPERACION_DIGITAL', 'USDT', 'MILLA'));
+ALTER TABLE Metodo_Pago ADD CONSTRAINT Check_Metodo_Pago_Tarjeta CHECK (
+    (mp_tipo = 'TARJETA' AND 
+        t_numero IS NOT NULL AND 
+        t_cod_seguridad IS NOT NULL AND 
+        t_nombre_titular IS NOT NULL AND 
+        t_fecha_vencimiento IS NOT NULL AND 
+        t_Banco_cod IS NOT NULL AND 
+        t_emisor IS NOT NULL AND
+        c_codigo_cuenta IS NULL AND c_numero IS NULL AND c_Banco_cod IS NULL AND c_fecha_emision IS NULL AND
+        de_num_referencia IS NULL AND de_num_destino IS NULL AND de_Banco_cod IS NULL AND
+        od_num_referencia IS NULL AND
+        u_hash_id IS NULL AND u_direccion_billetera IS NULL AND
+        m_cant_acumulada IS NULL AND m_Cliente_cod IS NULL
+    ) 
+    OR (mp_tipo <> 'TARJETA')
+);
+
+ALTER TABLE Metodo_Pago ADD CONSTRAINT Check_Metodo_Pago_Cheque CHECK (
+    (mp_tipo = 'CHEQUE' AND 
+        c_codigo_cuenta IS NOT NULL AND 
+        c_numero IS NOT NULL AND 
+        c_Banco_cod IS NOT NULL AND 
+        c_fecha_emision IS NOT NULL AND
+        t_numero IS NULL AND t_cod_seguridad IS NULL AND t_nombre_titular IS NULL AND t_fecha_vencimiento IS NULL AND t_Banco_cod IS NULL AND t_emisor IS NULL AND
+        de_num_referencia IS NULL AND de_num_destino IS NULL AND de_Banco_cod IS NULL AND
+        od_num_referencia IS NULL AND
+        u_hash_id IS NULL AND u_direccion_billetera IS NULL AND
+        m_cant_acumulada IS NULL AND m_Cliente_cod IS NULL
+    ) 
+    OR (mp_tipo <> 'CHEQUE')
+);
+
+ALTER TABLE Metodo_Pago ADD CONSTRAINT Check_Metodo_Pago_Deposito CHECK (
+    (mp_tipo = 'DEPOSITO' AND 
+        de_num_referencia IS NOT NULL AND 
+        de_num_destino IS NOT NULL AND 
+        de_Banco_cod IS NOT NULL AND
+        t_numero IS NULL AND t_cod_seguridad IS NULL AND t_nombre_titular IS NULL AND t_fecha_vencimiento IS NULL AND t_Banco_cod IS NULL AND t_emisor IS NULL AND
+        c_codigo_cuenta IS NULL AND c_numero IS NULL AND c_Banco_cod IS NULL AND c_fecha_emision IS NULL AND
+        od_num_referencia IS NULL AND
+        u_hash_id IS NULL AND u_direccion_billetera IS NULL AND
+        m_cant_acumulada IS NULL AND m_Cliente_cod IS NULL
+    ) 
+    OR (mp_tipo <> 'DEPOSITO')
+);
+
+ALTER TABLE Metodo_Pago ADD CONSTRAINT Check_Metodo_Pago_OpDigital CHECK (
+    (mp_tipo = 'OPERACION_DIGITAL' AND 
+        od_num_referencia IS NOT NULL AND
+        t_numero IS NULL AND t_cod_seguridad IS NULL AND t_nombre_titular IS NULL AND t_fecha_vencimiento IS NULL AND t_Banco_cod IS NULL AND t_emisor IS NULL AND
+        c_codigo_cuenta IS NULL AND c_numero IS NULL AND c_Banco_cod IS NULL AND c_fecha_emision IS NULL AND
+        de_num_referencia IS NULL AND de_num_destino IS NULL AND de_Banco_cod IS NULL AND
+        u_hash_id IS NULL AND u_direccion_billetera IS NULL AND
+        m_cant_acumulada IS NULL AND m_Cliente_cod IS NULL
+    ) 
+    OR (mp_tipo <> 'OPERACION_DIGITAL')
+);
+
+ALTER TABLE Metodo_Pago ADD CONSTRAINT Check_Metodo_Pago_USDT CHECK (
+    (mp_tipo = 'USDT' AND 
+        u_hash_id IS NOT NULL AND 
+        u_direccion_billetera IS NOT NULL AND
+        t_numero IS NULL AND t_cod_seguridad IS NULL AND t_nombre_titular IS NULL AND t_fecha_vencimiento IS NULL AND t_Banco_cod IS NULL AND t_emisor IS NULL AND
+        c_codigo_cuenta IS NULL AND c_numero IS NULL AND c_Banco_cod IS NULL AND c_fecha_emision IS NULL AND
+        de_num_referencia IS NULL AND de_num_destino IS NULL AND de_Banco_cod IS NULL AND
+        od_num_referencia IS NULL AND
+        m_cant_acumulada IS NULL AND m_Cliente_cod IS NULL
+    ) 
+    OR (mp_tipo <> 'USDT')
+);
+
+ALTER TABLE Metodo_Pago ADD CONSTRAINT Check_Metodo_Pago_Milla CHECK (
+    (mp_tipo = 'MILLA' AND 
+        m_cant_acumulada IS NOT NULL AND 
+        m_Cliente_cod IS NOT NULL AND
+        t_numero IS NULL AND t_cod_seguridad IS NULL AND t_nombre_titular IS NULL AND t_fecha_vencimiento IS NULL AND t_Banco_cod IS NULL AND t_emisor IS NULL AND
+        c_codigo_cuenta IS NULL AND c_numero IS NULL AND c_Banco_cod IS NULL AND c_fecha_emision IS NULL AND
+        de_num_referencia IS NULL AND de_num_destino IS NULL AND de_Banco_cod IS NULL AND
+        od_num_referencia IS NULL AND
+        u_hash_id IS NULL AND u_direccion_billetera IS NULL
+    ) 
+    OR (mp_tipo <> 'MILLA')
+);
 ALTER TABLE Promocion ADD CONSTRAINT Proveedor_Check CHECK(
 	(Aerolinea_p_cod IS NOT NULL AND Transporte_Terrestre_p_cod IS NULL AND Crucero_p_cod IS NULL AND Operador_Turistico_p_cod IS NULL AND Hotel_p_cod IS NULL) OR
 	(Aerolinea_p_cod IS NULL AND Transporte_Terrestre_p_cod IS NOT NULL AND Crucero_p_cod IS NULL AND Operador_Turistico_p_cod IS NULL AND Hotel_p_cod IS NULL) OR
@@ -1153,6 +1225,13 @@ ALTER TABLE Promocion ADD CONSTRAINT Proveedor_Check CHECK(
 	(Aerolinea_p_cod IS NULL AND Transporte_Terrestre_p_cod IS NULL AND Crucero_p_cod IS NULL AND Operador_Turistico_p_cod IS NULL AND Hotel_p_cod IS NOT NULL)
 );
 ALTER TABLE Promocion ADD CONSTRAINT Check_Porcentaje CHECK(pr_porcentaje BETWEEN 1 AND 90);
+ALTER TABLE Res_Pro_Ser ADD CONSTRAINT Reserva_Check CHECK(
+	(Boleto_Vuelo_co_cod IS NOT NULL AND Boleto_Vuelo_s_cod IS NOT NULL AND Detalle_Traslado_co_cod IS NULL AND Detalle_Traslado_s_cod IS NULL AND Boleto_Viaje_co_cod IS NULL AND Boleto_Viaje_s_cod IS NULL AND Entrada_Digital_co_cod IS NULL AND Entrada_Digital_s_cod IS NULL AND Detalle_Hospedaje_co_cod IS NULL AND Detalle_Hospedaje_s_cod IS NULL) OR
+	(Boleto_Vuelo_co_cod IS NULL AND Boleto_Vuelo_s_cod IS NULL AND Detalle_Traslado_co_cod IS NOT NULL AND Detalle_Traslado_s_cod IS NOT NULL AND Boleto_Viaje_co_cod IS NULL AND Boleto_Viaje_s_cod IS NULL AND Entrada_Digital_co_cod IS NULL AND Entrada_Digital_s_cod IS NULL AND Detalle_Hospedaje_co_cod IS NULL AND Detalle_Hospedaje_s_cod IS NULL) OR
+	(Boleto_Vuelo_co_cod IS NULL AND Boleto_Vuelo_s_cod IS NULL AND Detalle_Traslado_co_cod IS NULL AND Detalle_Traslado_s_cod IS NULL AND Boleto_Viaje_co_cod IS NOT NULL AND Boleto_Viaje_s_cod IS NOT NULL AND Entrada_Digital_co_cod IS NULL AND Entrada_Digital_s_cod IS NULL AND Detalle_Hospedaje_co_cod IS NULL AND Detalle_Hospedaje_s_cod IS NULL) OR
+	(Boleto_Vuelo_co_cod IS NULL AND Boleto_Vuelo_s_cod IS NULL AND Detalle_Traslado_co_cod IS NULL AND Detalle_Traslado_s_cod IS NULL AND Boleto_Viaje_co_cod IS NULL AND Boleto_Viaje_s_cod IS NULL AND Entrada_Digital_co_cod IS NOT NULL AND Entrada_Digital_s_cod IS NOT NULL AND Detalle_Hospedaje_co_cod IS NULL AND Detalle_Hospedaje_s_cod IS NULL) OR
+	(Boleto_Vuelo_co_cod IS NULL AND Boleto_Vuelo_s_cod IS NULL AND Detalle_Traslado_co_cod IS NULL AND Detalle_Traslado_s_cod IS NULL AND Boleto_Viaje_co_cod IS NULL AND Boleto_Viaje_s_cod IS NULL AND Entrada_Digital_co_cod IS NULL AND Entrada_Digital_s_cod IS NULL AND Detalle_Hospedaje_co_cod IS NOT NULL AND Detalle_Hospedaje_s_cod IS NOT NULL)
+);
 ALTER TABLE Reembolso ADD CONSTRAINT Reserva_Check CHECK(
 	(Boleto_Vuelo_co_cod IS NOT NULL AND Boleto_Vuelo_s_cod IS NOT NULL AND Detalle_Traslado_co_cod IS NULL AND Detalle_Traslado_s_cod IS NULL AND Boleto_Viaje_co_cod IS NULL AND Boleto_Viaje_s_cod IS NULL AND Entrada_Digital_co_cod IS NULL AND Entrada_Digital_s_cod IS NULL AND Detalle_Hospedaje_co_cod IS NULL AND Detalle_Hospedaje_s_cod IS NULL) OR
 	(Boleto_Vuelo_co_cod IS NULL AND Boleto_Vuelo_s_cod IS NULL AND Detalle_Traslado_co_cod IS NOT NULL AND Detalle_Traslado_s_cod IS NOT NULL AND Boleto_Viaje_co_cod IS NULL AND Boleto_Viaje_s_cod IS NULL AND Entrada_Digital_co_cod IS NULL AND Entrada_Digital_s_cod IS NULL AND Detalle_Hospedaje_co_cod IS NULL AND Detalle_Hospedaje_s_cod IS NULL) OR
@@ -1175,18 +1254,12 @@ ALTER TABLE Resena ADD CONSTRAINT Reserva_Check CHECK(
 	(Boleto_Vuelo_co_cod IS NULL AND Boleto_Vuelo_s_cod IS NULL AND Detalle_Traslado_co_cod IS NULL AND Detalle_Traslado_s_cod IS NULL AND Boleto_Viaje_co_cod IS NULL AND Boleto_Viaje_s_cod IS NULL AND Entrada_Digital_co_cod IS NOT NULL AND Entrada_Digital_s_cod IS NOT NULL AND Detalle_Hospedaje_co_cod IS NULL AND Detalle_Hospedaje_s_cod IS NULL) OR
 	(Boleto_Vuelo_co_cod IS NULL AND Boleto_Vuelo_s_cod IS NULL AND Detalle_Traslado_co_cod IS NULL AND Detalle_Traslado_s_cod IS NULL AND Boleto_Viaje_co_cod IS NULL AND Boleto_Viaje_s_cod IS NULL AND Entrada_Digital_co_cod IS NULL AND Entrada_Digital_s_cod IS NULL AND Detalle_Hospedaje_co_cod IS NOT NULL AND Detalle_Hospedaje_s_cod IS NOT NULL)	
 );
-ALTER TABLE Restaurante ADD CONSTRAINT Check_calificacion CHECK(re_calificacion BETWEEN 0 AND 10);
+ALTER TABLE Restaurante ADD CONSTRAINT Check_calificacion CHECK(re_calificacion BETWEEN 0 AND 5);
 ALTER TABLE Telefono ADD CONSTRAINT Telefono_Check CHECK (
 	(Cliente_c_cod IS NOT NULL AND Operador_Turistico_p_cod IS NULL) OR 
 	(Operador_Turistico_p_cod IS NOT NULL AND Cliente_c_cod IS NULL)
 );
-ALTER TABLE Res_Pro_Ser ADD CONSTRAINT Reserva_Check CHECK(
-	(Boleto_Vuelo_co_cod IS NOT NULL AND Boleto_Vuelo_s_cod IS NOT NULL AND Detalle_Traslado_co_cod IS NULL AND Detalle_Traslado_s_cod IS NULL AND Boleto_Viaje_co_cod IS NULL AND Boleto_Viaje_s_cod IS NULL AND Entrada_Digital_co_cod IS NULL AND Entrada_Digital_s_cod IS NULL AND Detalle_Hospedaje_co_cod IS NULL AND Detalle_Hospedaje_s_cod IS NULL) OR
-	(Boleto_Vuelo_co_cod IS NULL AND Boleto_Vuelo_s_cod IS NULL AND Detalle_Traslado_co_cod IS NOT NULL AND Detalle_Traslado_s_cod IS NOT NULL AND Boleto_Viaje_co_cod IS NULL AND Boleto_Viaje_s_cod IS NULL AND Entrada_Digital_co_cod IS NULL AND Entrada_Digital_s_cod IS NULL AND Detalle_Hospedaje_co_cod IS NULL AND Detalle_Hospedaje_s_cod IS NULL) OR
-	(Boleto_Vuelo_co_cod IS NULL AND Boleto_Vuelo_s_cod IS NULL AND Detalle_Traslado_co_cod IS NULL AND Detalle_Traslado_s_cod IS NULL AND Boleto_Viaje_co_cod IS NOT NULL AND Boleto_Viaje_s_cod IS NOT NULL AND Entrada_Digital_co_cod IS NULL AND Entrada_Digital_s_cod IS NULL AND Detalle_Hospedaje_co_cod IS NULL AND Detalle_Hospedaje_s_cod IS NULL) OR
-	(Boleto_Vuelo_co_cod IS NULL AND Boleto_Vuelo_s_cod IS NULL AND Detalle_Traslado_co_cod IS NULL AND Detalle_Traslado_s_cod IS NULL AND Boleto_Viaje_co_cod IS NULL AND Boleto_Viaje_s_cod IS NULL AND Entrada_Digital_co_cod IS NOT NULL AND Entrada_Digital_s_cod IS NOT NULL AND Detalle_Hospedaje_co_cod IS NULL AND Detalle_Hospedaje_s_cod IS NULL) OR
-	(Boleto_Vuelo_co_cod IS NULL AND Boleto_Vuelo_s_cod IS NULL AND Detalle_Traslado_co_cod IS NULL AND Detalle_Traslado_s_cod IS NULL AND Boleto_Viaje_co_cod IS NULL AND Boleto_Viaje_s_cod IS NULL AND Entrada_Digital_co_cod IS NULL AND Entrada_Digital_s_cod IS NULL AND Detalle_Hospedaje_co_cod IS NOT NULL AND Detalle_Hospedaje_s_cod IS NOT NULL)
-);
+ALTER TABLE Tasa_Cambio ADD CONSTRAINT Divisa_Check CHECK(tca_divisa_origen IN ('EUR', 'USD', 'JPY', 'MILLA'));
 ALTER TABLE Usuario ADD CONSTRAINT Usuario_Check CHECK (
 	(Cliente_c_cod IS NOT NULL AND Empleado_e_cod IS NULL AND Aerolinea_p_cod IS NULL AND Transporte_Terrestre_p_cod IS NULL AND Crucero_p_cod IS NULL AND Operador_Turistico_p_cod IS NULL AND Hotel_p_cod IS NULL) OR
 	(Cliente_c_cod IS NULL AND Empleado_e_cod IS NOT NULL AND Aerolinea_p_cod IS NULL AND Transporte_Terrestre_p_cod IS NULL AND Crucero_p_cod IS NULL AND Operador_Turistico_p_cod IS NULL AND Hotel_p_cod IS NULL) OR
@@ -1204,6 +1277,144 @@ ALTER TABLE Via_Res ADD CONSTRAINT Reserva_Check CHECK(
 	(Boleto_Vuelo_co_cod IS NULL AND Boleto_Vuelo_s_cod IS NULL AND Detalle_Traslado_co_cod IS NULL AND Detalle_Traslado_s_cod IS NULL AND Boleto_Viaje_co_cod IS NULL AND Boleto_Viaje_s_cod IS NULL AND Entrada_Digital_co_cod IS NULL AND Entrada_Digital_s_cod IS NULL AND Detalle_Hospedaje_co_cod IS NOT NULL AND Detalle_Hospedaje_s_cod IS NOT NULL)
 );
 
+-- ===================================================
+-- TRIGGERS
+-- ===================================================
+
+CREATE OR REPLACE FUNCTION fn_generar_nota_credito()
+	RETURNS TRIGGER AS $$
+	DECLARE
+	    v_costo_base NUMERIC(10, 2);
+	    v_cliente_cod INT;
+	    v_nuevo_mp_cod INT;
+	    v_monto_final NUMERIC(10, 2);
+	BEGIN	    
+	    -- Boleto Vuelo
+	    IF NEW.Boleto_Vuelo_co_cod IS NOT NULL THEN
+	        -- Actualizar el estado a Anulado
+	        UPDATE Boleto_Vuelo 
+	        SET res_anulado = TRUE 
+	        WHERE compra_co_cod = NEW.Boleto_Vuelo_co_cod 
+	          AND vuelo_s_cod = NEW.Boleto_Vuelo_s_cod;
+	
+	        -- Obtener datos para el reembolso
+	        SELECT bv.res_costo_sub_total, c.cliente_c_cod
+	        INTO v_costo_base, v_cliente_cod
+	        FROM Boleto_Vuelo bv
+	        JOIN Compra c ON bv.compra_co_cod = c.co_cod
+	        WHERE bv.compra_co_cod = NEW.Boleto_Vuelo_co_cod 
+	          AND bv.vuelo_s_cod = NEW.Boleto_Vuelo_s_cod;
+	          
+	    -- Detalle Traslado
+	    ELSIF NEW.Detalle_Traslado_co_cod IS NOT NULL THEN
+	        UPDATE Detalle_Traslado 
+	        SET res_anulado = TRUE 
+	        WHERE compra_co_cod = NEW.Detalle_Traslado_co_cod 
+	          AND traslado_s_cod = NEW.Detalle_Traslado_s_cod;
+	
+	        SELECT dt.res_costo_sub_total, c.cliente_c_cod
+	        INTO v_costo_base, v_cliente_cod
+	        FROM Detalle_Traslado dt
+	        JOIN Compra c ON dt.compra_co_cod = c.co_cod
+	        WHERE dt.compra_co_cod = NEW.Detalle_Traslado_co_cod 
+	          AND dt.traslado_s_cod = NEW.Detalle_Traslado_s_cod;
+	
+	    -- Boleto Viaje (Crucero)
+	    ELSIF NEW.Boleto_Viaje_co_cod IS NOT NULL THEN
+	        UPDATE Boleto_Viaje 
+	        SET res_anulado = TRUE 
+	        WHERE compra_co_cod = NEW.Boleto_Viaje_co_cod 
+	          AND viaje_s_cod = NEW.Boleto_Viaje_s_cod;
+	
+	        SELECT bvi.res_costo_sub_total, c.cliente_c_cod
+	        INTO v_costo_base, v_cliente_cod
+	        FROM Boleto_Viaje bvi
+	        JOIN Compra c ON bvi.compra_co_cod = c.co_cod
+	        WHERE bvi.compra_co_cod = NEW.Boleto_Viaje_co_cod 
+	          AND bvi.viaje_s_cod = NEW.Boleto_Viaje_s_cod;
+	
+	    -- Entrada Digital
+	    ELSIF NEW.Entrada_Digital_co_cod IS NOT NULL THEN
+	        UPDATE Entrada_Digital 
+	        SET res_anulado = TRUE 
+	        WHERE compra_co_cod = NEW.Entrada_Digital_co_cod 
+	          AND servicio_adicional_s_cod = NEW.Entrada_Digital_s_cod;
+	
+	        SELECT ed.res_costo_sub_total, c.cliente_c_cod
+	        INTO v_costo_base, v_cliente_cod
+	        FROM Entrada_Digital ed
+	        JOIN Compra c ON ed.compra_co_cod = c.co_cod
+	        WHERE ed.compra_co_cod = NEW.Entrada_Digital_co_cod 
+	          AND ed.servicio_adicional_s_cod = NEW.Entrada_Digital_s_cod;
+	
+	    -- Detalle Hospedaje
+	    ELSIF NEW.Detalle_Hospedaje_co_cod IS NOT NULL THEN
+	        UPDATE Detalle_Hospedaje 
+	        SET res_anulado = TRUE 
+	        WHERE compra_co_cod = NEW.Detalle_Hospedaje_co_cod 
+	          AND habitacion_s_cod = NEW.Detalle_Hospedaje_s_cod;
+	
+	        SELECT dh.res_costo_sub_total, c.cliente_c_cod
+	        INTO v_costo_base, v_cliente_cod
+	        FROM Detalle_Hospedaje dh
+	        JOIN Compra c ON dh.compra_co_cod = c.co_cod
+	        WHERE dh.compra_co_cod = NEW.Detalle_Hospedaje_co_cod 
+	          AND dh.habitacion_s_cod = NEW.Detalle_Hospedaje_s_cod;
+	    END IF;
+	
+	    -- CALCULAR MONTO (90%)
+	    v_monto_final := v_costo_base * 0.90;
+	
+	    -- CREAR NUEVO MÉTODO DE PAGO (Operación Digital)
+	    INSERT INTO Metodo_Pago (
+	        mp_tipo, 
+	        Cliente_c_cod, 
+	        od_num_referencia
+	    ) VALUES (
+	        'OPERACION_DIGITAL',
+	        v_cliente_cod,
+	        (floor(random() * 900000000 + 100000000)::bigint)
+	    )
+	    RETURNING mp_cod INTO v_nuevo_mp_cod;
+	
+	    -- INSERTAR LA NOTA DE CRÉDITO
+	    INSERT INTO Nota_Credito (
+	        nc_monto_devuelto, 
+	        reembolso_ree_cod, 
+	        metodo_pago_mp_cod
+	    ) VALUES (
+	        v_monto_final,
+	        NEW.ree_cod,
+	        v_nuevo_mp_cod
+	    );
+	
+	    RETURN NEW;
+	END;
+	$$ LANGUAGE plpgsql;
+
+CREATE OR REPLACE TRIGGER trg_crear_nota_credito_post_reembolso
+AFTER INSERT ON Reembolso
+FOR EACH ROW
+EXECUTE FUNCTION fn_generar_nota_credito();
+
+-- Trigger automatico para las millas de los clientes
+CREATE OR REPLACE FUNCTION fn_crear_pago_millas()
+	RETURNS TRIGGER 
+	AS $$
+	BEGIN
+	    -- Crear Millas asociadas al Cliente.
+	    INSERT INTO Metodo_Pago (Cliente_c_cod, m_cant_acumulada, m_Cliente_cod, mp_tipo)
+	    VALUES (NEW.c_cod, 0, NEW.c_cod, 'MILLA'); 
+	    RETURN NEW;
+	END;
+	$$ LANGUAGE plpgsql;
+
+
+CREATE OR REPLACE TRIGGER tr_nuevo_cliente_millas
+	AFTER INSERT ON Cliente
+	FOR EACH ROW
+	EXECUTE FUNCTION fn_crear_pago_millas();
+	
 -- ===================================================
 -- CREATE - STORE PROCEDURES / FUNCIONES
 -- ===================================================
