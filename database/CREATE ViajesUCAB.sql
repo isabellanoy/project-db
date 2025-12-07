@@ -202,6 +202,7 @@ CREATE TABLE Compra (
     co_compensacion_huella NUMERIC(12,2),
 	co_estado VARCHAR(20) NOT NULL,
 	co_es_paquete BOOLEAN,
+	Paquete_Turistico_pt_cod INT,
     Cliente_c_cod INT NOT NULL
 );
 
@@ -434,8 +435,9 @@ CREATE TABLE Metodo_Pago (
 	t_emisor VARCHAR(50),
 	c_codigo_cuenta BIGINT,
 	c_numero BIGINT,
-	c_Banco_cod INT,
+	c_nombre_titular VARCHAR(50),
 	c_fecha_emision DATE,
+	c_Banco_cod INT,
 	de_num_referencia BIGINT UNIQUE,
 	de_num_destino BIGINT,
 	de_Banco_cod INT,
@@ -1007,6 +1009,7 @@ ALTER TABLE Boleto_Vuelo ADD CONSTRAINT Boleto_Vuelo_Vuelo_FK FOREIGN KEY (Vuelo
 ALTER TABLE Boleto_Vuelo ADD CONSTRAINT Boleto_Vuelo_Tasa_Cambio_FK FOREIGN KEY (Tasa_Cambio_tca_cod) REFERENCES Tasa_Cambio (tca_cod);
 ALTER TABLE Cliente ADD CONSTRAINT Cliente_Lugar_FK FOREIGN KEY (Lugar_l_cod) REFERENCES Lugar (l_cod);
 ALTER TABLE Compra ADD CONSTRAINT Compra_Cliente_FK FOREIGN KEY (Cliente_c_cod) REFERENCES Cliente (c_cod);
+ALTER TABLE Compra ADD CONSTRAINT Compra_Paquete_FK FOREIGN KEY (Paquete_Turistico_pt_cod) REFERENCES Paquete_Turistico(pt_cod);
 ALTER TABLE Crucero ADD CONSTRAINT Crucero_Lugar_FK FOREIGN KEY (Lugar_l_cod) REFERENCES Lugar (l_cod);
 ALTER TABLE Cuota ADD CONSTRAINT Cuota_Compra_FK FOREIGN KEY (Compra_co_cod) REFERENCES Compra (co_cod);
 ALTER TABLE Deseo_Paquete ADD CONSTRAINT Deseo_Paquete_Cliente_FK FOREIGN KEY (Cliente_c_cod) REFERENCES Cliente (c_cod);
@@ -1130,7 +1133,7 @@ ALTER TABLE Vuelo ADD CONSTRAINT Vuelo_Servicio_FK FOREIGN KEY (s_cod) REFERENCE
 ALTER TABLE Cliente ADD CONSTRAINT Check_sexo CHECK(UPPER(c_sexo) IN ('M', 'F'));
 ALTER TABLE Cliente ADD CONSTRAINT Check_edo_civil CHECK(UPPER(c_edo_civil) IN ('SOLTERO', 'CASADO'));
 ALTER TABLE Cliente ADD CONSTRAINT Check_CI CHECK(c_CI BETWEEN 5000000 AND 150000000);
-ALTER TABLE Compra ADD CONSTRAINT Estado_Compra_Check CHECK(UPPER(co_estado) IN ('EN PROCESO', 'FINANCIADO', 'FINALIZADO'));
+ALTER TABLE Compra ADD CONSTRAINT Estado_Compra_Check CHECK(UPPER(co_estado) IN ('EN PROCESO', 'PAGANDO', 'FINANCIADO', 'FINALIZADO'));
 ALTER TABLE Empleado ADD CONSTRAINT Check_CI CHECK(e_CI BETWEEN 5000000 AND 150000000);
 ALTER TABLE Lugar ADD CONSTRAINT Check_tipo_lugar CHECK(UPPER(l_tipo) IN ('CONTINENTE', 'PAIS', 'EDO/PROVINCIA', 'CIUDAD', 'MUNICIPIO', 'PARROQUIA'));
 ALTER TABLE Marca ADD CONSTRAINT Check_Tipo_Vehiculo CHECK(UPPER(mav_tipo_vehiculo) IN ('AEREO', 'MARITIMO', 'TERRESTRE'));  
@@ -1158,6 +1161,7 @@ ALTER TABLE Metodo_Pago ADD CONSTRAINT Check_Metodo_Pago_Cheque CHECK (
         c_numero IS NOT NULL AND 
         c_Banco_cod IS NOT NULL AND 
         c_fecha_emision IS NOT NULL AND
+		c_nombre_titular IS NOT NULL AND
         t_numero IS NULL AND t_cod_seguridad IS NULL AND t_nombre_titular IS NULL AND t_fecha_vencimiento IS NULL AND t_Banco_cod IS NULL AND t_emisor IS NULL AND
         de_num_referencia IS NULL AND de_num_destino IS NULL AND de_Banco_cod IS NULL AND
         od_num_referencia IS NULL AND
@@ -1412,10 +1416,10 @@ CREATE OR REPLACE FUNCTION fn_crear_pago_millas()
 
 
 CREATE OR REPLACE TRIGGER tr_nuevo_cliente_millas
-	AFTER INSERT ON Cliente
-	FOR EACH ROW
-	EXECUTE FUNCTION fn_crear_pago_millas();
-	
+AFTER INSERT ON Cliente
+FOR EACH ROW
+EXECUTE FUNCTION fn_crear_pago_millas();
+
 -- ===================================================
 -- CREATE - STORE PROCEDURES / FUNCIONES
 -- ===================================================

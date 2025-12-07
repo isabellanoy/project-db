@@ -2576,7 +2576,24 @@ INSERT INTO Automovil (mt_capacidad, a_placa, a_costo_por_km, transporte_terrest
     (7, 'VEN-990', 28.00, (SELECT p_cod FROM Transporte_Terrestre WHERE p_nombre = 'Aeroexpresos Ejecutivos' LIMIT 1), (SELECT mv_cod FROM Modelo WHERE mv_nombre = 'Montero' LIMIT 1)),
     (5, 'BRA-443', 12.75, (SELECT p_cod FROM Transporte_Terrestre WHERE p_nombre = 'Viação Itapemirim' LIMIT 1), (SELECT mv_cod FROM Modelo WHERE mv_nombre = 'Gol' LIMIT 1)),
     (5, 'JPN-221', 19.90, (SELECT p_cod FROM Transporte_Terrestre WHERE p_nombre = 'JR Bus' LIMIT 1), (SELECT mv_cod FROM Modelo WHERE mv_nombre = 'Civic' LIMIT 1)),
-    (5, 'CCS-001', 35.00, (SELECT p_cod FROM Transporte_Terrestre WHERE p_nombre = 'Sitssa' LIMIT 1), (SELECT mv_cod FROM Modelo WHERE mv_nombre = 'Tucson' LIMIT 1));
+    (5, 'CCS-001', 35.00, (SELECT p_cod FROM Transporte_Terrestre WHERE p_nombre = 'Sitssa' LIMIT 1), (SELECT mv_cod FROM Modelo WHERE mv_nombre = 'Tucson' LIMIT 1)),
+	(4, 'AAA-AAA', 10.00, 1, 36),
+	(4, 'AAA-AAB', 10.00, 2, 35),
+	(4, 'AAA-AAC', 10.00, 3, 34),
+	(4, 'AAA-ABA', 10.00, 4, 33),
+	(4, 'AAA-ACA', 10.00, 5, 32),
+	(4, 'AAA-ADA', 10.00, 6, 31),
+	(4, 'AAA-AEA', 10.00, 7, 30),
+	(4, 'AAA-ABB', 10.00, 8, 29),
+	(4, 'AAA-ABC', 10.00, 9, 28),
+	(4, 'AAA-ACD', 10.00, 10, 27),
+	(4, 'AAA-BAA', 10.00, 9, 26),
+	(4, 'AAA-DBA', 10.00, 8, 25),
+	(4, 'AAA-ABE', 10.00, 7, 24),
+	(4, 'AAA-CDA', 10.00, 6, 23),
+	(4, 'AAA-ATA', 10.00, 5, 22),
+	(4, 'AAA-A1A', 10.00, 4, 21);
+	
 
 INSERT INTO Aeronave (mt_capacidad, aerolinea_p_cod, modelo_mv_cod) VALUES
     (160, (SELECT p_cod FROM Aerolinea WHERE p_nombre = 'American Airlines' LIMIT 1), (SELECT mv_cod FROM Modelo WHERE mv_nombre = '737-800' LIMIT 1)),
@@ -2617,7 +2634,9 @@ INSERT INTO Bar_Ser (servicio_barco_sb_cod, barco_mt_cod) VALUES
     ((SELECT sb_cod FROM Servicio_Barco WHERE sb_descripcion LIKE 'Clase de Cocina%' LIMIT 1), (SELECT mt_cod FROM Barco WHERE b_nombre = 'Carnival Vista' LIMIT 1)),
     ((SELECT sb_cod FROM Servicio_Barco WHERE sb_descripcion LIKE 'Sesión de Fotos%' LIMIT 1), (SELECT mt_cod FROM Barco WHERE b_nombre = 'Costa Concordia' LIMIT 1)),
     ((SELECT sb_cod FROM Servicio_Barco WHERE sb_descripcion LIKE 'Servicio de Lavandería%' LIMIT 1), (SELECT mt_cod FROM Barco WHERE b_nombre = 'Celebrity Solstice' LIMIT 1)),
-    ((SELECT sb_cod FROM Servicio_Barco WHERE sb_descripcion LIKE 'Acceso a Zona Termal%' LIMIT 1), (SELECT mt_cod FROM Barco WHERE b_nombre = 'MSC Fantasia' LIMIT 1));
+    ((SELECT sb_cod FROM Servicio_Barco WHERE sb_descripcion LIKE 'Acceso a Zona Termal%' LIMIT 1), (SELECT mt_cod FROM Barco WHERE b_nombre = 'MSC Fantasia' LIMIT 1)),
+	((SELECT sb_cod FROM Servicio_Barco WHERE sb_descripcion LIKE 'Acceso a Zona Termal%' LIMIT 1), (SELECT mt_cod FROM Barco WHERE b_nombre = 'Carnival Freedom' LIMIT 1));
+
 
 INSERT INTO Tipo_Camarote (tc_nombre, tc_descripcion, tc_capacidad, tc_costo) VALUES
     ('Interior Standard', 'Camarote interior sin ventana, ideal para presupuesto bajo.', 2, 80.00),
@@ -2642,6 +2661,19 @@ INSERT INTO Bar_Tip (bt_cant_camarotes, barco_mt_cod, tipo_camarote_tc_cod) VALU
     (250, (SELECT mt_cod FROM Barco WHERE b_nombre = 'AIDAnova' LIMIT 1), (SELECT tc_cod FROM Tipo_Camarote WHERE tc_nombre = 'Interior Superior' LIMIT 1)),
     (20,  (SELECT mt_cod FROM Barco WHERE b_nombre = 'MSC Fantasia' LIMIT 1), (SELECT tc_cod FROM Tipo_Camarote WHERE tc_nombre = 'The Haven / Yacht Club' LIMIT 1)),
     (350, (SELECT mt_cod FROM Barco WHERE b_nombre = 'Anthem of the Seas' LIMIT 1), (SELECT tc_cod FROM Tipo_Camarote WHERE tc_nombre = 'Vista al Mar (Ojo de Buey)' LIMIT 1));	
+	(10, 1, 2),
+	(10, 2, 1),
+	(10, 2, 2),
+	(10, 3, 1),
+	(10, 4, 1),
+	(10, 5, 1),
+	(10, 5, 2),
+	(10, 6, 1),
+	(10, 6, 2),
+	(10, 7, 1),
+	(10, 8, 1),
+	(10, 9, 1),
+	(10, 10, 1);
 
 INSERT INTO Clase_Asiento (ca_nombre, ca_descripcion, ca_costo) VALUES
     ('Economy Basic', 'Tarifa más baja, sin equipaje de mano ni selección de asiento.', 0.00),
@@ -2666,6 +2698,17 @@ INSERT INTO Aer_Cla (ac_cant_asientos, aeronave_mt_cod, clase_asiento_ca_cod) VA
     (100, (SELECT mt_cod FROM Aeronave WHERE aerolinea_p_cod = (SELECT p_cod FROM Aerolinea WHERE p_nombre = 'Conviasa') LIMIT 1), (SELECT ca_cod FROM Clase_Asiento WHERE ca_nombre = 'Economy Standard' LIMIT 1)),
     (8,   (SELECT mt_cod FROM Aeronave WHERE aerolinea_p_cod = (SELECT p_cod FROM Aerolinea WHERE p_nombre = 'Japan Airlines') LIMIT 1), (SELECT ca_cod FROM Clase_Asiento WHERE ca_nombre = 'First Class Suite' LIMIT 1)),
     (180, (SELECT mt_cod FROM Aeronave WHERE aerolinea_p_cod = (SELECT p_cod FROM Aerolinea WHERE p_nombre = 'Volaris') LIMIT 1), (SELECT ca_cod FROM Clase_Asiento WHERE ca_nombre = 'Economy Basic' LIMIT 1));	
+	(10, 4, 2),		
+	(10, 6, 2),	
+	(10, 7, 2),	
+	(10, 8, 2),	
+	(10, 9, 2),
+	(10, 10, 2),	
+	(10, 11, 2),	
+	(10, 12, 2),	
+	(10, 13, 2),	
+	(10, 14, 2),	
+	(10, 15, 2);	
 
 INSERT INTO Tasa_Cambio (tca_divisa_origen, tca_valor_tasa, tca_fecha_hora_tasa, tca_fecha_hora_fin) VALUES
     ('USD', 60.50, '2025-11-01 09:00:00', '2025-11-08 08:59:59'),
@@ -3894,9 +3937,9 @@ INSERT INTO Metodo_Pago (Cliente_c_cod, mp_tipo, t_numero, t_cod_seguridad, t_no
     (1, 'TARJETA', 4123456789012345, 123, 'PEDRO GUARULLA', '2028-12-01', (SELECT ba_cod FROM Banco WHERE ba_nombre = 'Banco de Venezuela' LIMIT 1), 'VISA'),
     (2, 'TARJETA', 5432109876543210, 456, 'PATRICIA LACAVA', '2029-06-30', (SELECT ba_cod FROM Banco WHERE ba_nombre = 'Bank of America' LIMIT 1), 'MASTERCARD');
 
-INSERT INTO Metodo_Pago (Cliente_c_cod, mp_tipo, c_codigo_cuenta, c_numero, c_Banco_cod, c_fecha_emision) VALUES
-    (3, 'CHEQUE', 010500001122334, 5000001, (SELECT ba_cod FROM Banco WHERE ba_nombre = 'Banco Mercantil' LIMIT 1), '2025-11-01'),
-    (4, 'CHEQUE', 010800009988776, 9000002, (SELECT ba_cod FROM Banco WHERE ba_nombre = 'BBVA Provincial' LIMIT 1), '2025-11-05');
+INSERT INTO Metodo_Pago (Cliente_c_cod, mp_tipo, c_codigo_cuenta, c_numero, c_Banco_cod, c_fecha_emision, c_nombre_titular) VALUES
+    (3, 'CHEQUE', 010500001122334, 5000001, (SELECT ba_cod FROM Banco WHERE ba_nombre = 'Banco Mercantil' LIMIT 1), '2025-11-01', 'Maria Perez'),
+    (4, 'CHEQUE', 010800009988776, 9000002, (SELECT ba_cod FROM Banco WHERE ba_nombre = 'BBVA Provincial' LIMIT 1), '2025-11-05', 'Juan Rodriguez');
 
 INSERT INTO Metodo_Pago (Cliente_c_cod, mp_tipo, de_num_referencia, de_num_destino, de_Banco_cod) VALUES
     (5, 'DEPOSITO', 111222333, 013400001234567, (SELECT ba_cod FROM Banco WHERE ba_nombre = 'Banesco' LIMIT 1)),

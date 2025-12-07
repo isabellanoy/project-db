@@ -137,6 +137,24 @@ DROP FUNCTION IF EXISTS fn_listar_habitaciones;
 DROP FUNCTION IF EXISTS fn_obtener_paquete_por_id;
 DROP FUNCTION IF EXISTS fn_listar_paquetes_turisticos;
 DROP FUNCTION IF EXISTS fn_obtener_servicios_paquete;
+DROP FUNCTION IF EXISTS fn_obtener_compra_activa;
+DROP FUNCTION IF EXISTS fn_crear_compra_itinerario;
+DROP FUNCTION IF EXISTS fn_buscar_promocion_servicio;
+DROP FUNCTION IF EXISTS fn_agregar_entrada_digital_a_compra;
+DROP FUNCTION IF EXISTS fn_agregar_habitacion_a_compra;
+DROP FUNCTION IF EXISTS fn_agregar_traslado_a_compra;
+DROP FUNCTION IF EXISTS fn_agregar_vuelo_a_compra;
+DROP FUNCTION IF EXISTS fn_agregar_viaje_a_compra;
+DROP FUNCTION IF EXISTS fn_cancelar_compra;
+DROP FUNCTION IF EXISTS fn_calcular_millas_compra;
+DROP FUNCTION IF EXISTS fn_validar_montos;
+DROP FUNCTION IF EXISTS fn_pago_tarjeta;
+DROP FUNCTION IF EXISTS fn_pago_cheque;
+DROP FUNCTION IF EXISTS fn_pago_deposito;
+DROP FUNCTION IF EXISTS fn_pago_operacion_digital;
+DROP FUNCTION IF EXISTS fn_pago_cripto;
+DROP FUNCTION IF EXISTS fn_pagar_paquete;
+DROP FUNCTION IF EXISTS fn_procesar_a_pago;
 
 DROP PROCEDURE IF EXISTS sp_actualizar_aerolinea;
 DROP PROCEDURE IF EXISTS sp_cambiar_clave_usuario;
@@ -151,6 +169,8 @@ DROP PROCEDURE IF EXISTS sp_actualizar_paquete_turistico;
 DROP PROCEDURE IF EXISTS sp_eliminar_paquete_turistico;
 DROP PROCEDURE IF EXISTS sp_agregar_servicios_paquete;
 DROP PROCEDURE IF EXISTS sp_quitar_servicios_paquete;
+DROP PROCEDURE IF EXISTS sp_validar_pagos;
+DROP PROCEDURE IF EXISTS sp_crear_cuotas_pago;
 
 -- Triggers
 DROP FUNCTION IF EXISTS fn_crear_pago_millas;

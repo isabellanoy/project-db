@@ -1818,7 +1818,7 @@ CREATE OR REPLACE PROCEDURE sp_crear_paquete_turistico(
 	    RETURNING pt_cod INTO v_pt_cod;
 
 		-- Procesar cada servicio
-		IF p_servicios_ids IS NOT NULL AND ARRAY_LENGTH(p_servicios_ids, 1) > 0 THEN
+		IF p_servicios_ids IS NOT NULL AND ARRAY_LENGTH(p_servicios_ids, 1) IS NOT NULL THEN
 			FOREACH v_s_cod IN ARRAY p_servicios_ids
 			LOOP
 				-- Validar que el servicio existe
@@ -2062,9 +2062,7 @@ END;
 $$;
 
 -- FUNCION PARA OBTENER LOS SERVICIOS ASOCIADOS A UN PAQUETE
-CREATE OR REPLACE FUNCTION fn_obtener_servicios_paquete(
-    p_pt_cod INT
-)
+CREATE OR REPLACE FUNCTION fn_obtener_servicios_paquete(p_pt_cod INT)
 RETURNS TABLE (
     cod_servicio INT
 ) AS $$
@@ -2084,6 +2082,1384 @@ BEGIN
 	WHERE s.s_cod = ps.servicio_s_cod AND ps.paquete_turistico_pt_cod = p_pt_cod;
 
 	RAISE NOTICE 'Servicios obtenidos';
+END;
+$$ LANGUAGE plpgsql;
+
+-- ============================================================================
+-- MONTAJE Y COMPRA DE ITINERARIOS
+-- ============================================================================
+-- (PRIVADA) Función para obtener el ID de la compra activa de un cliente. Retorna NULL si no tiene ninguna en proceso
+CREATE OR REPLACE FUNCTION fn_obtener_compra_activa(p_cod_cliente INT)
+RETURNS INT AS $$
+DECLARE
+    v_co_cod INT;
+BEGIN
+    SELECT co_cod INTO v_co_cod
+    FROM Compra
+    WHERE cliente_c_cod = p_cod_cliente 
+      AND co_estado IN ('EN PROCESO', 'PAGANDO')
+    LIMIT 1; -- Por si acaso LIMIT 1
+    
+    RETURN v_co_cod;
+END;
+$$ LANGUAGE plpgsql;
+
+-- CREAR COMPRA (Itinerario o Paquete)
+-- (PRIVADA) Crear compra tipo ITINERARIO (servicios individuales)
+CREATE OR REPLACE FUNCTION fn_crear_compra_itinerario(p_cod_cliente INT) 
+RETURNS INT AS $$
+DECLARE
+	v_cliente_cod INT;
+	v_compra_cod INT;
+BEGIN
+    -- Validar que el cliente existe
+    SELECT c.c_cod INTO v_cliente_cod FROM Cliente c WHERE c.c_cod = p_cod_cliente;
+
+	IF v_cliente_cod IS NULL THEN
+		RAISE NOTICE 'No se encontro el cliente';
+		RETURN NULL::INT;
+	END IF;
+
+    -- Validar que no haya compra EN PROCESO
+    SELECT * INTO v_compra_cod FROM fn_obtener_compra_activa(v_cliente_cod);
 	
+	IF v_compra_cod IS NOT NULL THEN
+        RAISE NOTICE 'Cliente ya tiene una compra EN PROCESO o PAGANDO. Debe completarla o cancelarla primero';
+        RETURN NULL::INT;
+    END IF;
+
+    -- Crear la compra
+    INSERT INTO Compra (co_fecha_hora, co_monto_total, co_millas_a_agregar, co_estado, co_es_paquete, Cliente_c_cod)
+    VALUES (NOW(), 0, 0, 'EN PROCESO', FALSE, v_cliente_cod)
+    RETURNING co_cod INTO v_compra_cod;
+
+	RAISE NOTICE 'Compra de Itinerario creada exitosamente. ID: %', v_compra_cod;
+	RETURN v_cliente_cod;
+
+EXCEPTION WHEN OTHERS THEN
+    RAISE NOTICE 'Error al crear compra: %', SQLERRM;
+	RETURN NULL::INT;
+END;
+$$ LANGUAGE plpgsql;
+
+-- (PRIVADA) FUNCTION AUXILIAR: Buscar monto de promocion sobre un servicio
+CREATE OR REPLACE FUNCTION fn_buscar_promocion_servicio(p_id_servicio INT)
+RETURNS NUMERIC(12,2) AS $$
+DECLARE
+	v_monto_descuento NUMERIC;
+BEGIN
+	SELECT SUM(ps_monto) INTO v_monto_descuento FROM Pro_Ser WHERE Servicio_s_cod = p_id_servicio;
+	RETURN v_monto_descuento;
+END;
+$$ LANGUAGE plpgsql;
+
+-- AGREGAR SERVICIOS A COMPRA (Itinerario)
+-- Agregar Vuelo a compra
+CREATE OR REPLACE FUNCTION fn_agregar_vuelo_a_compra(
+	p_cod_usuario INT,
+    p_id_vuelo INT,
+    p_cant_pasajeros INT,
+    p_id_clase_asiento INT
+) RETURNS BOOLEAN AS $$
+DECLARE
+    v_cliente_cod INT;
+	v_compra_cod INT;
+    v_costo_base NUMERIC(12,2);
+	v_monto_descuento NUMERIC(12,2);
+	v_sub_total NUMERIC(12,2);
+	v_millas_agregar INT;
+	v_estado_compra VARCHAR;
+	v_es_paquete_compra BOOLEAN;	
+    v_vuelo_cod INT;
+	v_costo_asiento NUMERIC(12,2);
+    v_capacidad_disponible INT;
+BEGIN
+    -- Existe cliente
+	SELECT c.c_cod INTO v_cliente_cod FROM Cliente c, Usuario u WHERE c.c_cod = u.cliente_c_cod AND u.u_cod = p_cod_usuario;
+	IF v_cliente_cod IS NULL THEN
+		RAISE NOTICE 'El cliente no se ha encontrado';
+		RETURN NULL::BOOLEAN;
+	END IF;
+	
+	-- Validar que la compra existe, si no, crearlo
+    SELECT * INTO v_compra_cod FROM fn_obtener_compra_activa(v_cliente_cod);
+	IF v_compra_cod IS NULL THEN
+		SELECT * INTO v_compra_cod FROM fn_crear_compra_itinerario(v_cliente_cod);
+	END IF;
+
+	IF v_compra_cod IS NULL THEN
+		RAISE NOTICE 'Error creando la compra';
+		RETURN NULL::BOOLEAN;
+	END IF;
+    
+	SELECT co_estado, co_es_paquete INTO v_estado_compra, v_es_paquete_compra FROM Compra WHERE co_cod = v_compra_cod;
+	
+	-- Validar si se esta pagando
+	IF v_estado_compra = 'PAGANDO' THEN
+		RAISE NOTICE 'La compra está pagándose, no se pueden agregar servicios';
+		RETURN NULL::BOOLEAN;
+	END IF;
+    
+	-- Validar que es compra de itinerario (no paquete)
+    IF v_es_paquete_compra IS TRUE THEN
+        RAISE NOTICE 'No se pueden agregar servicios para una compra de paquete. Cancelar compra del paquete o finalizarla.';
+        RETURN NULL::BOOLEAN;
+    END IF;
+
+	-- Validar vuelo
+    SELECT s_cod INTO v_vuelo_cod FROM Vuelo WHERE s_cod = p_id_vuelo;
+    IF v_vuelo_cod IS NULL THEN
+        RAISE NOTICE 'El vuelo no existe';
+        RETURN NULL::BOOLEAN;
+    END IF;
+	
+    -- Validar disponibilidad de asientos
+    IF p_cant_pasajeros IS NULL OR p_cant_pasajeros <= 0 THEN
+		RAISE NOTICE 'Colocar una cantidad de pasajeros valida';
+		RETURN NULL::BOOLEAN;
+	END IF;
+	
+	SELECT ac_cant_asientos, ca_costo INTO v_capacidad_disponible, v_costo_asiento
+    FROM Aer_Cla, Clase_Asiento WHERE Clase_Asiento_ca_cod = p_id_clase_asiento
+    AND Aeronave_mt_cod = (SELECT Aeronave_mt_cod FROM Vuelo WHERE s_cod = p_id_vuelo)
+	AND ca_cod = Clase_Asiento_ca_cod;
+	
+	IF v_capacidad_disponible IS NULL THEN
+		RAISE NOTICE 'No se encontro la clase de asiento para este vuelo';
+		RETURN NULL::BOOLEAN;
+	END IF;
+	
+    IF v_capacidad_disponible < p_cant_pasajeros THEN
+        RAISE NOTICE 'No hay suficientes asientos disponibles';
+        RETURN NULL::BOOLEAN;
+    END IF;
+    
+	-- Validar que no exista duplicado
+    IF EXISTS (SELECT 1 FROM Boleto_Vuelo WHERE Compra_co_cod = v_compra_cod AND Vuelo_s_cod = p_id_vuelo) THEN
+        RAISE NOTICE 'Este vuelo ya se ha agregado a la compra';
+        RETURN NULL::BOOLEAN;
+	END IF;
+
+    -- Obtener costo base del servicio
+    SELECT s_costo INTO v_costo_base FROM Servicio WHERE s_cod = p_id_vuelo;
+	
+	-- Buscar las promociones del servicio
+	SELECT * INTO v_monto_descuento FROM fn_buscar_promocion_servicio(p_id_vuelo);
+	
+	-- Calcular el subtotal
+	v_sub_total := (v_costo_base * p_cant_pasajeros) + v_costo_asiento; 
+	-- PUEDE DARSE EL CASO QUE EL DESCUENTO SOBREPASE EL MONTO TOTAL
+	IF v_monto_descuento IS NOT NULL AND v_monto_descuento < v_sub_total THEN
+		RAISE NOTICE 'Descuento menor al subtotal';
+		v_sub_total := v_sub_total - v_monto_descuento;
+	END IF;
+	
+    -- Insertar boleto de vuelo
+    INSERT INTO Boleto_Vuelo (Compra_co_cod, Vuelo_s_cod, res_costo_sub_total, res_anulado, bv_cant_pasajeros, Clase_Asiento_ca_cod)
+    VALUES (v_compra_cod, p_id_vuelo, v_sub_total, FALSE, p_cant_pasajeros, p_id_clase_asiento);
+	
+    -- Actualizar monto total de la compra
+    SELECT s_millas_otorgar INTO v_millas_agregar FROM Servicio WHERE s_cod = p_id_vuelo;
+
+    UPDATE Compra SET co_monto_total = co_monto_total + v_sub_total, co_millas_a_agregar = co_millas_a_agregar + v_millas_agregar
+	WHERE co_cod = v_compra_cod;
+
+    RAISE NOTICE 'Vuelo agregado a la compra exitosamente';
+    RETURN TRUE;
+
+EXCEPTION WHEN OTHERS THEN
+    RAISE NOTICE 'Error al agregar vuelo: %', SQLERRM;
+    RETURN NULL::BOOLEAN;
+END;
+$$ LANGUAGE plpgsql;
+
+-- Agregar viaje a compra
+CREATE OR REPLACE FUNCTION fn_agregar_viaje_a_compra(
+    p_cod_usuario INT,
+	p_id_viaje INT,
+    p_cant_pasajeros INT,
+    p_id_tipo_camarote INT,
+	p_id_servicio_barco INT DEFAULT NULL
+) RETURNS BOOLEAN AS $$
+DECLARE
+    v_cliente_cod INT;
+	v_compra_cod INT;
+    v_costo_base NUMERIC(12,2);
+	v_monto_descuento NUMERIC(12,2);
+	v_sub_total NUMERIC(12,2);
+	v_millas_agregar INT;
+	v_estado_compra VARCHAR;
+	v_es_paquete_compra BOOLEAN;	
+    v_viaje_cod INT;
+	v_capacidad_camarote INT;
+	v_costo_camarote NUMERIC(12,2);
+	v_costo_servicio NUMERIC(12,2) DEFAULT NULL;
+BEGIN
+    -- Validaciones básicas
+    SELECT c.c_cod INTO v_cliente_cod FROM Cliente c, Usuario u WHERE c.c_cod = u.cliente_c_cod AND u.u_cod = p_cod_usuario;
+	IF v_cliente_cod IS NULL THEN
+		RAISE NOTICE 'El cliente no se ha encontrado';
+		RETURN NULL::BOOLEAN;
+	END IF;
+	
+	-- Validar que la compra existe, si no, crearlo
+    SELECT * INTO v_compra_cod FROM fn_obtener_compra_activa(v_cliente_cod);
+	IF v_compra_cod IS NULL THEN
+		SELECT * INTO v_compra_cod FROM fn_crear_compra_itinerario(v_cliente_cod);
+	END IF;
+
+	IF v_compra_cod IS NULL THEN
+		RAISE NOTICE 'Error creando la compra';
+		RETURN NULL::BOOLEAN;
+	END IF;
+    
+	SELECT co_estado, co_es_paquete INTO v_estado_compra, v_es_paquete_compra FROM Compra WHERE co_cod = v_compra_cod;
+	
+	-- Validar si se esta pagando
+	IF v_estado_compra = 'PAGANDO' THEN
+		RAISE NOTICE 'La compra está pagándose, no se pueden agregar servicios';
+		RETURN NULL::BOOLEAN;
+	END IF;
+    
+	-- Validar que es compra de itinerario (no paquete)
+    IF v_es_paquete_compra IS TRUE THEN
+        RAISE NOTICE 'No se pueden agregar servicios para una compra de paquete. Cancelar compra del paquete o finalizarla.';
+        RETURN NULL::BOOLEAN;
+    END IF;
+
+	-- Validar viaje
+    SELECT s_cod INTO v_viaje_cod FROM Viaje WHERE s_cod = p_id_viaje;
+    IF v_viaje_cod IS NULL THEN
+        RAISE NOTICE 'El viaje no existe';
+        RETURN NULL::BOOLEAN;
+    END IF;
+
+    IF EXISTS (SELECT 1 FROM Boleto_Viaje WHERE Compra_co_cod = v_compra_cod AND Viaje_s_cod = p_id_viaje) THEN
+        RAISE NOTICE 'Este viaje ya ha sido agregado';
+        RETURN NULL::BOOLEAN;
+    END IF;
+	
+	-- Validar tipo camarote y su capacidad
+	IF p_cant_pasajeros IS NULL OR p_cant_pasajeros <= 0 THEN
+		RAISE NOTICE 'Colocar una cantidad de pasajeros valida';
+		RETURN NULL::BOOLEAN;
+	END IF;
+	
+	SELECT tc_capacidad, tc_costo INTO v_capacidad_camarote, v_costo_camarote
+	FROM Bar_Tip, Tipo_Camarote 
+	WHERE tc_cod = p_id_tipo_camarote
+	AND tc_cod = tipo_camarote_tc_cod
+    AND Barco_mt_cod = (SELECT Barco_mt_cod FROM Viaje WHERE s_cod = p_id_viaje);
+	
+	IF v_capacidad_camarote IS NULL THEN
+		RAISE NOTICE 'El tipo de camarote indicado no pertenece al barco del viaje';
+		RETURN NULL::BOOLEAN;
+	END IF;
+	
+	IF v_capacidad_camarote < p_cant_pasajeros THEN
+		RAISE NOTICE 'La cantidad de pasajeros sobrepasa el camarote indicado';
+		RETURN NULL::BOOLEAN;
+	END IF;
+	
+	-- Validar servicio barco
+	IF p_id_servicio_barco IS NOT NULL THEN
+		SELECT sb_costo INTO v_costo_servicio FROM Bar_Ser, Servicio_Barco 
+		WHERE sb_cod = p_id_servicio_barco 
+		AND sb_cod = servicio_barco_sb_cod 
+		AND barco_mt_cod = (SELECT barco_mt_cod FROM Viaje WHERE s_cod = p_id_viaje);
+		
+		IF v_costo_servicio IS NULL THEN
+			RAISE NOTICE 'El servicio del barco no está disponible';
+			RETURN NULL::BOOLEAN;
+		END IF;
+	END IF;
+	
+    -- Buscar costo base
+	SELECT s_costo INTO v_costo_base FROM Servicio WHERE s_cod = p_id_viaje;
+	
+	-- Buscar las promociones del servicio
+	SELECT * INTO v_monto_descuento FROM fn_buscar_promocion_servicio(p_id_viaje);
+
+    v_sub_total := (v_costo_base * p_cant_pasajeros) + v_costo_camarote;
+	IF v_costo_servicio IS NOT NULL THEN
+		v_sub_total := v_sub_total + v_costo_servicio;
+	END IF;
+	IF v_monto_descuento IS NOT NULL AND v_monto_descuento < v_sub_total THEN
+		RAISE NOTICE 'Descuento menor al subtotal';
+		v_sub_total := v_sub_total - v_monto_descuento;
+	END IF;
+
+    INSERT INTO Boleto_Viaje (Compra_co_cod, Viaje_s_cod, res_costo_sub_total, res_anulado, bvi_cant_pasajeros, Tipo_Camarote_tc_cod, servicio_barco_sb_cod)
+    VALUES (v_compra_cod, p_id_viaje, v_sub_total, FALSE, p_cant_pasajeros, p_id_tipo_camarote, p_id_servicio_barco);
+
+    SELECT s_millas_otorgar INTO v_millas_agregar FROM Servicio WHERE s_cod = p_id_viaje;
+
+    UPDATE Compra SET co_monto_total = co_monto_total + v_sub_total, co_millas_a_agregar = co_millas_a_agregar + v_millas_agregar
+	WHERE co_cod = v_compra_cod;
+
+    RAISE NOTICE 'Viaje agregado a la compra exitosamente';
+    RETURN TRUE;
+
+EXCEPTION WHEN OTHERS THEN
+    RAISE NOTICE 'Error al agregar viaje: %', SQLERRM;
+    RETURN NULL::BOOLEAN;
+END;
+$$ LANGUAGE plpgsql;
+
+-- Agregar Habitacion a compra
+CREATE OR REPLACE FUNCTION fn_agregar_habitacion_a_compra(
+    p_cod_usuario INT,
+	p_id_habitacion INT,
+    p_cant_noches INT,
+    p_fecha_check_in TIMESTAMP
+) RETURNS BOOLEAN AS $$
+DECLARE
+    v_cliente_cod INT;
+	v_compra_cod INT;
+    v_costo_base NUMERIC(12,2);
+	v_monto_descuento NUMERIC(12,2);
+	v_sub_total NUMERIC(12,2);
+	v_millas_agregar INT;
+	v_estado_compra VARCHAR;
+	v_es_paquete_compra BOOLEAN;	
+    v_habitacion_cod INT;
+    v_fecha_check_out TIMESTAMP;
+BEGIN
+    -- Validaciones básicas
+    SELECT c.c_cod INTO v_cliente_cod FROM Cliente c, Usuario u WHERE c.c_cod = u.cliente_c_cod AND u.u_cod = p_cod_usuario;
+	IF v_cliente_cod IS NULL THEN
+		RAISE NOTICE 'El cliente no se ha encontrado';
+		RETURN NULL::BOOLEAN;
+	END IF;
+	
+	-- Validar que la compra existe, si no, crearlo
+    SELECT * INTO v_compra_cod FROM fn_obtener_compra_activa(v_cliente_cod);
+	IF v_compra_cod IS NULL THEN
+		SELECT * INTO v_compra_cod FROM fn_crear_compra_itinerario(v_cliente_cod);
+	END IF;
+
+	IF v_compra_cod IS NULL THEN
+		RAISE NOTICE 'Error creando la compra';
+		RETURN NULL::BOOLEAN;
+	END IF;
+    
+	SELECT co_estado, co_es_paquete INTO v_estado_compra, v_es_paquete_compra FROM Compra WHERE co_cod = v_compra_cod;
+	
+	-- Validar si se esta pagando
+	IF v_estado_compra = 'PAGANDO' THEN
+		RAISE NOTICE 'La compra está pagándose, no se pueden agregar servicios';
+		RETURN NULL::BOOLEAN;
+	END IF;
+    
+	-- Validar que es compra de itinerario (no paquete)
+    IF v_es_paquete_compra IS TRUE THEN
+        RAISE NOTICE 'No se pueden agregar servicios para una compra de paquete. Cancelar compra del paquete o finalizarla.';
+        RETURN NULL::BOOLEAN;
+    END IF;
+
+	-- Validar habitacion
+    SELECT s_cod INTO v_habitacion_cod FROM Habitacion WHERE s_cod = p_id_habitacion;
+    IF v_habitacion_cod IS NULL THEN
+        RAISE NOTICE 'La habitacion no existe';
+        RETURN NULL::BOOLEAN;
+    END IF;
+
+    IF EXISTS (SELECT 1 FROM Detalle_Hospedaje WHERE Compra_co_cod = v_compra_cod AND habitacion_s_cod = p_id_habitacion) THEN
+        RAISE NOTICE 'Esta habitacion ya ha sido agregado';
+        RETURN NULL::BOOLEAN;
+    END IF;
+
+    -- Validar fechas
+    IF p_cant_noches <= 0 THEN
+        RAISE NOTICE 'La cantidad de noches debe ser mayor a 0';
+        RETURN NULL::BOOLEAN;
+    END IF;
+	
+	IF p_fecha_check_in < CURRENT_TIMESTAMP THEN
+		RAISE NOTICE 'La fecha de check in no puede ser antes que hoy';
+		RETURN NULL::BOOLEAN;
+	END IF;
+	
+    v_fecha_check_out := p_fecha_check_in + (p_cant_noches || ' days')::INTERVAL;
+
+    SELECT s_costo INTO v_costo_base FROM Servicio WHERE s_cod = p_id_habitacion;
+	
+	-- Buscar las promociones del servicio
+	SELECT * INTO v_monto_descuento FROM fn_buscar_promocion_servicio(p_id_habitacion);
+	
+	v_sub_total := v_costo_base * p_cant_noches;
+	IF v_monto_descuento IS NOT NULL AND v_monto_descuento < v_sub_total THEN
+		RAISE NOTICE 'Descuento menor al subtotal';
+		v_sub_total := v_sub_total - v_monto_descuento;
+	END IF;
+
+    INSERT INTO Detalle_Hospedaje (Compra_co_cod, Habitacion_s_cod, res_costo_sub_total, res_anulado, dh_cant_noches, dh_fecha_hora_check_in, dh_fecha_hora_check_out)
+    VALUES (v_compra_cod, p_id_habitacion, v_sub_total, FALSE, p_cant_noches, p_fecha_check_in, v_fecha_check_out);
+
+    SELECT s_millas_otorgar INTO v_millas_agregar FROM Servicio WHERE s_cod = p_id_habitacion;
+
+    UPDATE Compra SET co_monto_total = co_monto_total + v_sub_total, co_millas_a_agregar = co_millas_a_agregar + v_millas_agregar
+	WHERE co_cod = v_compra_cod;
+
+    RAISE NOTICE 'Habitacion agregado a la compra exitosamente';
+    RETURN TRUE;
+
+EXCEPTION WHEN OTHERS THEN
+    RAISE NOTICE 'Error al agregar habitacion: %', SQLERRM;
+    RETURN NULL::BOOLEAN;
+END;
+$$ LANGUAGE plpgsql;
+
+-- Agregar Traslado a compra
+CREATE OR REPLACE FUNCTION fn_agregar_traslado_a_compra(
+	p_cod_usuario INT,
+    p_id_traslado INT,
+    p_id_automovil INT,
+    p_fecha_traslado TIMESTAMP
+) RETURNS BOOLEAN AS $$
+DECLARE
+    v_cliente_cod INT;
+	v_compra_cod INT;
+    v_costo_base NUMERIC(12,2);
+	v_monto_descuento NUMERIC(12,2);
+	v_sub_total NUMERIC(12,2);
+	v_millas_agregar INT;
+	v_estado_compra VARCHAR;
+	v_es_paquete_compra BOOLEAN;	
+    v_traslado_cod INT;
+	v_costo_vehiculo NUMERIC(12,2);
+	v_distancia_traslado NUMERIC(10);
+	
+BEGIN
+    -- Validaciones básicas
+    SELECT c.c_cod INTO v_cliente_cod FROM Cliente c, Usuario u WHERE c.c_cod = u.cliente_c_cod AND u.u_cod = p_cod_usuario;
+	IF v_cliente_cod IS NULL THEN
+		RAISE NOTICE 'El cliente no se ha encontrado';
+		RETURN NULL::BOOLEAN;
+	END IF;
+	
+	-- Validar que la compra existe, si no, crearlo
+    SELECT * INTO v_compra_cod FROM fn_obtener_compra_activa(v_cliente_cod);
+	IF v_compra_cod IS NULL THEN
+		SELECT * INTO v_compra_cod FROM fn_crear_compra_itinerario(v_cliente_cod);
+	END IF;
+
+	IF v_compra_cod IS NULL THEN
+		RAISE NOTICE 'Error creando la compra';
+		RETURN NULL::BOOLEAN;
+	END IF;
+    
+	SELECT co_estado, co_es_paquete INTO v_estado_compra, v_es_paquete_compra FROM Compra WHERE co_cod = v_compra_cod;
+	
+	-- Validar si se esta pagando
+	IF v_estado_compra = 'PAGANDO' THEN
+		RAISE NOTICE 'La compra está pagándose, no se pueden agregar servicios';
+		RETURN NULL::BOOLEAN;
+	END IF;
+    
+	-- Validar que es compra de itinerario (no paquete)
+    IF v_es_paquete_compra IS TRUE THEN
+        RAISE NOTICE 'No se pueden agregar servicios para una compra de paquete. Cancelar compra del paquete o finalizarla.';
+        RETURN NULL::BOOLEAN;
+    END IF;
+
+	-- Validar traslado
+    SELECT s_cod INTO v_traslado_cod FROM Traslado WHERE s_cod = p_id_traslado;
+    IF v_traslado_cod IS NULL THEN
+        RAISE NOTICE 'El traslado no existe';
+        RETURN NULL::BOOLEAN;
+    END IF;
+
+    IF EXISTS (SELECT 1 FROM Detalle_Traslado WHERE Compra_co_cod = v_compra_cod AND traslado_s_cod = p_id_traslado) THEN
+        RAISE NOTICE 'Este traslado ya ha sido agregado';
+        RETURN NULL::BOOLEAN;
+    END IF;
+	
+	-- Validar fecha del traslado
+	IF p_fecha_traslado < CURRENT_TIMESTAMP THEN
+		RAISE NOTICE 'La fecha de traslado no puede ser antes que hoy';
+		RETURN NULL::BOOLEAN;
+	END IF;
+	
+	SELECT t_distancia_km INTO v_distancia_traslado FROM Traslado WHERE s_cod = p_id_traslado;
+	
+	-- Validar el vehiculo elegido
+	SELECT a.a_costo_por_km INTO v_costo_vehiculo FROM Automovil a
+	WHERE a.mt_cod = p_id_automovil AND a.transporte_terrestre_p_cod = (SELECT tt.p_cod FROM Transporte_Terrestre tt, Traslado tr WHERE tt.p_cod = transporte_terrestre_p_cod AND tr.s_cod = p_id_traslado);
+	
+	IF v_costo_vehiculo IS NULL THEN
+		RAISE NOTICE 'El vehiculo elegido no es valido';
+		RETURN NULL::BOOLEAN;
+	END IF;
+    
+	SELECT s_costo INTO v_costo_base FROM Servicio WHERE s_cod = p_id_traslado;
+	
+	-- Buscar las promociones del servicio
+	SELECT * INTO v_monto_descuento FROM fn_buscar_promocion_servicio(p_id_traslado);
+	
+	v_sub_total := v_costo_base + (v_costo_vehiculo * v_distancia_traslado);
+	IF v_monto_descuento IS NOT NULL AND v_monto_descuento < v_sub_total THEN
+		RAISE NOTICE 'Descuento menor al subtotal';
+		v_sub_total := v_sub_total - v_monto_descuento;
+	END IF;
+
+    INSERT INTO Detalle_Traslado (Compra_co_cod, Traslado_s_cod, res_costo_sub_total, res_anulado, dt_fecha_hora, Automovil_mt_cod)
+    VALUES (v_compra_cod, p_id_traslado, v_sub_total, FALSE, p_fecha_traslado, p_id_automovil);
+
+    SELECT s_millas_otorgar INTO v_millas_agregar FROM Servicio WHERE s_cod = p_id_traslado;
+
+    UPDATE Compra SET co_monto_total = co_monto_total + v_sub_total, co_millas_a_agregar = co_millas_a_agregar + v_millas_agregar
+	WHERE co_cod = v_compra_cod;
+
+    RAISE NOTICE 'Traslado agregado a la compra exitosamente';
+    RETURN TRUE;
+
+EXCEPTION WHEN OTHERS THEN
+    RAISE NOTICE 'Error al agregar traslado: %', SQLERRM;
+    RETURN NULL::BOOLEAN;
+END;
+$$ LANGUAGE plpgsql;
+
+-- Agregar Servicio Adicional (Entrada Digital) a compra
+CREATE OR REPLACE FUNCTION fn_agregar_entrada_digital_a_compra(
+    p_cod_usuario INT,
+    p_id_servicio_adicional INT,
+    p_cant_personas INT
+) RETURNS BOOLEAN AS $$
+DECLARE
+    v_cliente_cod INT;
+	v_compra_cod INT;
+    v_costo_base NUMERIC(12,2);
+	v_monto_descuento NUMERIC(12,2);
+	v_sub_total NUMERIC(12,2);
+	v_millas_agregar BIGINT;
+	v_estado_compra VARCHAR;
+	v_es_paquete_compra BOOLEAN;
+    v_servicio_ad_cod INT;
+BEGIN
+    -- Validaciones básicas
+    SELECT c.c_cod INTO v_cliente_cod FROM Cliente c, Usuario u WHERE c.c_cod = u.cliente_c_cod AND u.u_cod = p_cod_usuario;
+	IF v_cliente_cod IS NULL THEN
+		RAISE NOTICE 'El cliente no se ha encontrado';
+		RETURN NULL::BOOLEAN;
+	END IF;
+	
+	-- Validar que la compra existe, si no, crearlo
+    SELECT * INTO v_compra_cod FROM fn_obtener_compra_activa(v_cliente_cod);
+	IF v_compra_cod IS NULL THEN
+		SELECT * INTO v_compra_cod FROM fn_crear_compra_itinerario(v_cliente_cod);
+	END IF;
+
+	IF v_compra_cod IS NULL THEN
+		RAISE NOTICE 'Error creando la compra';
+		RETURN NULL::BOOLEAN;
+	END IF;
+
+	SELECT co_estado, co_es_paquete INTO v_estado_compra, v_es_paquete_compra FROM Compra WHERE co_cod = v_compra_cod;
+	
+	-- Validar si se esta pagando
+	IF v_estado_compra = 'PAGANDO' THEN
+		RAISE NOTICE 'La compra está pagándose, no se pueden agregar servicios';
+		RETURN NULL::BOOLEAN;
+	END IF;
+    
+	-- Validar que es compra de itinerario (no paquete)
+    IF v_es_paquete_compra IS TRUE THEN
+        RAISE NOTICE 'No se pueden agregar servicios para una compra de paquete. Cancelar compra del paquete o finalizarla.';
+        RETURN NULL::BOOLEAN;
+    END IF;
+
+	-- Validar entrada digital
+    SELECT s_cod INTO v_servicio_ad_cod FROM Servicio_Adicional WHERE s_cod = p_id_servicio_adicional;
+    IF v_servicio_ad_cod IS NULL THEN
+        RAISE NOTICE 'El servicio adicional no existe';
+        RETURN NULL::BOOLEAN;
+    END IF;
+
+    IF EXISTS (SELECT 1 FROM Entrada_Digital WHERE Compra_co_cod = v_compra_cod AND servicio_adicional_s_cod = p_id_servicio_adicional) THEN
+        RAISE NOTICE 'Este traslado ya ha sido agregado';
+        RETURN NULL::BOOLEAN;
+    END IF;
+	
+	IF p_cant_personas IS NULL OR p_cant_personas <= 0 THEN
+		RAISE NOTICE 'No pueden ser 0 personas';
+		RETURN NULL::BOOLEAN;
+	END IF;
+	
+	IF p_cant_personas > (SELECT sa_capacidad FROM Servicio_Adicional WHERE s_cod = p_id_servicio_adicional) THEN
+		RAISE NOTICE 'El servicio adicional no tiene capacidad para esta cantidad de personas';
+		RETURN NUULL::BOOLEAN;
+	END IF;
+
+    SELECT s_costo INTO v_costo_base FROM Servicio WHERE s_cod = p_id_servicio_adicional;
+    
+	-- Buscar las promociones del servicio
+	SELECT * INTO v_monto_descuento FROM fn_buscar_promocion_servicio(p_id_servicio_adicional);
+	
+	v_sub_total := v_costo_base * p_cant_personas;
+	IF v_monto_descuento IS NOT NULL AND v_monto_descuento < v_sub_total THEN
+		RAISE NOTICE 'Descuento menor al subtotal';
+		v_sub_total := v_sub_total - v_monto_descuento;
+	END IF;
+
+    INSERT INTO Entrada_Digital (Compra_co_cod, Servicio_Adicional_s_cod, res_costo_sub_total, res_anulado, ed_cant_personas)
+    VALUES (v_compra_cod, p_id_servicio_adicional, v_sub_total, FALSE, p_cant_personas);
+
+	SELECT s_millas_otorgar INTO v_millas_agregar FROM Servicio WHERE s_cod = p_id_servicio_adicional;
+
+    UPDATE Compra SET co_monto_total = co_monto_total + v_sub_total, co_millas_a_agregar = co_millas_a_agregar + v_millas_agregar
+	WHERE co_cod = v_compra_cod;
+
+    RAISE NOTICE 'Servicio adicional agregado a la compra exitosamente';
+    RETURN TRUE;
+
+EXCEPTION WHEN OTHERS THEN
+    RAISE NOTICE 'Error al agregar servicio adicional: %', SQLERRM;
+    RETURN NULL::BOOLEAN;
+END;
+$$ LANGUAGE plpgsql;
+
+-- Cancelar compra EN PROCESO
+CREATE OR REPLACE FUNCTION fn_cancelar_compra(p_cod_usuario INT) 
+RETURNS BOOLEAN AS $$
+DECLARE
+    v_cliente_cod INT;
+	v_compra_cod INT;
+    v_estado_compra VARCHAR;
+	v_contador INT := 0;
+BEGIN
+    SELECT c.c_cod INTO v_cliente_cod FROM Cliente c, Usuario u WHERE c.c_cod = u.cliente_c_cod AND u.u_cod = p_cod_usuario;
+	IF v_cliente_cod IS NULL THEN
+		RAISE NOTICE 'El cliente no se ha encontrado';
+		RETURN NULL::BOOLEAN;
+	END IF;
+	
+	-- Buscar la compra activa
+    SELECT * INTO v_compra_cod FROM fn_obtener_compra_activa(v_cliente_cod);
+	IF v_compra_cod IS NULL THEN
+		RAISE NOTICE 'No hay ninguna compra activa para este cliente';
+		RETURN NULL::BOOLEAN;
+	END IF;
+
+	-- Validar si se esta pagando
+	SELECT co_estado INTO v_estado_compra FROM Compra WHERE co_cod = v_compra_cod;
+	IF v_estado_compra = 'PAGANDO' THEN
+		RAISE NOTICE 'La compra está pagándose, no se puede cancelar';
+		RETURN NULL::BOOLEAN;
+	END IF;
+	
+    -- Eliminar todas las reservas asociadas y viajeros
+    v_contador := v_contador + (SELECT COUNT(*) FROM Boleto_Vuelo WHERE Compra_co_cod = v_compra_cod);
+    DELETE FROM Boleto_Vuelo WHERE Compra_co_cod = v_compra_cod;
+	RAISE NOTICE 'Boletos de vuelos eliminados. Eliminaciones totales: %', v_contador;
+
+    v_contador := v_contador + (SELECT COUNT(*) FROM Boleto_Viaje WHERE Compra_co_cod = v_compra_cod);
+    DELETE FROM Boleto_Viaje WHERE Compra_co_cod = v_compra_cod;
+	RAISE NOTICE 'Boletos de viajes eliminados. Eliminaciones totales: %', v_contador;
+
+    v_contador := v_contador + (SELECT COUNT(*) FROM Detalle_Hospedaje WHERE Compra_co_cod = v_compra_cod);
+    DELETE FROM Detalle_Hospedaje WHERE Compra_co_cod = v_compra_cod;
+	RAISE NOTICE 'Hospedajes eliminados. Eliminaciones totales: %', v_contador;
+
+    v_contador := v_contador + (SELECT COUNT(*) FROM Detalle_Traslado WHERE Compra_co_cod = v_compra_cod);
+    DELETE FROM Detalle_Traslado WHERE Compra_co_cod = v_compra_cod;
+	RAISE NOTICE 'Traslados eliminados. Eliminaciones totales: %', v_contador;
+
+    v_contador := v_contador + (SELECT COUNT(*) FROM Entrada_Digital WHERE Compra_co_cod = v_compra_cod);
+    DELETE FROM Entrada_Digital WHERE Compra_co_cod = v_compra_cod;
+	RAISE NOTICE 'Entradas digitales eliminadas. Eliminaciones totales: %', v_contador;
+
+	DELETE FROM Via_Res WHERE boleto_vuelo_co_cod = v_compra_cod 
+	OR detalle_traslado_co_cod = v_compra_cod 
+	OR boleto_viaje_co_cod = v_compra_cod 
+	OR entrada_digital_co_cod = v_compra_cod 
+	OR detalle_hospedaje_co_cod = v_compra_cod; 
+	
+    -- Eliminar la compra
+    DELETE FROM Compra WHERE co_cod = v_compra_cod;
+
+	RAISE NOTICE 'Compra cancelada. Se eliminaron % reservas', v_contador;
+    RETURN TRUE;
+
+EXCEPTION WHEN OTHERS THEN
+    RAISE NOTICE 'Error al cancelar la compra: %', SQLERRM;
+	RETURN NULL::BOOLEAN;
+END;
+$$ LANGUAGE plpgsql;
+
+-- PROCESAMIENTO DE PAGO Y FINALIZACION
+-- (PRIVADA) Calcular millas a agregar por compra
+CREATE OR REPLACE FUNCTION fn_calcular_millas_compra(p_id_compra INT) 
+RETURNS INT AS $$
+DECLARE
+    v_km_total INT;
+	v_millas_total INT;
+BEGIN
+    v_km_total := 0;
+
+	v_km_total := v_km_total + 
+	COALESCE(
+		(SELECT SUM(v_distancia_km) FROM Vuelo 
+		WHERE s_cod = (SELECT vuelo_s_cod FROM Boleto_Vuelo WHERE compra_co_cod = p_id_compra))
+	, 0) + 
+	COALESCE(
+		(SELECT SUM(t_distancia_km) FROM Traslado 
+		WHERE s_cod = (SELECT traslado_s_cod FROM Detalle_Traslado WHERE compra_co_cod = p_id_compra))
+	, 0) + 
+	COALESCE(
+		(SELECT SUM(vi_distancia_km) FROM Viaje 
+		WHERE s_cod = (SELECT viaje_s_cod FROM Boleto_Viaje WHERE compra_co_cod = p_id_compra))
+	, 0);
+
+	v_millas_total := v_km_total / 10;
+
+	RETURN v_millas_total;
+	
+EXCEPTION WHEN OTHERS THEN
+    RAISE NOTICE 'Error calculando millas: %', SQLERRM;
+	RETURN 0;
+END;
+$$ LANGUAGE plpgsql;
+
+-- VALIDAR LOS MONTOS DE PAGOS A PROCESAR PARA UNA COMPRA
+CREATE OR REPLACE FUNCTION fn_validar_montos(
+	p_cod_usuario INT,
+	p_montos NUMERIC[],
+	p_es_financiada BOOLEAN DEFAULT FALSE,
+	p_monto_huella NUMERIC DEFAULT 0
+)
+RETURNS BOOLEAN AS $$
+DECLARE
+	v_cliente_cod INT;
+	v_compra_cod INT;
+	v_estado_compra VARCHAR;
+	v_es_paquete_compra BOOLEAN;
+	v_monto_a_pagar NUMERIC(15,2);
+	v_monto_pagado NUMERIC(15,2);
+	v_monto NUMERIC(12,2);
+BEGIN
+	IF ARRAY_LENGTH(p_montos, 1) IS NULL THEN
+		RAISE NOTICE 'Indicar al menos un monto';
+		RETURN NULL::BOOLEAN;
+	END IF;
+	
+	-- Existe cliente
+	SELECT c.c_cod INTO v_cliente_cod FROM Cliente c, Usuario u WHERE c.c_cod = u.cliente_c_cod AND u.u_cod = p_cod_usuario;
+	IF v_cliente_cod IS NULL THEN
+		RAISE NOTICE 'El cliente no se ha encontrado';
+		RETURN NULL::BOOLEAN;
+	END IF;
+
+	-- Validar que la compra existe
+    SELECT * INTO v_compra_cod FROM fn_obtener_compra_activa(v_cliente_cod);
+	IF v_compra_cod IS NULL THEN
+		RAISE NOTICE 'No hay ninguna compra EN PROCESO o PAGANDO';
+		RETURN NULL::BOOLEAN;
+	END IF;
+
+	SELECT co_estado, co_es_paquete, co_monto_total 
+	INTO v_estado_compra, v_es_paquete_compra, v_monto_a_pagar
+	FROM Compra WHERE co_cod = v_compra_cod;
+	
+	-- Validar si es PAGANDO
+	IF v_estado_compra = 'PAGANDO' THEN
+		RAISE NOTICE 'La compra es PAGANDO.';
+		RETURN NULL::BOOLEAN;
+	END IF;
+    
+	-- Validar que es compra de itinerario (no paquete)
+    IF v_es_paquete_compra IS TRUE THEN
+        RAISE NOTICE 'La compra de paquete se paga con millas.';
+        RETURN NULL::BOOLEAN;
+    END IF;	
+
+	-- Revisar si se financia, el monto a pagar sera el 10% inicial
+	IF p_es_financiada IS TRUE THEN
+		v_monto_a_pagar := v_monto_a_pagar * 0.10;
+	END IF;
+	
+	-- Mas el monto colocado para la compensacion
+	v_monto_a_pagar := v_monto_a_pagar + p_monto_huella;
+	
+	v_monto_pagado := 0;
+	
+	FOREACH v_monto IN ARRAY p_montos LOOP
+		v_monto_pagado := v_monto_pagado + v_monto;
+		IF v_monto_pagado > v_monto_a_pagar THEN
+			RAISE NOTICE 'Los montos de los pagos sobrepasan el monto total';
+			RETURN FALSE;
+		END IF;
+	END LOOP;
+
+	IF v_monto_pagado = v_monto_a_pagar THEN
+		RAISE NOTICE 'Montos adecuados para pagar';
+		RETURN TRUE;
+	ELSE
+		RAISE NOTICE 'Montos insuficientes para pagar';
+		RETURN FALSE;
+	END IF;
+END;
+$$ LANGUAGE plpgsql;
+
+-- (PRIVADA) Funcion para revisar si ya se cumplio con el monto y cambiar a finalizado
+CREATE OR REPLACE PROCEDURE sp_validar_pagos(p_compra_cod INT, p_es_financiada BOOLEAN)
+AS $$
+DECLARE
+	v_monto_a_pagar NUMERIC(15,2);
+	v_monto_huella NUMERIC(12,2);
+	v_monto_pagado NUMERIC(15,2);
+	v_estado_nuevo VARCHAR;
+	v_millas_agregar BIGINT;
+	v_cliente_cod INT;
+BEGIN
+	SELECT co_monto_total, co_compensacion_huella 
+	INTO v_monto_a_pagar, v_monto_huella 
+	FROM Compra WHERE co_cod = p_compra_cod;
+
+	IF v_monto_huella IS NULL THEN
+		v_monto_huella := 0;
+	END IF;
+	
+	IF p_es_financiada IS TRUE THEN
+		v_monto_a_pagar := v_monto_a_pagar * 0.10;
+	END IF;
+
+	v_monto_a_pagar := v_monto_a_pagar + v_monto_huella;
+
+	SELECT SUM(pa_monto) INTO v_monto_pagado FROM Pago WHERE compra_co_cod = p_compra_cod;
+
+	IF v_monto_pagado IS NULL OR v_monto_pagado < v_monto_a_pagar THEN
+		RETURN;
+	END IF;
+
+	IF p_es_financiada IS TRUE THEN
+		v_estado_nuevo := 'FINANCIADO';
+	ELSE
+		v_estado_nuevo := 'FINALIZADO';
+	END IF;
+
+	-- Recoger las millas a agregar y otorgarlas
+	SELECT co_millas_a_agregar INTO v_millas_agregar FROM Compra WHERE co_cod = p_compra_cod;
+	v_millas_agregar := v_millas_agregar + (SELECT * FROM fn_calcular_millas_compra(p_compra_cod));
+
+	SELECT c_cod INTO v_cliente_cod FROM Cliente, Compra WHERE c_cod = cliente_c_cod AND co_cod = p_compra_cod;
+
+	UPDATE Metodo_Pago SET m_cant_acumulada = m_cant_acumulada + v_millas_agregar WHERE m_cliente_cod = v_cliente_cod;
+
+	-- Actualizar el estado de la compra
+	UPDATE Compra SET co_estado = v_estado_nuevo WHERE co_cod = p_compra_cod;
+	RAISE NOTICE 'Pagos concretaron la compra';
+END;
+$$ LANGUAGE plpgsql;
+
+-- FUNCIONES PARA PAGAR POR CADA TIPO DE METODO DE PAGO
+CREATE OR REPLACE FUNCTION fn_pago_tarjeta(
+	p_cod_usuario INT,
+	p_monto NUMERIC(12,2),
+	p_tarj_numero BIGINT,
+	p_tarj_cod_seguridad INT,
+	p_tarj_nombre_titular VARCHAR,
+	p_tarj_fecha_venc DATE,
+	p_tarj_banco_cod INT,
+	p_tarj_emisor VARCHAR
+) RETURNS BOOLEAN AS $$
+DECLARE
+	v_compra_cod INT;
+	v_cliente_cod INT;
+	v_estado_compra VARCHAR;
+	v_es_paquete_compra BOOLEAN;
+	v_es_financiada BOOLEAN;
+	v_mp_cod INT;
+BEGIN
+	-- Validar monto
+	IF p_monto IS NULL OR p_monto <= 0 THEN
+		RAISE NOTICE 'El monto debe ser positivo';
+		RETURN NULL::BOOLEAN;
+	END IF;
+	
+	-- Existe cliente
+	SELECT c.c_cod INTO v_cliente_cod FROM Cliente c, Usuario u WHERE c.c_cod = u.cliente_c_cod AND u.u_cod = p_cod_usuario;
+	IF v_cliente_cod IS NULL THEN
+		RAISE NOTICE 'El cliente no se ha encontrado';
+		RETURN NULL::BOOLEAN;
+	END IF;
+
+	-- Validar que la compra existe
+    SELECT * INTO v_compra_cod FROM fn_obtener_compra_activa(v_cliente_cod);
+	IF v_compra_cod IS NULL THEN
+		RAISE NOTICE 'No hay ninguna compra EN PROCESO o PAGANDO';
+		RETURN NULL::BOOLEAN;
+	END IF;
+
+	SELECT co_estado, co_es_paquete 
+	INTO v_estado_compra, v_es_paquete_compra 
+	FROM Compra WHERE co_cod = v_compra_cod;
+
+	-- Validar que es compra de itinerario (no paquete)
+    IF v_es_paquete_compra IS TRUE THEN
+        RAISE NOTICE 'Los paquetes se pagan solo con MILLA.';
+        RETURN NULL::BOOLEAN;
+    END IF;
+	
+	-- Validar si se esta pagando
+	IF v_estado_compra = 'EN PROCESO' THEN
+		RAISE NOTICE 'La compra sigue EN PROCESO. No se puede pagar';
+		RETURN NULL::BOOLEAN;
+	END IF;
+
+	-- Revisar si se financia
+	v_es_financiada := FALSE;
+	IF EXISTS (SELECT 1 FROM Cuota WHERE compra_co_cod = v_compra_cod) THEN
+		v_es_financiada := TRUE;
+	END IF;
+
+	IF NOT EXISTS (SELECT 1 FROM Banco WHERE ba_cod = p_tarj_banco_cod) THEN
+		RAISE NOTICE 'El codigo del banco no existe';
+		RETURN NULL::BOOLEAN;
+	END IF;
+	
+	INSERT INTO Metodo_Pago (cliente_c_cod, t_numero, t_cod_seguridad, t_nombre_titular, t_fecha_vencimiento, t_banco_cod, t_emisor, mp_tipo)
+	VALUES (v_cliente_cod, p_tarj_numero, p_tarj_cod_seguridad, p_tarj_nombre_titular, p_tarj_fecha_venc, p_tarj_banco_cod, p_tarj_emisor, 'TARJETA')
+	RETURNING mp_cod INTO v_mp_cod;
+	RAISE NOTICE 'Metodo de pago creado';
+
+	INSERT INTO Pago VALUES (p_monto, CURRENT_TIMESTAMP, v_compra_cod, v_mp_cod);
+	RAISE NOTICE 'Pago creado';
+
+	-- Validar si ya completa la compra
+	CALL sp_validar_pagos(v_compra_cod, v_es_financiada);
+	
+	RETURN TRUE;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE OR REPLACE FUNCTION fn_pago_cheque(
+	p_cod_usuario INT,
+	p_monto NUMERIC(12,2),
+	p_cheq_cod_cuenta BIGINT,
+	p_cheq_numero BIGINT,
+	p_cheq_nombre_titular VARCHAR(50),
+	p_cheq_fecha_emision DATE,
+	p_cheq_banco_cod INT
+) RETURNS BOOLEAN AS $$
+DECLARE
+	v_compra_cod INT;
+	v_cliente_cod INT;
+	v_estado_compra VARCHAR;
+	v_es_paquete_compra BOOLEAN;
+	v_es_financiada BOOLEAN;
+	v_mp_cod INT;
+BEGIN
+	-- Validar monto
+	IF p_monto IS NULL OR p_monto <= 0 THEN
+		RAISE NOTICE 'El monto debe ser positivo';
+		RETURN NULL::BOOLEAN;
+	END IF;
+	
+	-- Existe cliente
+	SELECT c.c_cod INTO v_cliente_cod FROM Cliente c, Usuario u WHERE c.c_cod = u.cliente_c_cod AND u.u_cod = p_cod_usuario;
+	IF v_cliente_cod IS NULL THEN
+		RAISE NOTICE 'El cliente no se ha encontrado';
+		RETURN NULL::BOOLEAN;
+	END IF;
+
+	-- Validar que la compra existe
+    SELECT * INTO v_compra_cod FROM fn_obtener_compra_activa(v_cliente_cod);
+	IF v_compra_cod IS NULL THEN
+		RAISE NOTICE 'No hay ninguna compra EN PROCESO o PAGANDO';
+		RETURN NULL::BOOLEAN;
+	END IF;
+
+	SELECT co_estado, co_es_paquete 
+	INTO v_estado_compra, v_es_paquete_compra 
+	FROM Compra WHERE co_cod = v_compra_cod;
+
+	-- Validar que es compra de itinerario (no paquete)
+    IF v_es_paquete_compra IS TRUE THEN
+        RAISE NOTICE 'Los paquetes se pagan solo con MILLA.';
+        RETURN NULL::BOOLEAN;
+    END IF;
+	
+	-- Validar si se esta pagando
+	IF v_estado_compra = 'EN PROCESO' THEN
+		RAISE NOTICE 'La compra sigue EN PROCESO. No se puede pagar';
+		RETURN NULL::BOOLEAN;
+	END IF;
+
+	-- Revisar si se financia
+	v_es_financiada := FALSE;
+	IF EXISTS (SELECT 1 FROM Cuota WHERE compra_co_cod = v_compra_cod) THEN
+		v_es_financiada := TRUE;
+	END IF;
+
+	IF NOT EXISTS (SELECT 1 FROM Banco WHERE ba_cod = p_cheq_banco_cod) THEN
+		RAISE NOTICE 'El codigo del banco no existe';
+		RETURN NULL::BOOLEAN;
+	END IF;
+	
+	INSERT INTO Metodo_Pago (cliente_c_cod, c_codigo_cuenta, c_numero, c_fecha_emision, c_nombre_titular, c_banco_cod, mp_tipo)
+	VALUES (v_cliente_cod, p_cheq_cod_cuenta, p_cheq_numero, p_cheq_fecha_emision, p_cheq_nombre_titular, p_cheq_banco_cod, 'CHEQUE')
+	RETURNING mp_cod INTO v_mp_cod;
+	RAISE NOTICE 'Metodo de pago creado';
+
+	INSERT INTO Pago VALUES (p_monto, CURRENT_TIMESTAMP, v_compra_cod, v_mp_cod);
+	RAISE NOTICE 'Pago creado';
+
+	-- Validar si ya completa la compra
+	CALL sp_validar_pagos(v_compra_cod, v_es_financiada);
+	
+	RETURN TRUE;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE OR REPLACE FUNCTION fn_pago_deposito(
+	p_cod_usuario INT,
+	p_monto NUMERIC(12,2),
+	p_dep_num_ref BIGINT,
+	p_dep_num_destino BIGINT,
+	p_dep_banco_cod INT
+) RETURNS BOOLEAN AS $$
+DECLARE
+	v_compra_cod INT;
+	v_cliente_cod INT;
+	v_estado_compra VARCHAR;
+	v_es_paquete_compra BOOLEAN;
+	v_es_financiada BOOLEAN;
+	v_mp_cod INT;
+BEGIN
+	-- Validar monto
+	IF p_monto IS NULL OR p_monto <= 0 THEN
+		RAISE NOTICE 'El monto debe ser positivo';
+		RETURN NULL::BOOLEAN;
+	END IF;
+	
+	-- Existe cliente
+	SELECT c.c_cod INTO v_cliente_cod FROM Cliente c, Usuario u WHERE c.c_cod = u.cliente_c_cod AND u.u_cod = p_cod_usuario;
+	IF v_cliente_cod IS NULL THEN
+		RAISE NOTICE 'El cliente no se ha encontrado';
+		RETURN NULL::BOOLEAN;
+	END IF;
+
+	-- Validar que la compra existe
+    SELECT * INTO v_compra_cod FROM fn_obtener_compra_activa(v_cliente_cod);
+	IF v_compra_cod IS NULL THEN
+		RAISE NOTICE 'No hay ninguna compra EN PROCESO o PAGANDO';
+		RETURN NULL::BOOLEAN;
+	END IF;
+
+	SELECT co_estado, co_es_paquete 
+	INTO v_estado_compra, v_es_paquete_compra 
+	FROM Compra WHERE co_cod = v_compra_cod;
+
+	-- Validar que es compra de itinerario (no paquete)
+    IF v_es_paquete_compra IS TRUE THEN
+        RAISE NOTICE 'Los paquetes se pagan solo con MILLA.';
+        RETURN NULL::BOOLEAN;
+    END IF;
+	
+	-- Validar si se esta pagando
+	IF v_estado_compra = 'EN PROCESO' THEN
+		RAISE NOTICE 'La compra sigue EN PROCESO. No se puede pagar';
+		RETURN NULL::BOOLEAN;
+	END IF;
+
+	-- Revisar si se financia
+	v_es_financiada := FALSE;
+	IF EXISTS (SELECT 1 FROM Cuota WHERE compra_co_cod = v_compra_cod) THEN
+		v_es_financiada := TRUE;
+	END IF;
+
+	IF NOT EXISTS (SELECT 1 FROM Banco WHERE ba_cod = p_dep_banco_cod) THEN
+		RAISE NOTICE 'El codigo del banco no existe';
+		RETURN NULL::BOOLEAN;
+	END IF;
+	
+	INSERT INTO Metodo_Pago (cliente_c_cod, de_num_referencia, de_num_destino, de_banco_cod, mp_tipo)
+	VALUES (v_cliente_cod, p_dep_num_ref, p_dep_num_destino, p_dep_banco_cod, 'DEPOSITO')
+	RETURNING mp_cod INTO v_mp_cod;
+	RAISE NOTICE 'Metodo de pago creado';
+
+	INSERT INTO Pago VALUES (p_monto, CURRENT_TIMESTAMP, v_compra_cod, v_mp_cod);
+	RAISE NOTICE 'Pago creado';
+
+	-- Validar si ya completa la compra
+	CALL sp_validar_pagos(v_compra_cod, v_es_financiada);
+	
+	RETURN TRUE;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE OR REPLACE FUNCTION fn_pago_operacion_digital(
+	p_cod_usuario INT,
+	p_monto NUMERIC(12,2),
+	p_op_num_referencia BIGINT
+) RETURNS BOOLEAN AS $$
+DECLARE
+	v_compra_cod INT;
+	v_cliente_cod INT;
+	v_estado_compra VARCHAR;
+	v_es_paquete_compra BOOLEAN;
+	v_es_financiada BOOLEAN;
+	v_mp_cod INT;
+BEGIN
+	-- Validar monto
+	IF p_monto IS NULL OR p_monto <= 0 THEN
+		RAISE NOTICE 'El monto debe ser positivo';
+		RETURN NULL::BOOLEAN;
+	END IF;
+	
+	-- Existe cliente
+	SELECT c.c_cod INTO v_cliente_cod FROM Cliente c, Usuario u WHERE c.c_cod = u.cliente_c_cod AND u.u_cod = p_cod_usuario;
+	IF v_cliente_cod IS NULL THEN
+		RAISE NOTICE 'El cliente no se ha encontrado';
+		RETURN NULL::BOOLEAN;
+	END IF;
+
+	-- Validar que la compra existe
+    SELECT * INTO v_compra_cod FROM fn_obtener_compra_activa(v_cliente_cod);
+	IF v_compra_cod IS NULL THEN
+		RAISE NOTICE 'No hay ninguna compra EN PROCESO o PAGANDO';
+		RETURN NULL::BOOLEAN;
+	END IF;
+
+	SELECT co_estado, co_es_paquete 
+	INTO v_estado_compra, v_es_paquete_compra 
+	FROM Compra WHERE co_cod = v_compra_cod;
+
+	-- Validar que es compra de itinerario (no paquete)
+    IF v_es_paquete_compra IS TRUE THEN
+        RAISE NOTICE 'Los paquetes se pagan solo con MILLA.';
+        RETURN NULL::BOOLEAN;
+    END IF;
+	
+	-- Validar si se esta pagando
+	IF v_estado_compra = 'EN PROCESO' THEN
+		RAISE NOTICE 'La compra sigue EN PROCESO. No se puede pagar';
+		RETURN NULL::BOOLEAN;
+	END IF;
+
+	-- Revisar si se financia
+	v_es_financiada := FALSE;
+	IF EXISTS (SELECT 1 FROM Cuota WHERE compra_co_cod = v_compra_cod) THEN
+		v_es_financiada := TRUE;
+	END IF;
+	
+	INSERT INTO Metodo_Pago (cliente_c_cod, od_num_referencia, mp_tipo)
+	VALUES (v_cliente_cod, p_op_num_referencia, 'OPERACION_DIGITAL')
+	RETURNING mp_cod INTO v_mp_cod;
+	RAISE NOTICE 'Metodo de pago creado';
+
+	INSERT INTO Pago VALUES (p_monto, CURRENT_TIMESTAMP, v_compra_cod, v_mp_cod);
+	RAISE NOTICE 'Pago creado';
+
+	-- Validar si ya completa la compra
+	CALL sp_validar_pagos(v_compra_cod, v_es_financiada);
+	
+	RETURN TRUE;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE OR REPLACE FUNCTION fn_pago_cripto(
+	p_cod_usuario INT,
+	p_monto NUMERIC(12,2),
+	p_cript_hash_id VARCHAR(100),
+	p_cript_dir_billetera VARCHAR(100)
+) RETURNS BOOLEAN AS $$
+DECLARE
+	v_compra_cod INT;
+	v_cliente_cod INT;
+	v_estado_compra VARCHAR;
+	v_es_paquete_compra BOOLEAN;
+	v_es_financiada BOOLEAN;
+	v_mp_cod INT;
+BEGIN
+	-- Validar monto
+	IF p_monto IS NULL OR p_monto <= 0 THEN
+		RAISE NOTICE 'El monto debe ser positivo';
+		RETURN NULL::BOOLEAN;
+	END IF;
+	
+	-- Existe cliente
+	SELECT c.c_cod INTO v_cliente_cod FROM Cliente c, Usuario u WHERE c.c_cod = u.cliente_c_cod AND u.u_cod = p_cod_usuario;
+	IF v_cliente_cod IS NULL THEN
+		RAISE NOTICE 'El cliente no se ha encontrado';
+		RETURN NULL::BOOLEAN;
+	END IF;
+
+	-- Validar que la compra existe
+    SELECT * INTO v_compra_cod FROM fn_obtener_compra_activa(v_cliente_cod);
+	IF v_compra_cod IS NULL THEN
+		RAISE NOTICE 'No hay ninguna compra EN PROCESO o PAGANDO';
+		RETURN NULL::BOOLEAN;
+	END IF;
+
+	SELECT co_estado, co_es_paquete 
+	INTO v_estado_compra, v_es_paquete_compra 
+	FROM Compra WHERE co_cod = v_compra_cod;
+
+	-- Validar que es compra de itinerario (no paquete)
+    IF v_es_paquete_compra IS TRUE THEN
+        RAISE NOTICE 'Los paquetes se pagan solo con MILLA.';
+        RETURN NULL::BOOLEAN;
+    END IF;
+	
+	-- Validar si se esta pagando
+	IF v_estado_compra = 'EN PROCESO' THEN
+		RAISE NOTICE 'La compra sigue EN PROCESO. No se puede pagar';
+		RETURN NULL::BOOLEAN;
+	END IF;
+
+	-- Revisar si se financia
+	v_es_financiada := FALSE;
+	IF EXISTS (SELECT 1 FROM Cuota WHERE compra_co_cod = v_compra_cod) THEN
+		v_es_financiada := TRUE;
+	END IF;
+	
+	INSERT INTO Metodo_Pago (cliente_c_cod, u_hash_id, u_direccion_billetera, mp_tipo)
+	VALUES (v_cliente_cod, p_cript_hash_id, p_cript_dir_billetera, 'USDT')
+	RETURNING mp_cod INTO v_mp_cod;
+	RAISE NOTICE 'Metodo de pago creado';
+
+	INSERT INTO Pago VALUES (p_monto, CURRENT_TIMESTAMP, v_compra_cod, v_mp_cod);
+	RAISE NOTICE 'Pago creado';
+
+	-- Validar si ya completa la compra
+	CALL sp_validar_pagos(v_compra_cod, v_es_financiada);
+	
+	RETURN TRUE;
+END;
+$$ LANGUAGE plpgsql;
+
+-- (PRIVADA) Crear cuotas de financiamiento
+CREATE OR REPLACE PROCEDURE sp_crear_cuotas_pago(
+    p_id_compra INT,
+    p_monto_saldo NUMERIC(12,2),
+    p_cant_cuotas INT
+) AS $$
+DECLARE
+    v_monto_por_cuota NUMERIC(12,2);
+    v_fecha_base TIMESTAMP;
+    i INT;
+BEGIN
+    v_monto_por_cuota := p_monto_saldo / p_cant_cuotas;
+    v_fecha_base := NOW();
+
+    FOR i IN 1..p_cant_cuotas LOOP
+        INSERT INTO Cuota (cu_monto, cu_fecha_hora_final, Compra_co_cod)
+        VALUES (
+            v_monto_por_cuota,
+            v_fecha_base + (i || ' months')::INTERVAL,
+            p_id_compra
+        );
+    END LOOP;
+
+	RAISE NOTICE 'Se crearon % cuotas de %', p_cant_cuotas, v_monto_por_cuota;
+END;
+$$ LANGUAGE plpgsql;
+
+-- (PRIVADA) Funcion para pagar el paquete con millas
+CREATE OR REPLACE FUNCTION fn_pagar_paquete(p_cod_cliente INT, p_compra_cod INT)
+RETURNS BOOLEAN AS $$
+DECLARE
+	v_millas_disponibles BIGINT;
+	v_millas_a_descontar INT;
+	v_cod_milla INT;
+BEGIN
+	SELECT mp_cod, m_cant_acumulada INTO v_cod_milla, v_millas_disponibles 
+	FROM Metodo_Pago 
+	WHERE m_cliente_cod = p_cod_cliente;
+
+	SELECT pt_costo_millas INTO v_millas_a_descontar
+	FROM Paquete_Turistico 
+	WHERE pt_cod = (SELECT paquete_turistico_pt_cod FROM Compra WHERE co_cod = p_compra_cod);
+
+	IF v_millas_disponibles < v_millas_a_descontar THEN
+		RAISE NOTICE 'No hay suficiente cantidad de millas';
+		RETURN FALSE;
+	END IF;
+
+	INSERT INTO Pago VALUES (v_millas_a_descontar, CURRENT_TIMESTAMP, p_compra_cod, v_cod_milla);
+	RAISE NOTICE 'Pago con millas efectuado';
+	
+	UPDATE Metodo_Pago SET m_cant_acumulada = m_cant_acumulada - v_millas_a_descontar 
+	WHERE m_cliente_cod = p_cod_cliente;
+
+	UPDATE Compra SET co_estado = 'FINALIZADO' WHERE co_cod = p_compra_cod;
+	
+	RETURN TRUE;
+END;
+$$ LANGUAGE plpgsql;
+
+-- Procesar la compra a PAGANDO
+CREATE OR REPLACE FUNCTION fn_procesar_a_pago(
+    p_cod_usuario INT,
+    p_es_financiado BOOLEAN DEFAULT FALSE,
+    p_cant_cuotas INT DEFAULT 1,
+	p_monto_huella NUMERIC DEFAULT NULL::NUMERIC
+) RETURNS BOOLEAN AS $$
+DECLARE
+    v_cliente_cod INT;
+	v_compra_cod INT;
+	v_estado_compra VARCHAR;
+	v_es_paquete_compra BOOLEAN;
+    v_monto_total NUMERIC(15,2);
+	v_monto_restante NUMERIC(12,2);
+	v_resultado_compra_paquete BOOLEAN;
+BEGIN
+    -- Existe cliente
+	SELECT c.c_cod INTO v_cliente_cod FROM Cliente c, Usuario u WHERE c.c_cod = u.cliente_c_cod AND u.u_cod = p_cod_usuario;
+	IF v_cliente_cod IS NULL THEN
+		RAISE NOTICE 'El cliente no se ha encontrado';
+		RETURN NULL::BOOLEAN;
+	END IF;
+
+	-- Validar que la compra existe
+    SELECT * INTO v_compra_cod FROM fn_obtener_compra_activa(v_cliente_cod);
+	IF v_compra_cod IS NULL THEN
+		RAISE NOTICE 'No hay ninguna compra EN PROCESO o PAGANDO';
+		RETURN NULL::BOOLEAN;
+	END IF;
+
+	SELECT co_estado, co_es_paquete, co_monto_total
+	INTO v_estado_compra, v_es_paquete_compra , v_monto_total
+	FROM Compra WHERE co_cod = v_compra_cod;
+	
+	-- Validar si ya esta pagando
+	IF v_estado_compra = 'PAGANDO' THEN
+		RAISE NOTICE 'La compra ya se proceso a pagando. Complete los pagos';
+		RETURN NULL::BOOLEAN;
+	END IF;
+    
+	-- Validar si se quiere financiar, que no sea de paquete
+    IF v_es_paquete_compra IS TRUE AND p_es_financiado IS TRUE THEN
+        RAISE NOTICE 'No se pueden financiar compras de paquetes';
+        RETURN NULL::BOOLEAN;
+    END IF;
+
+	-- Validar si se quiere financiar, cantidad de cuotas entre 1 y 3
+    IF p_es_financiado IS TRUE AND p_cant_cuotas NOT BETWEEN 1 AND 3 THEN
+        RAISE NOTICE 'La cantidad de cuotas debe estar entre 1 y 3';
+        RETURN NULL::BOOLEAN;
+    END IF;
+
+    IF v_es_paquete_compra IS TRUE THEN
+		SELECT * INTO v_resultado_compra_paquete FROM fn_pagar_paquete(v_cliente_cod, v_compra_cod); 
+		RAISE NOTICE 'Intento de compra de paquete';
+		RETURN v_resultado_compra_paquete;
+	END IF;
+
+	IF p_es_financiado IS TRUE THEN
+		v_monto_restante := v_monto_total * 0.90;
+		CALL sp_crear_cuotas_pago(v_compra_cod, v_monto_restante, p_cant_cuotas);
+	END IF;
+
+	UPDATE Compra SET co_estado = 'PAGANDO', co_compensacion_huella = p_monto_huella WHERE co_cod = v_compra_cod;
+
+	RAISE NOTICE 'Compra cambió a PAGANDO exitosamente';
+	RETURN TRUE;
+	
+EXCEPTION WHEN OTHERS THEN
+    RAISE NOTICE 'Error procesando la compra a pagando: %', SQLERRM;
+	RETURN NULL::BOOLEAN;
 END;
 $$ LANGUAGE plpgsql;
