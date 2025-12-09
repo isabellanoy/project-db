@@ -2088,6 +2088,22 @@ $$ LANGUAGE plpgsql;
 -- ============================================================================
 -- MONTAJE Y COMPRA DE ITINERARIOS
 -- ============================================================================
+-- (PRIVADA) Función para obtener la Tasa de Cambio actual. Busca la tasa activa para una divisa (ej: USD)
+CREATE OR REPLACE FUNCTION fn_obtener_tasa_actual(p_divisa VARCHAR)
+RETURNS TABLE (
+	cod_tasa INT,
+	factor_tasa NUMERIC
+) AS $$
+BEGIN
+    RETURN QUERY SELECT tca_cod, tca_valor_tasa
+    FROM Tasa_Cambio
+    WHERE tca_divisa_origen = p_divisa 
+      AND tca_fecha_hora_fin IS NULL
+    ORDER BY tca_fecha_hora_tasa DESC
+    LIMIT 1;
+END;
+$$ LANGUAGE plpgsql;
+
 -- (PRIVADA) Función para obtener el ID de la compra activa de un cliente. Retorna NULL si no tiene ninguna en proceso
 CREATE OR REPLACE FUNCTION fn_obtener_compra_activa(p_cod_cliente INT)
 RETURNS INT AS $$
@@ -2169,7 +2185,9 @@ DECLARE
 	v_sub_total NUMERIC(12,2);
 	v_millas_agregar INT;
 	v_estado_compra VARCHAR;
-	v_es_paquete_compra BOOLEAN;	
+	v_es_paquete_compra BOOLEAN;
+	v_factor_tasa NUMERIC;
+	v_tasa_cambio_cod INT;
     v_vuelo_cod INT;
 	v_costo_asiento NUMERIC(12,2);
     v_capacidad_disponible INT;
@@ -2252,11 +2270,21 @@ BEGIN
 	IF v_monto_descuento IS NOT NULL AND v_monto_descuento < v_sub_total THEN
 		RAISE NOTICE 'Descuento menor al subtotal';
 		v_sub_total := v_sub_total - v_monto_descuento;
+
+		INSERT INTO Res_Pro_Ser (pro_ser_promocion_pr_cod, pro_ser_servicio_s_cod, boleto_vuelo_s_cod, boleto_vuelo_co_cod)
+		SELECT promocion_pr_cod, servicio_s_cod, p_id_vuelo, v_compra_cod 
+		FROM Pro_Ser WHERE servicio_s_cod = p_id_vuelo;
 	END IF;
+
+	-- Aplicar la tasa de cambio
+	SELECT cod_tasa, factor_tasa INTO v_tasa_cambio_cod, v_factor_tasa
+	FROM fn_obtener_tasa_actual('USD');
+	
+	v_sub_total := v_sub_total * COALESCE(v_factor_tasa, 1);
 	
     -- Insertar boleto de vuelo
-    INSERT INTO Boleto_Vuelo (Compra_co_cod, Vuelo_s_cod, res_costo_sub_total, res_anulado, bv_cant_pasajeros, Clase_Asiento_ca_cod)
-    VALUES (v_compra_cod, p_id_vuelo, v_sub_total, FALSE, p_cant_pasajeros, p_id_clase_asiento);
+    INSERT INTO Boleto_Vuelo (Compra_co_cod, Vuelo_s_cod, res_costo_sub_total, res_anulado, bv_cant_pasajeros, Clase_Asiento_ca_cod, tasa_cambio_tca_cod)
+    VALUES (v_compra_cod, p_id_vuelo, v_sub_total, FALSE, p_cant_pasajeros, p_id_clase_asiento, v_tasa_cambio_cod);
 	
     -- Actualizar monto total de la compra
     SELECT s_millas_otorgar INTO v_millas_agregar FROM Servicio WHERE s_cod = p_id_vuelo;
@@ -2290,6 +2318,8 @@ DECLARE
 	v_millas_agregar INT;
 	v_estado_compra VARCHAR;
 	v_es_paquete_compra BOOLEAN;	
+	v_factor_tasa NUMERIC;
+	v_tasa_cambio_cod INT;	
     v_viaje_cod INT;
 	v_capacidad_camarote INT;
 	v_costo_camarote NUMERIC(12,2);
@@ -2387,10 +2417,20 @@ BEGIN
 	IF v_monto_descuento IS NOT NULL AND v_monto_descuento < v_sub_total THEN
 		RAISE NOTICE 'Descuento menor al subtotal';
 		v_sub_total := v_sub_total - v_monto_descuento;
+
+		INSERT INTO Res_Pro_Ser (pro_ser_promocion_pr_cod, pro_ser_servicio_s_cod, boleto_viaje_s_cod, boleto_viaje_co_cod)
+		SELECT promocion_pr_cod, servicio_s_cod, p_id_viaje, v_compra_cod 
+		FROM Pro_Ser WHERE servicio_s_cod = p_id_viaje;
 	END IF;
 
-    INSERT INTO Boleto_Viaje (Compra_co_cod, Viaje_s_cod, res_costo_sub_total, res_anulado, bvi_cant_pasajeros, Tipo_Camarote_tc_cod, servicio_barco_sb_cod)
-    VALUES (v_compra_cod, p_id_viaje, v_sub_total, FALSE, p_cant_pasajeros, p_id_tipo_camarote, p_id_servicio_barco);
+	-- Aplicar la tasa de cambio
+	SELECT cod_tasa, factor_tasa INTO v_tasa_cambio_cod, v_factor_tasa
+	FROM fn_obtener_tasa_actual('USD');
+	
+	v_sub_total := v_sub_total * COALESCE(v_factor_tasa, 1);
+		
+    INSERT INTO Boleto_Viaje (Compra_co_cod, Viaje_s_cod, res_costo_sub_total, res_anulado, bvi_cant_pasajeros, Tipo_Camarote_tc_cod, servicio_barco_sb_cod, tasa_cambio_tca_cod)
+    VALUES (v_compra_cod, p_id_viaje, v_sub_total, FALSE, p_cant_pasajeros, p_id_tipo_camarote, p_id_servicio_barco, v_tasa_cambio_cod);
 
     SELECT s_millas_otorgar INTO v_millas_agregar FROM Servicio WHERE s_cod = p_id_viaje;
 
@@ -2422,6 +2462,8 @@ DECLARE
 	v_millas_agregar INT;
 	v_estado_compra VARCHAR;
 	v_es_paquete_compra BOOLEAN;	
+	v_factor_tasa NUMERIC;
+	v_tasa_cambio_cod INT;	
     v_habitacion_cod INT;
     v_fecha_check_out TIMESTAMP;
 BEGIN
@@ -2491,10 +2533,20 @@ BEGIN
 	IF v_monto_descuento IS NOT NULL AND v_monto_descuento < v_sub_total THEN
 		RAISE NOTICE 'Descuento menor al subtotal';
 		v_sub_total := v_sub_total - v_monto_descuento;
+
+		INSERT INTO Res_Pro_Ser (pro_ser_promocion_pr_cod, pro_ser_servicio_s_cod, detalle_hospedaje_s_cod, detalle_hospedaje_co_cod)
+		SELECT promocion_pr_cod, servicio_s_cod, p_id_habitacion, v_compra_cod 
+		FROM Pro_Ser WHERE servicio_s_cod = p_id_habitacion;
 	END IF;
 
-    INSERT INTO Detalle_Hospedaje (Compra_co_cod, Habitacion_s_cod, res_costo_sub_total, res_anulado, dh_cant_noches, dh_fecha_hora_check_in, dh_fecha_hora_check_out)
-    VALUES (v_compra_cod, p_id_habitacion, v_sub_total, FALSE, p_cant_noches, p_fecha_check_in, v_fecha_check_out);
+	-- Aplicar la tasa de cambio
+	SELECT cod_tasa, factor_tasa INTO v_tasa_cambio_cod, v_factor_tasa
+	FROM fn_obtener_tasa_actual('USD');
+	
+	v_sub_total := v_sub_total * COALESCE(v_factor_tasa, 1);
+	
+    INSERT INTO Detalle_Hospedaje (Compra_co_cod, Habitacion_s_cod, res_costo_sub_total, res_anulado, dh_cant_noches, dh_fecha_hora_check_in, dh_fecha_hora_check_out, tasa_cambio_tca_cod)
+    VALUES (v_compra_cod, p_id_habitacion, v_sub_total, FALSE, p_cant_noches, p_fecha_check_in, v_fecha_check_out, v_tasa_cambio_cod);
 
     SELECT s_millas_otorgar INTO v_millas_agregar FROM Servicio WHERE s_cod = p_id_habitacion;
 
@@ -2525,7 +2577,9 @@ DECLARE
 	v_sub_total NUMERIC(12,2);
 	v_millas_agregar INT;
 	v_estado_compra VARCHAR;
-	v_es_paquete_compra BOOLEAN;	
+	v_es_paquete_compra BOOLEAN;
+	v_factor_tasa NUMERIC;
+	v_tasa_cambio_cod INT;	
     v_traslado_cod INT;
 	v_costo_vehiculo NUMERIC(12,2);
 	v_distancia_traslado NUMERIC(10);
@@ -2601,10 +2655,20 @@ BEGIN
 	IF v_monto_descuento IS NOT NULL AND v_monto_descuento < v_sub_total THEN
 		RAISE NOTICE 'Descuento menor al subtotal';
 		v_sub_total := v_sub_total - v_monto_descuento;
+
+		INSERT INTO Res_Pro_Ser (pro_ser_promocion_pr_cod, pro_ser_servicio_s_cod, detalle_traslado_s_cod, detalle_traslado_co_cod)
+		SELECT promocion_pr_cod, servicio_s_cod, p_id_traslado, v_compra_cod 
+		FROM Pro_Ser WHERE servicio_s_cod = p_id_traslado;
 	END IF;
 
-    INSERT INTO Detalle_Traslado (Compra_co_cod, Traslado_s_cod, res_costo_sub_total, res_anulado, dt_fecha_hora, Automovil_mt_cod)
-    VALUES (v_compra_cod, p_id_traslado, v_sub_total, FALSE, p_fecha_traslado, p_id_automovil);
+	-- Aplicar la tasa de cambio
+	SELECT cod_tasa, factor_tasa INTO v_tasa_cambio_cod, v_factor_tasa
+	FROM fn_obtener_tasa_actual('USD');
+	
+	v_sub_total := v_sub_total * COALESCE(v_factor_tasa, 1);
+	
+    INSERT INTO Detalle_Traslado (Compra_co_cod, Traslado_s_cod, res_costo_sub_total, res_anulado, dt_fecha_hora, Automovil_mt_cod, tasa_cambio_tca_cod)
+    VALUES (v_compra_cod, p_id_traslado, v_sub_total, FALSE, p_fecha_traslado, p_id_automovil, v_tasa_cambio_cod);
 
     SELECT s_millas_otorgar INTO v_millas_agregar FROM Servicio WHERE s_cod = p_id_traslado;
 
@@ -2635,6 +2699,8 @@ DECLARE
 	v_millas_agregar BIGINT;
 	v_estado_compra VARCHAR;
 	v_es_paquete_compra BOOLEAN;
+	v_factor_tasa NUMERIC;
+	v_tasa_cambio_cod INT;	
     v_servicio_ad_cod INT;
 BEGIN
     -- Validaciones básicas
@@ -2700,10 +2766,20 @@ BEGIN
 	IF v_monto_descuento IS NOT NULL AND v_monto_descuento < v_sub_total THEN
 		RAISE NOTICE 'Descuento menor al subtotal';
 		v_sub_total := v_sub_total - v_monto_descuento;
+
+		INSERT INTO Res_Pro_Ser (pro_ser_promocion_pr_cod, pro_ser_servicio_s_cod, entrada_digital_s_cod, entrada_digital_co_cod)
+		SELECT promocion_pr_cod, servicio_s_cod, p_id_servicio_adicional, v_compra_cod 
+		FROM Pro_Ser WHERE servicio_s_cod = p_id_servicio_adicional;
 	END IF;
 
-    INSERT INTO Entrada_Digital (Compra_co_cod, Servicio_Adicional_s_cod, res_costo_sub_total, res_anulado, ed_cant_personas)
-    VALUES (v_compra_cod, p_id_servicio_adicional, v_sub_total, FALSE, p_cant_personas);
+	-- Aplicar la tasa de cambio
+	SELECT cod_tasa, factor_tasa INTO v_tasa_cambio_cod, v_factor_tasa
+	FROM fn_obtener_tasa_actual('USD');
+	
+	v_sub_total := v_sub_total * COALESCE(v_factor_tasa, 1);
+
+    INSERT INTO Entrada_Digital (Compra_co_cod, Servicio_Adicional_s_cod, res_costo_sub_total, res_anulado, ed_cant_personas, tasa_cambio_tca_cod)
+    VALUES (v_compra_cod, p_id_servicio_adicional, v_sub_total, FALSE, p_cant_personas, v_tasa_cambio_cod);
 
 	SELECT s_millas_otorgar INTO v_millas_agregar FROM Servicio WHERE s_cod = p_id_servicio_adicional;
 
@@ -3421,7 +3497,7 @@ BEGIN
 	END IF;
 
 	SELECT co_estado, co_es_paquete, co_monto_total
-	INTO v_estado_compra, v_es_paquete_compra , v_monto_total
+	INTO v_estado_compra, v_es_paquete_compra, v_monto_total
 	FROM Compra WHERE co_cod = v_compra_cod;
 	
 	-- Validar si ya esta pagando
@@ -3460,6 +3536,132 @@ BEGIN
 	
 EXCEPTION WHEN OTHERS THEN
     RAISE NOTICE 'Error procesando la compra a pagando: %', SQLERRM;
+	RETURN NULL::BOOLEAN;
+END;
+$$ LANGUAGE plpgsql;
+
+-- (PRIVADA) FUNCIÓN AUXILIAR: Agregar servicios del paquete a la compra
+CREATE OR REPLACE PROCEDURE sp_agregar_servicios_paquete_a_compra(
+    p_id_compra INT,
+    p_id_paquete INT
+) AS $$
+DECLARE
+	v_cant_personas INT;
+	v_factor_tasa NUMERIC;
+	v_tasa_cambio_cod INT;
+	v_servicio RECORD;
+    v_tipo_servicio VARCHAR(50);
+    v_costo NUMERIC(12,2);
+BEGIN
+    SELECT pt_cant_personas INTO v_cant_personas FROM Paquete_Turistico WHERE pt_cod = p_id_paquete;
+	-- Iterar sobre todos los servicios del paquete
+    FOR v_servicio IN 
+        SELECT ps.Servicio_s_cod 
+        FROM Paq_Ser ps
+        WHERE ps.Paquete_Turistico_pt_cod = p_id_paquete
+    LOOP
+        -- Determinar tipo de servicio y agregar a tabla correspondiente
+        SELECT * INTO v_tipo_servicio FROM fn_obtener_tipo_proveedor_servicio(v_servicio.servicio_s_cod);
+
+        -- Obtener costo del servicio
+        SELECT s_costo INTO v_costo FROM Servicio WHERE s_cod = v_servicio.Servicio_s_cod;
+
+		-- Aplicar la tasa de cambio
+		SELECT cod_tasa, factor_tasa INTO v_tasa_cambio_cod, v_factor_tasa
+		FROM fn_obtener_tasa_actual('USD');
+	
+		v_costo := v_costo * COALESCE(v_factor_tasa, 1);
+		
+        -- Insertar en tabla de detalle según tipo
+        CASE v_tipo_servicio
+            WHEN 'Aerolinea' THEN
+                INSERT INTO Boleto_Vuelo (Compra_co_cod, Vuelo_s_cod, res_costo_sub_total, res_anulado, bv_cant_pasajeros, Clase_Asiento_ca_cod, tasa_cambio_tca_cod)
+                VALUES (p_id_compra, v_servicio.Servicio_s_cod, v_costo, FALSE, v_cant_personas, 
+				(WITH nave AS (SELECT mt_cod FROM Aeronave, Vuelo WHERE mt_cod = Aeronave_mt_cod AND s_cod = v_servicio.servicio_s_cod)
+				SELECT ca.ca_cod FROM Clase_Asiento ca, nave n, Aer_Cla ac WHERE ac.aeronave_mt_cod = n.mt_cod AND ac.clase_asiento_ca_cod = ca.ca_cod LIMIT 1), 
+				v_tasa_cambio_cod); -- Valores por defecto
+
+            WHEN 'Crucero' THEN
+                INSERT INTO Boleto_Viaje (Compra_co_cod, Viaje_s_cod, res_costo_sub_total, res_anulado, bvi_cant_pasajeros, Tipo_Camarote_tc_cod, tasa_cambio_tca_cod)
+                VALUES (p_id_compra, v_servicio.Servicio_s_cod, v_costo, FALSE, v_cant_personas, 
+				(WITH nave AS (SELECT mt_cod FROM Barco, Viaje WHERE mt_cod = barco_mt_cod AND s_cod = 21)
+				SELECT tc.tc_cod FROM Tipo_Camarote tc, nave n, Bar_Tip bt WHERE bt.barco_mt_cod = n.mt_cod AND bt.tipo_camarote_tc_cod = tc.tc_cod LIMIT 1), 
+				v_tasa_cambio_cod);
+
+            WHEN 'Hotel' THEN
+                INSERT INTO Detalle_Hospedaje (Compra_co_cod, Habitacion_s_cod, res_costo_sub_total, res_anulado, dh_cant_noches, dh_fecha_hora_check_in, dh_fecha_hora_check_out, tasa_cambio_tca_cod)
+                VALUES (p_id_compra, v_servicio.Servicio_s_cod, v_costo, FALSE, 1, NOW(), NOW() + INTERVAL '1 day', v_tasa_cambio_cod);
+
+            WHEN 'Transporte' THEN
+                INSERT INTO Detalle_Traslado (Compra_co_cod, Traslado_s_cod, res_costo_sub_total, res_anulado, dt_fecha_hora, Automovil_mt_cod, tasa_cambio_tca_cod)
+                VALUES (p_id_compra, v_servicio.Servicio_s_cod, v_costo, FALSE, NOW(), 
+				(WITH transporte AS (SELECT transporte_terrestre_p_cod FROM traslado WHERE s_cod = v_servicio.servicio_s_cod)
+				SELECT mt_cod FROM automovil a, transporte t WHERE a.transporte_terrestre_p_cod = t.transporte_terrestre_p_cod LIMIT 1), 
+				v_tasa_cambio_cod);
+
+            WHEN 'Operador' THEN
+                INSERT INTO Entrada_Digital (Compra_co_cod, Servicio_Adicional_s_cod, res_costo_sub_total, res_anulado, ed_cant_personas, tasa_cambio_tca_cod)
+                VALUES (p_id_compra, v_servicio.Servicio_s_cod, v_costo, FALSE, v_cant_personas, v_tasa_cambio_cod);
+        END CASE;
+
+		UPDATE Compra SET co_monto_total = co_monto_total + v_costo WHERE co_cod = p_id_compra;
+
+    END LOOP;
+	RAISE NOTICE 'Reservas del paquete % agregadas a la compra %', p_id_paquete, p_id_compra;
+END;
+$$ LANGUAGE plpgsql;
+
+-- Crear compra tipo PAQUETE
+CREATE OR REPLACE FUNCTION fn_crear_compra_paquete(
+    p_cod_usuario INT,
+    p_id_paquete INT
+) RETURNS BOOLEAN AS $$
+DECLARE
+    v_cliente_cod INT;
+	v_compra_cod INT;
+	v_costo_paquete NUMERIC(12,2);
+    v_costo_millas INT;
+    v_cant_personas INT;
+BEGIN
+    -- Existe cliente
+	SELECT c.c_cod INTO v_cliente_cod FROM Cliente c, Usuario u WHERE c.c_cod = u.cliente_c_cod AND u.u_cod = p_cod_usuario;
+	IF v_cliente_cod IS NULL THEN
+		RAISE NOTICE 'El cliente no se ha encontrado';
+		RETURN NULL::BOOLEAN;
+	END IF;
+
+    -- Validar que el paquete existe
+    IF NOT EXISTS (SELECT 1 FROM Paquete_Turistico WHERE pt_cod = p_id_paquete) THEN
+		RAISE NOTICE 'El paquete turistico no existe';
+        RETURN NULL::BOOLEAN;
+    END IF;
+
+	-- Validar que la compra existe, si no, crearlo
+    SELECT * INTO v_compra_cod FROM fn_obtener_compra_activa(v_cliente_cod);
+	IF v_compra_cod IS NOT NULL THEN
+		RAISE NOTICE 'Ya hay otra compra en proceso. Completarla o cancelarla para comprar paquete';
+		RETURN NULL::BOOLEAN;
+	END IF;
+
+    -- Obtener datos del paquete
+    SELECT pt_costo, pt_costo_millas, pt_cant_personas 
+	INTO v_costo_paquete, v_costo_millas, v_cant_personas
+    FROM Paquete_Turistico WHERE pt_cod = p_id_paquete;
+
+    -- Crear la compra de paquete
+    INSERT INTO Compra (co_fecha_hora, co_monto_total, co_millas_a_agregar, co_estado, co_es_paquete, Cliente_c_cod, paquete_Turistico_pt_cod)
+    VALUES (NOW(), v_costo_paquete, 0, 'EN PROCESO', TRUE, v_cliente_cod, p_id_paquete)
+    RETURNING co_cod INTO v_compra_cod;
+
+    -- Obtener servicios del paquete e insertarlos en las tablas de detalle
+    -- Se insertarán con valores por defecto
+    CALL sp_agregar_servicios_paquete_a_compra(v_compra_cod, p_id_paquete);
+
+    RAISE NOTICE 'Compra de paquete creado exitosamente';
+	RETURN TRUE;
+	
+EXCEPTION WHEN OTHERS THEN
+	RAISE NOTICE 'Error creando la compra de paquete: %', SQLERRM;
 	RETURN NULL::BOOLEAN;
 END;
 $$ LANGUAGE plpgsql;

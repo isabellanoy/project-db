@@ -2660,7 +2660,7 @@ INSERT INTO Bar_Tip (bt_cant_camarotes, barco_mt_cod, tipo_camarote_tc_cod) VALU
     (100, (SELECT mt_cod FROM Barco WHERE b_nombre = 'Costa Toscana' LIMIT 1), (SELECT tc_cod FROM Tipo_Camarote WHERE tc_nombre = 'Mini Suite' LIMIT 1)),
     (250, (SELECT mt_cod FROM Barco WHERE b_nombre = 'AIDAnova' LIMIT 1), (SELECT tc_cod FROM Tipo_Camarote WHERE tc_nombre = 'Interior Superior' LIMIT 1)),
     (20,  (SELECT mt_cod FROM Barco WHERE b_nombre = 'MSC Fantasia' LIMIT 1), (SELECT tc_cod FROM Tipo_Camarote WHERE tc_nombre = 'The Haven / Yacht Club' LIMIT 1)),
-    (350, (SELECT mt_cod FROM Barco WHERE b_nombre = 'Anthem of the Seas' LIMIT 1), (SELECT tc_cod FROM Tipo_Camarote WHERE tc_nombre = 'Vista al Mar (Ojo de Buey)' LIMIT 1));	
+    (350, (SELECT mt_cod FROM Barco WHERE b_nombre = 'Anthem of the Seas' LIMIT 1), (SELECT tc_cod FROM Tipo_Camarote WHERE tc_nombre = 'Vista al Mar (Ojo de Buey)' LIMIT 1)),	
 	(10, 1, 2),
 	(10, 2, 1),
 	(10, 2, 2),
@@ -2697,7 +2697,7 @@ INSERT INTO Aer_Cla (ac_cant_asientos, aeronave_mt_cod, clase_asiento_ca_cod) VA
     (24,  (SELECT mt_cod FROM Aeronave WHERE aerolinea_p_cod = (SELECT p_cod FROM Aerolinea WHERE p_nombre = 'Iberia') LIMIT 1), (SELECT ca_cod FROM Clase_Asiento WHERE ca_nombre = 'Premium Economy' LIMIT 1)),
     (100, (SELECT mt_cod FROM Aeronave WHERE aerolinea_p_cod = (SELECT p_cod FROM Aerolinea WHERE p_nombre = 'Conviasa') LIMIT 1), (SELECT ca_cod FROM Clase_Asiento WHERE ca_nombre = 'Economy Standard' LIMIT 1)),
     (8,   (SELECT mt_cod FROM Aeronave WHERE aerolinea_p_cod = (SELECT p_cod FROM Aerolinea WHERE p_nombre = 'Japan Airlines') LIMIT 1), (SELECT ca_cod FROM Clase_Asiento WHERE ca_nombre = 'First Class Suite' LIMIT 1)),
-    (180, (SELECT mt_cod FROM Aeronave WHERE aerolinea_p_cod = (SELECT p_cod FROM Aerolinea WHERE p_nombre = 'Volaris') LIMIT 1), (SELECT ca_cod FROM Clase_Asiento WHERE ca_nombre = 'Economy Basic' LIMIT 1));	
+    (180, (SELECT mt_cod FROM Aeronave WHERE aerolinea_p_cod = (SELECT p_cod FROM Aerolinea WHERE p_nombre = 'Volaris') LIMIT 1), (SELECT ca_cod FROM Clase_Asiento WHERE ca_nombre = 'Economy Basic' LIMIT 1)),	
 	(10, 4, 2),		
 	(10, 6, 2),	
 	(10, 7, 2),	

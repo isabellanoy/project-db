@@ -653,7 +653,6 @@ COMMENT ON COLUMN Resena.r_calificacion IS 'Calificacion colocada sobre la reser
 COMMENT ON COLUMN Resena.r_comentario IS 'El comentario del cliente sobre la reserva';
 
 CREATE TABLE Res_Pro_Ser (
-    res_pro_ser_cod SERIAL NOT NULL,
 	Pro_Ser_Promocion_pr_cod INT NOT NULL,
     Pro_Ser_Servicio_s_cod INT NOT NULL,
 	Boleto_Vuelo_co_cod INT,
@@ -668,8 +667,7 @@ CREATE TABLE Res_Pro_Ser (
 	Detalle_Hospedaje_s_cod INT	
 );
 
-ALTER TABLE Res_Pro_Ser ADD CONSTRAINT Res_Pro_Ser_PK PRIMARY KEY (Pro_Ser_Promocion_pr_cod, Pro_Ser_Servicio_s_cod, res_pro_ser_cod);
-ALTER SEQUENCE res_pro_ser_res_pro_ser_cod_seq RESTART WITH 1;
+ALTER TABLE Res_Pro_Ser ADD CONSTRAINT Res_Pro_Ser_PK PRIMARY KEY (Pro_Ser_Promocion_pr_cod, Pro_Ser_Servicio_s_cod);
 
 CREATE TABLE Restaurante (
     re_cod SERIAL NOT NULL,

@@ -118,7 +118,6 @@ DROP FUNCTION IF EXISTS fn_quitar_servicios_promocion;
 DROP FUNCTION IF EXISTS fn_registrar_promocion;
 DROP FUNCTION IF EXISTS fn_username_existe;
 DROP FUNCTION IF EXISTS fn_validar_permiso_usuario;
-DROP FUNCTION IF EXISTS fn_registrar_cliente;
 DROP FUNCTION IF EXISTS fn_validar_proveedor_servicio;
 DROP FUNCTION IF EXISTS fn_actualizar_nombre_rol;
 DROP FUNCTION IF EXISTS fn_agregar_permisos_a_rol;
@@ -155,6 +154,8 @@ DROP FUNCTION IF EXISTS fn_pago_operacion_digital;
 DROP FUNCTION IF EXISTS fn_pago_cripto;
 DROP FUNCTION IF EXISTS fn_pagar_paquete;
 DROP FUNCTION IF EXISTS fn_procesar_a_pago;
+DROP FUNCTION IF EXISTS fn_obtener_tasa_actual;
+DROP FUNCTION IF EXISTS fn_crear_compra_paquete;
 
 DROP PROCEDURE IF EXISTS sp_actualizar_aerolinea;
 DROP PROCEDURE IF EXISTS sp_cambiar_clave_usuario;
@@ -171,6 +172,7 @@ DROP PROCEDURE IF EXISTS sp_agregar_servicios_paquete;
 DROP PROCEDURE IF EXISTS sp_quitar_servicios_paquete;
 DROP PROCEDURE IF EXISTS sp_validar_pagos;
 DROP PROCEDURE IF EXISTS sp_crear_cuotas_pago;
+DROP PROCEDURE IF EXISTS sp_agregar_servicios_paquete_a_compra;
 
 -- Triggers
 DROP FUNCTION IF EXISTS fn_crear_pago_millas;
