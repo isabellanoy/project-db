@@ -3665,3 +3665,349 @@ EXCEPTION WHEN OTHERS THEN
 	RETURN NULL::BOOLEAN;
 END;
 $$ LANGUAGE plpgsql;
+
+-- ===================================================
+-- FUNCIONES DE REPORTE
+-- ===================================================
+
+-- Reporte para calificacion promedio
+CREATE OR REPLACE FUNCTION fn_reporte_ranking_proveedores()
+RETURNS TABLE (
+    tipo_proveedor VARCHAR,
+    nombre_proveedor VARCHAR,
+    calificacion_promedio NUMERIC(4, 2),
+    cantidad_resenas INT,
+    clasificacion_estrellas VARCHAR -- Visualización textual (ej: ★★★★★)
+) AS $$
+BEGIN
+    RETURN QUERY
+    WITH Resenas_Unificadas AS (
+        -- 1. AEROLÍNEAS (Desde Boleto_Vuelo)
+        SELECT 
+            'Aerolínea'::VARCHAR AS tipo,
+            a.p_nombre AS nombre,
+            r.r_calificacion AS puntaje
+        FROM Resena r
+        JOIN Boleto_Vuelo bv 
+            ON r.Boleto_Vuelo_co_cod = bv.compra_co_cod 
+            AND r.Boleto_Vuelo_s_cod = bv.vuelo_s_cod
+        JOIN Vuelo v ON bv.vuelo_s_cod = v.s_cod
+        JOIN Aerolinea a ON v.aerolinea_p_cod = a.p_cod
+
+        UNION ALL
+
+        -- 2. CRUCEROS (Desde Boleto_Viaje)
+        SELECT 
+            'Compañía de Cruceros'::VARCHAR,
+            c.p_nombre,
+            r.r_calificacion
+        FROM Resena r
+        JOIN Boleto_Viaje bvi 
+            ON r.Boleto_Viaje_co_cod = bvi.compra_co_cod 
+            AND r.Boleto_Viaje_s_cod = bvi.viaje_s_cod
+        JOIN Viaje vi ON bvi.viaje_s_cod = vi.s_cod
+        JOIN Crucero c ON vi.crucero_p_cod = c.p_cod
+
+        UNION ALL
+
+        -- 3. OPERADORES TURÍSTICOS (Desde Entrada_Digital - Servicios Adicionales)
+        SELECT 
+            'Operador Turístico'::VARCHAR,
+            op.p_nombre,
+            r.r_calificacion
+        FROM Resena r
+        JOIN Entrada_Digital ed 
+            ON r.Entrada_Digital_co_cod = ed.compra_co_cod 
+            AND r.Entrada_Digital_s_cod = ed.servicio_adicional_s_cod
+        JOIN Servicio_Adicional sa ON ed.servicio_adicional_s_cod = sa.s_cod
+        JOIN Operador_Turistico op ON sa.operador_turistico_p_cod = op.p_cod
+
+		UNION ALL
+		
+        -- 4. TRANSPORTE TERRESTRE (Desde Detalle_Traslado - Traslado)
+		SELECT 
+            'Transporte Terrestre'::VARCHAR,
+            tt.p_nombre,
+            r.r_calificacion
+        FROM Resena r
+        JOIN Detalle_Traslado dt 
+            ON r.Detalle_Traslado_co_cod = dt.compra_co_cod 
+            AND r.Detalle_Traslado_s_cod = dt.traslado_s_cod
+        JOIN Traslado t ON dt.traslado_s_cod = t.s_cod
+        JOIN Transporte_Terrestre tt ON t.transporte_terrestre_p_cod = tt.p_cod
+
+		UNION ALL
+		
+		-- 5. HOTEL (Desde Detalle_Hospedaje - Habitacion)
+		SELECT 
+            'Hotel'::VARCHAR,
+            ho.p_nombre,
+            r.r_calificacion
+        FROM Resena r
+        JOIN Detalle_Hospedaje dh 
+            ON r.Detalle_Hospedaje_co_cod = dh.compra_co_cod 
+            AND r.Detalle_Hospedaje_s_cod = dh.habitacion_s_cod
+        JOIN Habitacion ha ON dh.habitacion_s_cod = ha.s_cod
+        JOIN Hotel ho ON ha.hotel_p_cod = ho.p_cod
+    )
+    SELECT 
+        ru.tipo,
+        ru.nombre,
+        ROUND(AVG(ru.puntaje), 2) AS promedio,
+        COUNT(*)::INT AS total_resenas,
+        -- Genera estrellas visuales basadas en el promedio (0-10)
+        REPEAT('★', (ROUND(AVG(ru.puntaje))/2)::INT)::VARCHAR AS estrellas
+    FROM Resenas_Unificadas ru
+    GROUP BY ru.tipo, ru.nombre
+    ORDER BY promedio DESC, ru.nombre; -- Ordenar del mejor calificado al peor
+END;
+$$ LANGUAGE plpgsql;
+
+-- Impacto Financiero de Millas en Reservas Internacionales
+CREATE OR REPLACE FUNCTION fn_reporte_impacto_financiero_millas()
+RETURNS TABLE (
+    id_compra INT,
+    fecha_transaccion TIMESTAMP,
+    millas_usadas NUMERIC(12,2),
+    tasa_milla_bs NUMERIC(10, 4), -- Valor de 1 Milla en VES
+    valor_total_bs NUMERIC(15, 2), -- Valor total en VES
+    tasa_usd_historica NUMERIC(10, 4), -- Tasa USD en la fecha
+    valor_cubierto_usd NUMERIC(15, 2), -- Equivalente en USD
+    tasa_eur_historica NUMERIC(10, 4), -- Tasa EUR en la fecha
+    valor_cubierto_eur NUMERIC(15, 2)  -- Equivalente en EUR
+) AS $$
+BEGIN
+    RETURN QUERY
+    WITH Pagos_Milla AS (
+        -- Seleccionar pagos hechos con millas
+        SELECT 
+            p.compra_co_cod,
+            p.pa_fecha_hora AS fecha_pago,
+            p.pa_monto AS cantidad_millas -- Asumiendo que m_cant_acumulada guarda lo usado en la tx
+        FROM Pago p
+        JOIN Metodo_Pago mp ON p.metodo_pago_mp_cod = mp.mp_cod
+        WHERE mp.mp_tipo = 'MILLA'
+    ),
+    Compras_Internacionales AS (
+        -- Filtrar compras que tengan algún destino/lugar fuera de Venezuela
+        SELECT DISTINCT c.co_cod
+        FROM Compra c
+        -- Verificar Vuelos (Origen)
+        LEFT JOIN Boleto_Vuelo bv ON c.co_cod = bv.compra_co_cod
+        LEFT JOIN Vuelo v ON bv.vuelo_s_cod = v.s_cod
+        LEFT JOIN Lugar lug_v1 ON v.lugar_l_cod = lug_v1.l_cod
+		LEFT JOIN Lugar lug_v2 ON lug_v1.lugar_l_cod = lug_v2.l_cod
+		LEFT JOIN Lugar lug_v3 ON lug_v2.lugar_l_cod = lug_v3.l_cod
+		LEFT JOIN Lugar lug_v4 ON lug_v3.lugar_l_cod = lug_v4.l_cod
+
+		-- Verificar Traslados
+		LEFT JOIN Detalle_Traslado dt ON c.co_cod = dt.compra_co_cod
+		LEFT JOIN Traslado t ON t.s_cod = dt.traslado_s_cod
+		LEFT JOIN Lugar lug_t1 ON lug_t1.l_cod = t.lugar_l_cod
+		LEFT JOIN Lugar lug_t2 ON lug_t2.l_cod = lug_t1.lugar_l_cod
+		LEFT JOIN Lugar lug_t3 ON lug_t3.l_cod = lug_t2.lugar_l_cod
+		LEFT JOIN Lugar lug_t4 ON lug_t4.l_cod = lug_t3.lugar_l_cod
+		
+		-- Verificar Hoteles (Ubicación)
+        LEFT JOIN Detalle_Hospedaje dh ON c.co_cod = dh.compra_co_cod
+        LEFT JOIN Habitacion h ON dh.habitacion_s_cod = h.s_cod
+        LEFT JOIN Hotel ho ON h.hotel_p_cod = ho.p_cod
+		LEFT JOIN Lugar lug_h1 ON lug_h1.l_cod = ho.lugar_l_cod
+		LEFT JOIN Lugar lug_h2 ON lug_h2.l_cod = lug_h1.lugar_l_cod
+		LEFT JOIN Lugar lug_h3 ON lug_h3.l_cod = lug_h2.lugar_l_cod
+		LEFT JOIN Lugar lug_h4 ON lug_h4.l_cod = lug_h3.lugar_l_cod
+       
+		-- Verificar Viajes (Origen)
+		LEFT JOIN Boleto_Viaje bvi ON c.co_cod = bvi.compra_co_cod
+		LEFT JOIN Viaje vi ON vi.s_cod = bvi.viaje_s_cod
+		LEFT JOIN Lugar lug_vi1 ON lug_vi1.l_cod = vi.lugar_l_cod
+		LEFT JOIN Lugar lug_vi2 ON lug_vi2.l_cod = lug_vi1.lugar_l_cod
+		LEFT JOIN Lugar lug_vi3 ON lug_vi3.l_cod = lug_vi2.lugar_l_cod
+		LEFT JOIN Lugar lug_vi4 ON lug_vi4.l_cod = lug_vi3.lugar_l_cod
+		
+		-- Verificar Servicios Adicionales
+		LEFT JOIN Entrada_Digital ed ON c.co_cod = ed.compra_co_cod
+		LEFT JOIN Servicio_Adicional sa ON sa.s_cod = ed.servicio_adicional_s_cod
+		LEFT JOIN Lugar lug_sa1 ON lug_sa1.l_cod = sa.lugar_l_cod
+		LEFT JOIN Lugar lug_sa2 ON lug_sa2.l_cod = lug_sa1.lugar_l_cod
+		LEFT JOIN Lugar lug_sa3 ON lug_sa3.l_cod = lug_sa2.lugar_l_cod
+		LEFT JOIN Lugar lug_sa4 ON lug_sa4.l_cod = lug_sa3.lugar_l_cod
+        
+        WHERE (
+			(COALESCE(lug_v1.l_nombre, '') <> 'Venezuela') AND
+			(COALESCE(lug_v2.l_nombre, '') <> 'Venezuela') AND
+			(COALESCE(lug_v3.l_nombre, '') <> 'Venezuela') AND
+			(COALESCE(lug_v4.l_nombre, '') <> 'Venezuela'))
+			OR (
+			(COALESCE(lug_t1.l_nombre, '') <> 'Venezuela') AND
+			(COALESCE(lug_t2.l_nombre, '') <> 'Venezuela') AND
+			(COALESCE(lug_t3.l_nombre, '') <> 'Venezuela') AND
+			(COALESCE(lug_t4.l_nombre, '') <> 'Venezuela'))
+			OR (
+			(COALESCE(lug_h1.l_nombre, '') <> 'Venezuela') AND
+			(COALESCE(lug_h2.l_nombre, '') <> 'Venezuela') AND
+			(COALESCE(lug_h3.l_nombre, '') <> 'Venezuela') AND
+			(COALESCE(lug_h4.l_nombre, '') <> 'Venezuela'))
+			OR (
+			(COALESCE(lug_vi1.l_nombre, '') <> 'Venezuela') AND
+			(COALESCE(lug_vi2.l_nombre, '') <> 'Venezuela') AND
+			(COALESCE(lug_vi3.l_nombre, '') <> 'Venezuela') AND
+			(COALESCE(lug_vi4.l_nombre, '') <> 'Venezuela'))
+			OR (
+			(COALESCE(lug_sa1.l_nombre, '') <> 'Venezuela') AND
+			(COALESCE(lug_sa2.l_nombre, '') <> 'Venezuela') AND
+			(COALESCE(lug_sa3.l_nombre, '') <> 'Venezuela') AND
+			(COALESCE(lug_sa4.l_nombre, '') <> 'Venezuela'))
+    )
+    SELECT 
+        pm.compra_co_cod,
+        pm.fecha_pago,
+        pm.cantidad_millas,
+        
+        -- Obtener Tasa Histórica de la Milla (MILLA -> VES)
+        COALESCE((
+            SELECT tca_valor_tasa FROM Tasa_Cambio 
+            WHERE tca_divisa_origen = 'MILLA' 
+              AND pm.fecha_pago >= tca_fecha_hora_tasa 
+              AND (tca_fecha_hora_fin IS NULL OR pm.fecha_pago < tca_fecha_hora_fin)
+            ORDER BY tca_fecha_hora_tasa DESC LIMIT 1
+        ), 0) AS tasa_milla,
+
+        -- Calcular Valor en VES
+        (pm.cantidad_millas * COALESCE((
+            SELECT tca_valor_tasa FROM Tasa_Cambio 
+            WHERE tca_divisa_origen = 'MILLA' 
+              AND pm.fecha_pago >= tca_fecha_hora_tasa 
+              AND (tca_fecha_hora_fin IS NULL OR pm.fecha_pago < tca_fecha_hora_fin)
+            ORDER BY tca_fecha_hora_tasa DESC LIMIT 1
+        ), 0)) AS valor_ves,
+
+        -- Obtener Tasa Histórica USD (USD -> VES)
+        COALESCE((
+            SELECT tca_valor_tasa FROM Tasa_Cambio 
+            WHERE tca_divisa_origen = 'USD' 
+              AND pm.fecha_pago >= tca_fecha_hora_tasa 
+              AND (tca_fecha_hora_fin IS NULL OR pm.fecha_pago < tca_fecha_hora_fin)
+            ORDER BY tca_fecha_hora_tasa DESC LIMIT 1
+        ), 1) AS tasa_usd, -- Evitar división por cero
+
+        -- Calcular Valor Cubierto en USD (Valor VES / Tasa USD)
+        ROUND(
+            (pm.cantidad_millas * 
+			COALESCE(
+			(SELECT tca_valor_tasa 
+			FROM Tasa_Cambio WHERE tca_divisa_origen = 'MILLA' 
+			AND pm.fecha_pago >= tca_fecha_hora_tasa ORDER BY tca_fecha_hora_tasa DESC LIMIT 1), 0)) 
+            / 
+            NULLIF(COALESCE(
+			(SELECT tca_valor_tasa 
+			FROM Tasa_Cambio WHERE tca_divisa_origen = 'USD' 
+			AND pm.fecha_pago >= tca_fecha_hora_tasa ORDER BY tca_fecha_hora_tasa DESC LIMIT 1), 1), 0)
+        , 2) AS valor_usd,
+
+        -- Obtener Tasa Histórica EUR (EUR -> VES)
+        COALESCE((
+            SELECT tca_valor_tasa FROM Tasa_Cambio 
+            WHERE tca_divisa_origen = 'EUR' 
+              AND pm.fecha_pago >= tca_fecha_hora_tasa 
+              AND (tca_fecha_hora_fin IS NULL OR pm.fecha_pago < tca_fecha_hora_fin)
+            ORDER BY tca_fecha_hora_tasa DESC LIMIT 1
+        ), 1) AS tasa_eur,
+
+        -- Calcular Valor Cubierto en EUR
+        ROUND(
+            (pm.cantidad_millas * 
+			COALESCE(
+			(SELECT tca_valor_tasa 
+			FROM Tasa_Cambio WHERE tca_divisa_origen = 'MILLA' 
+			AND pm.fecha_pago >= tca_fecha_hora_tasa ORDER BY tca_fecha_hora_tasa DESC LIMIT 1), 0)) 
+            / 
+            NULLIF(COALESCE(
+			(SELECT tca_valor_tasa 
+			FROM Tasa_Cambio WHERE tca_divisa_origen = 'EUR' 
+			AND pm.fecha_pago >= tca_fecha_hora_tasa ORDER BY tca_fecha_hora_tasa DESC LIMIT 1), 1), 0)
+        , 2) AS valor_eur
+
+    FROM Pagos_Milla pm
+    JOIN Compras_Internacionales ci ON pm.compra_co_cod = ci.co_cod;
+END;
+$$ LANGUAGE plpgsql;
+
+-- Auditoria reembolsos y penalizaciones por cancelacion
+CREATE OR REPLACE FUNCTION fn_auditoria_reembolsos()
+RETURNS TABLE (
+	razon_reembolso VARCHAR,
+	monto_retenido_10 NUMERIC(15,2),
+	monto_devuelto_90 NUMERIC(15,2),
+	fecha_reembolso DATE,
+	reserva_cancelada VARCHAR
+) AS $$
+BEGIN
+	RETURN QUERY 
+	SELECT r.ree_razon, ROUND(nc.nc_monto_devuelto / 9.0, 2), nc.nc_monto_devuelto, r.ree_fecha_hora::DATE,
+        -- Identificar qué se canceló
+        CASE 
+            WHEN r.Boleto_Vuelo_co_cod IS NOT NULL THEN 
+                'Vuelo: ' || COALESCE(v.v_cod_vue, 'N/A')::VARCHAR
+            WHEN r.Detalle_Traslado_co_cod IS NOT NULL THEN 
+                'Traslado hacia: ' || COALESCE(lug_t.l_nombre, 'Destino Desconocido')::VARCHAR
+            WHEN r.Boleto_Viaje_co_cod IS NOT NULL THEN 
+                'Crucero: ' || COALESCE(b.b_nombre, 'Barco Desconocido')::VARCHAR
+            WHEN r.Entrada_Digital_co_cod IS NOT NULL THEN 
+                'Actividad: ' || COALESCE(sa.sa_nombre, 'N/A')::VARCHAR
+            WHEN r.Detalle_Hospedaje_co_cod IS NOT NULL THEN 
+                'Hotel: ' || COALESCE(h.p_nombre, 'N/A') || ' - Hab: ' || COALESCE(hab.ha_numero, '?')::VARCHAR
+            ELSE 'Servicio Desconocido'::VARCHAR
+        END
+    FROM Reembolso r
+    JOIN Nota_Credito nc ON r.ree_cod = nc.reembolso_ree_cod
+    
+    -- Vuelos
+    LEFT JOIN Boleto_Vuelo bv ON r.Boleto_Vuelo_co_cod = bv.compra_co_cod AND r.Boleto_Vuelo_s_cod = bv.vuelo_s_cod
+    LEFT JOIN Vuelo v ON bv.vuelo_s_cod = v.s_cod
+    
+    -- Traslados
+    LEFT JOIN Detalle_Traslado dt ON r.Detalle_Traslado_co_cod = dt.compra_co_cod AND r.Detalle_Traslado_s_cod = dt.traslado_s_cod
+    LEFT JOIN Traslado t ON dt.traslado_s_cod = t.s_cod
+    LEFT JOIN Lugar lug_t ON t.lugar_l_cod = lug_t.l_cod
+    
+    -- Viajes
+    LEFT JOIN Boleto_Viaje bvi ON r.Boleto_Viaje_co_cod = bvi.compra_co_cod AND r.Boleto_Viaje_s_cod = bvi.viaje_s_cod
+    LEFT JOIN Viaje vi ON bvi.viaje_s_cod = vi.s_cod
+    LEFT JOIN Barco b ON vi.barco_mt_cod = b.mt_cod
+    
+    -- Entradas
+    LEFT JOIN Entrada_Digital ed ON r.Entrada_Digital_co_cod = ed.compra_co_cod AND r.Entrada_Digital_s_cod = ed.servicio_adicional_s_cod
+    LEFT JOIN Servicio_Adicional sa ON ed.servicio_adicional_s_cod = sa.s_cod
+    
+    -- Hoteles
+    LEFT JOIN Detalle_Hospedaje dh ON r.Detalle_Hospedaje_co_cod = dh.compra_co_cod AND r.Detalle_Hospedaje_s_cod = dh.habitacion_s_cod
+    LEFT JOIN Habitacion hab ON dh.habitacion_s_cod = hab.s_cod
+    LEFT JOIN Hotel h ON hab.hotel_p_cod = h.p_cod
+    
+    WHERE r.ree_fecha_hora BETWEEN (CURRENT_TIMESTAMP - '3 months'::INTERVAL) AND CURRENT_TIMESTAMP;
+END;
+$$ LANGUAGE plpgsql;
+
+-- Canje de paquetes por millas
+CREATE OR REPLACE FUNCTION fn_paquetes_canjeados()
+RETURNS TABLE (
+	nombre_paquete VARCHAR,
+	descripcion_paquete VARCHAR,
+	costo_millas INT
+) AS $$
+BEGIN
+	RETURN QUERY WITH Paquetes_Canjeados AS (
+	SELECT DISTINCT pt_cod 
+	FROM Paquete_Turistico
+	JOIN Compra ON pt_cod = paquete_turistico_pt_cod
+	WHERE co_fecha_hora BETWEEN (CURRENT_TIMESTAMP - '6 months'::INTERVAL) AND CURRENT_TIMESTAMP
+	AND co_estado = 'FINALIZADO'
+	)
+	SELECT pt_nombre, pt_descripcion, pt_costo_millas
+	FROM Paquete_Turistico pt
+	JOIN Paquetes_Canjeados pc ON pt.pt_cod = pc.pt_cod
+	ORDER BY pt_costo_millas DESC
+	LIMIT 5;
+END;
+$$ LANGUAGE plpgsql;

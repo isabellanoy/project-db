@@ -156,6 +156,10 @@ DROP FUNCTION IF EXISTS fn_pagar_paquete;
 DROP FUNCTION IF EXISTS fn_procesar_a_pago;
 DROP FUNCTION IF EXISTS fn_obtener_tasa_actual;
 DROP FUNCTION IF EXISTS fn_crear_compra_paquete;
+DROP FUNCTION IF EXISTS fn_reporte_ranking_proveedores;
+DROP FUNCTION IF EXISTS fn_reporte_impacto_financiero_millas;
+DROP FUNCTION IF EXISTS fn_auditoria_reembolsos;
+DROP FUNCTION IF EXISTS fn_paquetes_canjeados;
 
 DROP PROCEDURE IF EXISTS sp_actualizar_aerolinea;
 DROP PROCEDURE IF EXISTS sp_cambiar_clave_usuario;
@@ -177,3 +181,6 @@ DROP PROCEDURE IF EXISTS sp_agregar_servicios_paquete_a_compra;
 -- Triggers
 DROP FUNCTION IF EXISTS fn_crear_pago_millas;
 DROP TRIGGER IF EXISTS tr_nuevo_cliente_millas ON Cliente;
+
+DROP FUNCTION IF EXISTS fn_generar_nota_credito;
+DROP TRIGGER IF EXISTS trg_crear_nota_credito_post_reembolso ON Reembolso;
