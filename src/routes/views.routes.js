@@ -22,7 +22,6 @@ router.get('/', (_req, res) => {
 router.get('/login', (_req, res) => {
   sendView(res, ['auth', 'login.html']);
 });
-// Nota: Si creas register.html, agrega la ruta aquí.
 
 // --- Rutas de Usuario (Cliente) ---
 
