@@ -1,4 +1,5 @@
 const express = require('express');
+const path = require('path');
 const pool = require('../config/db');
 
 const router = express.Router();
@@ -15,6 +16,23 @@ const parseUserId = (req) => {
   const parsed = Number(candidate);
   return Number.isNaN(parsed) ? null : parsed;
 };
+
+router.get('/', (_req, res) => {
+  return success(res, {
+    basePath: '/api/auth',
+    endpoints: [
+      { method: 'POST', path: '/api/auth/login', description: 'Valida credenciales de usuario.' },
+      { method: 'POST', path: '/api/auth/register', description: 'Registra cliente, usuario y método de pago inicial.' },
+      { method: 'GET', path: '/api/auth/me', description: 'Devuelve el perfil completo del cliente autenticado.' },
+      { method: 'POST', path: '/api/auth/change-password', description: 'Cambia la contraseña validando la clave actual.' }
+    ],
+    hint: 'Usa el método HTTP indicado para cada ruta. Las rutas POST esperan JSON en el cuerpo.'
+  }, 'Rutas de autenticación disponibles');
+});
+
+router.get('/register', (_req, res) => {
+  res.sendFile(path.join(process.cwd(), 'src', 'views', 'register.html'));
+});
 
 router.post('/register', async (req, res, next) => {
   const {
@@ -85,6 +103,10 @@ router.post('/register', async (req, res, next) => {
   }
 });
 
+router.get('/login', (_req, res) => {
+  res.sendFile(path.join(process.cwd(), 'src', 'views', 'login.html'));
+});
+
 router.post('/login', async (req, res, next) => {
   const { username_o_email: usernameOrEmail, clave } = req.body ?? {};
 
@@ -125,6 +147,19 @@ router.get('/me', async (req, res, next) => {
   } catch (error) {
     return next(error);
   }
+});
+
+router.get('/change-password', (_req, res) => {
+  return success(
+    res,
+    {
+      method: 'POST',
+      path: '/api/auth/change-password',
+      requiredFields: ['usuario_cod', 'clave_actual', 'clave_nueva'],
+      hint: 'Envía el identificador de usuario por query, header X-User-Id o en el cuerpo.'
+    },
+    'Descripción del endpoint /api/auth/change-password'
+  );
 });
 
 router.post('/change-password', async (req, res, next) => {

@@ -28,6 +28,25 @@ const parseIntegerArray = (value) => {
   return null;
 };
 
+router.get('/', (_req, res) => {
+  return res.json({
+    ok: true,
+    message: 'Rutas disponibles para roles y permisos',
+    data: {
+      basePath: '/api',
+      endpoints: [
+        { method: 'GET', path: '/api/roles', description: 'Lista todos los roles con su cantidad de permisos.' },
+        { method: 'GET', path: '/api/roles/:id', description: 'Obtiene un rol junto a su JSON de permisos.' },
+        { method: 'POST', path: '/api/roles', description: 'Crea un rol y asigna permisos opcionales.' },
+        { method: 'PUT', path: '/api/roles/:id/permisos/add', description: 'Agrega permisos en lote a un rol.' },
+        { method: 'PUT', path: '/api/roles/:id/permisos/remove', description: 'Quita permisos en lote a un rol.' },
+        { method: 'GET', path: '/api/permisos', description: 'Lista los permisos disponibles.' }
+      ],
+      hint: 'Los métodos POST/PUT requieren cuerpo JSON con los campos documentados en README. Para ver todo el catálogo visita /api/docs.'
+    }
+  });
+});
+
 router.get('/roles', async (_req, res, next) => {
   try {
     const result = await pool.query('SELECT * FROM fn_listar_todos_roles()');

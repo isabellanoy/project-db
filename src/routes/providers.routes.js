@@ -25,6 +25,24 @@ const parseDateOrNull = (value) => {
   return Number.isNaN(date.getTime()) ? null : date;
 };
 
+router.get('/', (_req, res) => {
+  return ok(
+    res,
+    {
+      basePath: '/api/providers',
+      endpoints: [
+        { method: 'GET', path: '/api/providers/aerolineas', description: 'Lista todas las aerolíneas disponibles.' },
+        { method: 'GET', path: '/api/providers/aerolineas/:id', description: 'Obtiene una aerolínea específica.' },
+        { method: 'POST', path: '/api/providers/aerolineas', description: 'Crea una aerolínea validando lugar y fechas.' },
+        { method: 'PUT', path: '/api/providers/aerolineas/:id', description: 'Actualiza una aerolínea permitiendo cambios parciales.' },
+        { method: 'DELETE', path: '/api/providers/aerolineas/:id', description: 'Elimina una aerolínea si no tiene referencias activas.' }
+      ],
+      hint: 'Recuerda enviar JSON válido en los métodos POST y PUT.'
+    },
+    'Rutas para gestión de proveedores disponibles'
+  );
+});
+
 // Aerolíneas - procedimientos almacenados
 router.get('/aerolineas', async (_req, res, next) => {
   try {
