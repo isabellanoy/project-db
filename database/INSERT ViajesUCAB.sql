@@ -2798,7 +2798,7 @@ SELECT s_cod, 'JL016', '2025-11-25 17:00:00', 8800, 10,
     (SELECT l_cod FROM Lugar WHERE l_nombre = 'Los Angeles' LIMIT 1),
     (SELECT mt_cod FROM Aeronave WHERE aerolinea_p_cod = (SELECT p_cod FROM Aerolinea WHERE p_nombre = 'Japan Airlines' LIMIT 1) LIMIT 1) FROM s;
 
--- FCO -> MEX (ITA Airways)
+-- FCO -> MEX (Aeroitalia)
 WITH s AS (INSERT INTO Servicio (s_costo, s_millas_otorgar) VALUES (950.00, 6000) RETURNING s_cod)
 INSERT INTO Vuelo (s_cod, v_cod_vue, v_fecha_hora_salida, v_distancia_km, v_duracion_horas, aerolinea_p_cod, lugar_l_cod, lugar_l_cod2, aeronave_mt_cod)
 SELECT s_cod, 'AZ676', '2025-12-10 10:00:00', 10200, 13, 
@@ -4054,4 +4054,154 @@ INSERT INTO Pago_Cuota VALUES
 	(3581.61, '2025-02-28 15:07:04', 8, (SELECT mp_cod FROM Metodo_Pago WHERE od_num_referencia = 8433332855)),
 	(990.00, '2025-02-01 17:22:41', 9, (SELECT mp_cod FROM Metodo_Pago WHERE od_num_referencia = 9283339221)),
 	(990.00, '2025-02-28 15:07:04', 10, (SELECT mp_cod FROM Metodo_Pago WHERE od_num_referencia = 8447392885));
+
+WITH 
+    Datos AS (
+        SELECT 
+            (SELECT c_cod FROM Cliente LIMIT 1 OFFSET 0) as cliente_id,
+            (SELECT tca_cod FROM Tasa_Cambio WHERE tca_divisa_origen = 'USD' AND tca_fecha_hora_fin IS NULL LIMIT 1) as tasa_usd,
+            (SELECT ca_cod FROM Clase_Asiento LIMIT 1) as asiento_std,
+            (SELECT mt_cod FROM Automovil LIMIT 1) as auto_std
+    ),
+    Nueva_Compra AS (
+        INSERT INTO Compra (co_fecha_hora, co_monto_total, co_millas_a_agregar, co_compensacion_huella, co_estado, cliente_c_cod)
+        SELECT '2024-12-31 8:00:00', 935.00, 4900, 0, 'FINALIZADO', cliente_id FROM Datos
+        RETURNING co_cod
+    ),
+    Ins_Vuelo AS (
+        INSERT INTO Boleto_Vuelo (compra_co_cod, vuelo_s_cod, res_costo_sub_total, res_anulado, bv_cant_pasajeros, clase_asiento_ca_cod, tasa_cambio_tca_cod)
+        SELECT nc.co_cod, 1, 850.00, FALSE, 1, d.asiento_std, d.tasa_usd 
+        FROM Nueva_Compra nc, Datos d
+    ),
+    Ins_Hotel AS (
+        INSERT INTO Detalle_Hospedaje (compra_co_cod, habitacion_s_cod, res_costo_sub_total, res_anulado, dh_cant_noches, dh_fecha_hora_check_in, dh_fecha_hora_check_out, tasa_cambio_tca_cod)
+        SELECT nc.co_cod, 42, 300.00, FALSE, 1, ('2024-12-31 12:00:00'::timestamp + interval '5 days')::timestamp, ('2024-12-31 16:00:00'::timestamp + interval '6 days')::timestamp, d.tasa_usd
+        FROM Nueva_Compra nc, Datos d
+    ),
+    Ins_Promos AS (
+        INSERT INTO Res_Pro_Ser (boleto_vuelo_co_cod, boleto_vuelo_s_cod, detalle_hospedaje_co_cod, detalle_hospedaje_s_cod, pro_ser_servicio_s_cod, pro_ser_promocion_pr_cod)
+        SELECT nc.co_cod, 1, null, null, 1, 1 FROM Nueva_Compra nc
+        UNION ALL
+        SELECT null, null, nc.co_cod, 42, 42, 2 FROM Nueva_Compra nc
+    )
+SELECT co_cod as compra_1_generada FROM Nueva_Compra;
+
+WITH 
+    Datos AS (
+        SELECT 
+            (SELECT c_cod FROM Cliente LIMIT 1 OFFSET 1) as cliente_id,
+            (SELECT tca_cod FROM Tasa_Cambio WHERE tca_divisa_origen = 'USD' AND tca_fecha_hora_fin IS NULL LIMIT 1) as tasa_usd,
+            (SELECT tc_cod FROM Tipo_Camarote LIMIT 1) as camarote_std,
+            (SELECT mt_cod FROM Automovil LIMIT 1) as auto_std
+    ),
+    Nueva_Compra AS (
+        INSERT INTO Compra (co_fecha_hora, co_monto_total, co_millas_a_agregar, co_compensacion_huella, co_estado, cliente_c_cod)
+        SELECT '2025-02-10 8:00:00', 1108.50, 5050, 0, 'FINALIZADO', cliente_id FROM Datos
+        RETURNING co_cod
+    ),
+    Ins_Viaje AS (
+        INSERT INTO Boleto_Viaje (compra_co_cod, viaje_s_cod, res_costo_sub_total, res_anulado, bvi_cant_pasajeros, tipo_camarote_tc_cod, tasa_cambio_tca_cod)
+        SELECT nc.co_cod, 21, 1200.00, FALSE, 1, d.camarote_std, d.tasa_usd
+        FROM Nueva_Compra nc, Datos d
+    ),
+    Ins_Traslado AS (
+        INSERT INTO Detalle_Traslado (compra_co_cod, traslado_s_cod, res_costo_sub_total, res_anulado, dt_fecha_hora, automovil_mt_cod, tasa_cambio_tca_cod)
+        SELECT nc.co_cod, 11, 30.00, FALSE, ('2025-02-10 8:00:00'::timestamp + interval '1 day')::timestamp, d.auto_std, d.tasa_usd
+        FROM Nueva_Compra nc, Datos d
+    ),
+    Ins_Promos AS (
+        INSERT INTO Res_Pro_Ser (boleto_viaje_co_cod, boleto_viaje_s_cod, detalle_traslado_co_cod, detalle_traslado_s_cod, pro_ser_servicio_s_cod, pro_ser_promocion_pr_cod)
+        SELECT nc.co_cod, 21, null, null, 21, 3 FROM Nueva_Compra nc
+        UNION ALL
+        SELECT null, null, nc.co_cod, 11, 11, 4 FROM Nueva_Compra nc
+    )
+SELECT co_cod as compra_2_generada FROM Nueva_Compra;
+
+WITH 
+    Datos AS (
+        SELECT 
+            (SELECT c_cod FROM Cliente LIMIT 1 OFFSET 2) as cliente_id,
+            (SELECT tca_cod FROM Tasa_Cambio WHERE tca_divisa_origen = 'USD' AND tca_fecha_hora_fin IS NULL LIMIT 1) as tasa_usd,
+            (SELECT ca_cod FROM Clase_Asiento LIMIT 1) as asiento_std
+    ),
+    Nueva_Compra AS (
+        INSERT INTO Compra (co_fecha_hora, co_monto_total, co_millas_a_agregar, co_compensacion_huella, co_estado, cliente_c_cod)
+        SELECT '2025-02-01 8:00:00', 575.00, 2500, 0, 'FINALIZADO', cliente_id FROM Datos
+        RETURNING co_cod
+    ),
+    Ins_Adicional AS (
+        INSERT INTO Entrada_Digital (compra_co_cod, servicio_adicional_s_cod, res_costo_sub_total, res_anulado, ed_cant_personas, tasa_cambio_tca_cod)
+        VALUES ((SELECT co_cod FROM Nueva_Compra), 33, 500.00, FALSE, 1, (SELECT tasa_usd FROM Datos))
+    ),
+    Ins_Vuelo AS (
+        INSERT INTO Boleto_Vuelo (compra_co_cod, vuelo_s_cod, res_costo_sub_total, res_anulado, bv_cant_pasajeros, clase_asiento_ca_cod, tasa_cambio_tca_cod)
+        SELECT nc.co_cod, 10, 250.00, FALSE, 1, d.asiento_std, d.tasa_usd
+        FROM Nueva_Compra nc, Datos d
+    ),
+    Ins_Promos AS (
+        INSERT INTO Res_Pro_Ser (entrada_digital_co_cod, entrada_digital_s_cod, boleto_vuelo_co_cod, boleto_vuelo_s_cod, pro_ser_servicio_s_cod, pro_ser_promocion_pr_cod)
+        SELECT nc.co_cod, 33, null, null, 33, 5 FROM Nueva_Compra nc
+        UNION ALL
+        SELECT null, null, nc.co_cod, 10, 10, 6 FROM Nueva_Compra nc
+    )
+SELECT co_cod as compra_3_generada FROM Nueva_Compra;
+
+WITH 
+    Datos AS (
+        SELECT 
+            (SELECT c_cod FROM Cliente LIMIT 1 OFFSET 3) as cliente_id,
+            (SELECT tca_cod FROM Tasa_Cambio WHERE tca_divisa_origen = 'USD' AND tca_fecha_hora_fin IS NULL LIMIT 1) as tasa_usd,
+            (SELECT tc_cod FROM Tipo_Camarote LIMIT 1) as camarote_std
+    ),
+    Nueva_Compra AS (
+        INSERT INTO Compra (co_fecha_hora, co_monto_total, co_millas_a_agregar, co_compensacion_huella, co_estado, cliente_c_cod)
+        SELECT '2025-03-22 8:00:00', 1725.00, 7000, 0, 'FINALIZADO', cliente_id FROM Datos
+        RETURNING co_cod
+    ),
+    Ins_Hotel AS (
+        INSERT INTO Detalle_Hospedaje (compra_co_cod, habitacion_s_cod, res_costo_sub_total, res_anulado, dh_cant_noches, dh_fecha_hora_check_in, dh_fecha_hora_check_out, tasa_cambio_tca_cod)
+        SELECT nc.co_cod, 43, 500.00, FALSE, 1, ('2025-03-22 8:00:00'::timestamp + interval '10 days')::timestamp, ('2025-03-22 8:00:00'::timestamp + interval '11 days')::timestamp, d.tasa_usd
+        FROM Nueva_Compra nc, Datos d
+    ),
+    Ins_Viaje AS (
+        INSERT INTO Boleto_Viaje (compra_co_cod, viaje_s_cod, res_costo_sub_total, res_anulado, bvi_cant_pasajeros, tipo_camarote_tc_cod, tasa_cambio_tca_cod)
+        SELECT nc.co_cod, 23, 1500.00, FALSE, 1, d.camarote_std, d.tasa_usd
+        FROM Nueva_Compra nc, Datos d
+    ),
+    Ins_Promos AS (
+        INSERT INTO Res_Pro_Ser (detalle_hospedaje_co_cod, detalle_hospedaje_s_cod, Boleto_Viaje_co_cod, Boleto_Viaje_s_cod, pro_ser_servicio_s_cod, pro_ser_promocion_pr_cod)
+        SELECT nc.co_cod, 43, null, null, 43, 7 FROM Nueva_Compra nc
+        UNION ALL
+        SELECT null, null, nc.co_cod, 23, 23, 8 FROM Nueva_Compra nc
+    )
+SELECT co_cod as compra_4_generada FROM Nueva_Compra;
+
+WITH 
+    Datos AS (
+        SELECT 
+            (SELECT c_cod FROM Cliente LIMIT 1 OFFSET 4) as cliente_id,
+            (SELECT tca_cod FROM Tasa_Cambio WHERE tca_divisa_origen = 'USD' AND tca_fecha_hora_fin IS NULL LIMIT 1) as tasa_usd,
+            (SELECT mt_cod FROM Automovil LIMIT 1) as auto_std
+    ),
+    Nueva_Compra AS (
+        INSERT INTO Compra (co_fecha_hora, co_monto_total, co_millas_a_agregar, co_compensacion_huella, co_estado, cliente_c_cod)
+        SELECT '2025-04-26 8:00:00', 187.50, 250, 0, 'FINALIZADO', cliente_id FROM Datos
+        RETURNING co_cod
+    ),
+    Ins_Traslado AS (
+        INSERT INTO Detalle_Traslado (compra_co_cod, traslado_s_cod, res_costo_sub_total, res_anulado, dt_fecha_hora, automovil_mt_cod, tasa_cambio_tca_cod)
+        SELECT nc.co_cod, 13, 50.00, FALSE, ('2025-04-26 8:00:00'::timestamp + interval '2 days')::timestamp, d.auto_std, d.tasa_usd
+        FROM Nueva_Compra nc, Datos d
+    ),
+    Ins_Adicional AS (
+        INSERT INTO Entrada_Digital (compra_co_cod, servicio_adicional_s_cod, res_costo_sub_total, res_anulado, ed_cant_personas, tasa_cambio_tca_cod)
+        VALUES ((SELECT co_cod FROM Nueva_Compra), 32, 150.00, FALSE, 1, (SELECT tasa_usd FROM Datos))
+    ),
+    Ins_Promos AS (
+        INSERT INTO Res_Pro_Ser (detalle_traslado_co_cod, detalle_traslado_s_cod, entrada_digital_co_cod, entrada_digital_s_cod, pro_ser_servicio_s_cod, pro_ser_promocion_pr_cod)
+        SELECT nc.co_cod, 13, null, null, 13, 9 FROM Nueva_Compra nc
+        UNION ALL
+        SELECT null, null, nc.co_cod, 32, 32, 10 FROM Nueva_Compra nc
+    )
+SELECT co_cod as compra_5_generada FROM Nueva_Compra;
 	

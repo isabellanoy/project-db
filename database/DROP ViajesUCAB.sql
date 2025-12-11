@@ -160,6 +160,9 @@ DROP FUNCTION IF EXISTS fn_reporte_ranking_proveedores;
 DROP FUNCTION IF EXISTS fn_reporte_impacto_financiero_millas;
 DROP FUNCTION IF EXISTS fn_auditoria_reembolsos;
 DROP FUNCTION IF EXISTS fn_paquetes_canjeados;
+DROP FUNCTION IF EXISTS fn_reporte_millas_por_destino;
+DROP FUNCTION IF EXISTS fn_eliminar_viajero;
+DROP FUNCTION IF EXISTS fn_agregar_viajero;
 
 DROP PROCEDURE IF EXISTS sp_actualizar_aerolinea;
 DROP PROCEDURE IF EXISTS sp_cambiar_clave_usuario;

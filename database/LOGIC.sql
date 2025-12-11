@@ -3666,6 +3666,220 @@ EXCEPTION WHEN OTHERS THEN
 END;
 $$ LANGUAGE plpgsql;
 
+-- FUNCIÓN PARA AGREGAR VIAJEROS
+CREATE OR REPLACE FUNCTION fn_agregar_viajero(
+	p_cod_usuario INT,
+	p_cod_servicio_reserva INT,
+	p_via_nombre VARCHAR,
+	p_via_s_nombre VARCHAR,
+	p_via_apellido VARCHAR,
+	p_via_s_apellido VARCHAR,
+	p_via_correo VARCHAR,
+	p_via_fnacim DATE
+) RETURNS BOOLEAN AS $$
+DECLARE
+    v_cliente_cod INT;
+	v_compra_cod INT;
+	v_estado_compra VARCHAR;
+	v_viajero_cod INT;
+	v_tipo_reserva VARCHAR; -- 'VUELO', 'HOTEL', 'TRASLADO', 'CRUCERO', 'ENTRADA'
+	v_capacidad_max INT := 0;
+	v_cantidad_actual INT := 0;
+BEGIN
+    -- Obtener Cliente desde Usuario (Asumiendo que c_ci es la PK según archivos anteriores)
+	SELECT c.c_cod INTO v_cliente_cod FROM Cliente c JOIN Usuario u ON c.c_cod = u.cliente_c_cod WHERE u.u_cod = p_cod_usuario;
+
+	IF v_cliente_ci IS NULL THEN
+		RAISE NOTICE 'El cliente no se ha encontrado para el usuario %', p_cod_usuario;
+		RETURN FALSE;
+	END IF;
+
+	-- Validar que la compra existe
+    SELECT fn_obtener_compra_activa(v_cliente_ci) INTO v_compra_cod;
+	
+	IF v_compra_cod IS NULL THEN
+		RAISE NOTICE 'No hay ninguna compra EN PROCESO para agregar Viajeros';
+		RETURN FALSE;
+	END IF;
+
+	SELECT co_estado INTO v_estado_compra FROM Compra WHERE co_cod = v_compra_cod;
+	
+	-- Validar estado
+	IF v_estado_compra <> 'EN PROCESO' THEN
+		RAISE NOTICE 'No se pueden agragar viajeros a esta compra. No está EN PROCESO';
+		RETURN FALSE;
+	END IF;
+
+	-- TIPO DE SERVICIO Y VALIDAR CAPACIDAD
+	v_tipo_reserva := NULL;
+
+	-- Revisar si es VUELO
+	IF EXISTS (SELECT 1 FROM Boleto_Vuelo WHERE compra_co_cod = v_compra_cod AND vuelo_s_cod = p_cod_servicio_reserva) THEN
+		v_tipo_reserva := 'VUELO';
+		-- Capacidad: Cantidad de pasajeros indicada en la reserva
+		SELECT bv_cantidad_pasajeros INTO v_capacidad_max 
+		FROM Boleto_Vuelo WHERE compra_co_cod = v_compra_cod AND vuelo_s_cod = p_cod_servicio_reserva;
+		
+		-- Contar actuales
+		SELECT COUNT(*) INTO v_cantidad_actual FROM Via_Res 
+		WHERE boleto_vuelo_co_cod = v_compra_cod AND boleto_vuelo_s_cod = p_cod_servicio_reserva;
+
+	-- Revisar si es HOSPEDAJE (Hotel)
+	ELSIF EXISTS (SELECT 1 FROM Detalle_Hospedaje WHERE compra_co_cod = v_compra_cod AND habitacion_s_cod = p_cod_servicio_reserva) THEN
+		v_tipo_reserva := 'HOTEL';
+		-- Capacidad: Capacidad real de la habitación (ha_capacidad)
+		SELECT h.ha_capacidad INTO v_capacidad_max
+		FROM Detalle_Hospedaje dh
+		JOIN Habitacion h ON dh.habitacion_s_cod = h.s_cod
+		WHERE dh.compra_co_cod = v_compra_cod AND dh.habitacion_s_cod = p_cod_servicio_reserva;
+
+		SELECT COUNT(*) INTO v_cantidad_actual FROM Via_Res 
+		WHERE detalle_hospedaje_co_cod = v_compra_cod AND detalle_hospedaje_s_cod = p_cod_servicio_reserva;
+
+	-- Revisar si es TRASLADO
+	ELSIF EXISTS (SELECT 1 FROM Detalle_Traslado WHERE compra_co_cod = v_compra_cod AND traslado_s_cod = p_cod_servicio_reserva) THEN
+		v_tipo_reserva := 'TRASLADO';
+		-- Capacidad: Capacidad del vehículo asignado (Automovil.mt_capacidad)
+		SELECT a.mt_capacidad INTO v_capacidad_max
+		FROM Detalle_Traslado dt
+		JOIN Automovil a ON dt.automovil_mt_cod = a.mt_cod
+		WHERE dt.compra_co_cod = v_compra_cod AND dt.traslado_s_cod = p_cod_servicio_reserva;
+
+		SELECT COUNT(*) INTO v_cantidad_actual FROM Via_Res 
+		WHERE detalle_traslado_co_cod = v_compra_cod AND detalle_traslado_s_cod = p_cod_servicio_reserva;
+
+	-- Revisar si es CRUCERO
+	ELSIF EXISTS (SELECT 1 FROM Boleto_Viaje WHERE compra_co_cod = v_compra_cod AND viaje_s_cod = p_cod_servicio_reserva) THEN
+		v_tipo_reserva := 'CRUCERO';
+		SELECT bvi_cant_pasajeros INTO v_capacidad_max
+		FROM Boleto_Viaje WHERE compra_co_cod = v_compra_cod AND viaje_s_cod = p_cod_servicio_reserva;
+
+		SELECT COUNT(*) INTO v_cantidad_actual FROM Via_Res 
+		WHERE boleto_viaje_co_cod = v_compra_cod AND boleto_viaje_s_cod = p_cod_servicio_reserva;
+
+	-- Revisar si es ENTRADA DIGITAL
+	ELSIF EXISTS (SELECT 1 FROM Entrada_Digital WHERE compra_co_cod = v_compra_cod AND servicio_adicional_s_cod = p_cod_servicio_reserva) THEN
+		v_tipo_reserva := 'ENTRADA';
+		SELECT ed_cant_personas INTO v_capacidad_max
+		FROM Entrada_Digital WHERE compra_co_cod = v_compra_cod AND servicio_adicional_s_cod = p_cod_servicio_reserva;
+
+		SELECT COUNT(*) INTO v_cantidad_actual FROM Via_Res 
+		WHERE entrada_digital_co_cod = v_compra_cod AND entrada_digital_s_cod = p_cod_servicio_reserva;
+	
+	ELSE
+		RAISE NOTICE 'El servicio indicado (%) no pertenece a la compra activa del cliente.', p_cod_servicio_reserva;
+		RETURN FALSE;
+	END IF;
+
+	-- VERIFICAR LÍMITE ALCANZADO
+	IF v_cantidad_actual >= v_capacidad_max THEN
+		RAISE EXCEPTION 'No se puede agregar viajero. Capacidad máxima alcanzada para este servicio (% / %)', v_cantidad_actual, v_capacidad_max;
+		RETURN FALSE;
+	END IF;
+
+	-- INSERTAR VIAJERO (O usar existente si ya está en la BD)
+	-- Buscamos si existe por correo, sino crea
+	SELECT via_cod INTO v_viajero_cod FROM Viajero WHERE via_correo = p_via_correo LIMIT 1;
+	
+	IF v_viajero_cod IS NULL THEN
+		INSERT INTO Viajero (via_p_nombre, via_s_nombre, via_p_apellido, via_s_apellido, via_correo, via_fecha_nacimiento)
+		VALUES (p_via_nombre, p_via_s_nombre, p_via_apellido, p_via_s_apellido, p_via_correo, p_via_fnacim)
+		RETURNING via_cod INTO v_viajero_cod;
+	END IF;
+
+	-- VINCULAR VIAJERO A LA RESERVA
+	CASE v_tipo_reserva
+		WHEN 'VUELO' THEN
+			INSERT INTO Via_Res (viajero_via_cod, boleto_vuelo_co_cod, boleto_vuelo_s_cod)
+			VALUES (v_viajero_cod, v_compra_cod, p_cod_servicio_reserva);
+		WHEN 'HOTEL' THEN
+			INSERT INTO Via_Res (viajero_via_cod, detalle_hospedaje_co_cod, detalle_hospedaje_s_cod)
+			VALUES (v_viajero_cod, v_compra_cod, p_cod_servicio_reserva);
+		WHEN 'TRASLADO' THEN
+			INSERT INTO Via_Res (viajero_via_cod, detalle_traslado_co_cod, detalle_traslado_s_cod)
+			VALUES (v_viajero_cod, v_compra_cod, p_cod_servicio_reserva);
+		WHEN 'CRUCERO' THEN
+			INSERT INTO Via_Res (viajero_via_cod, boleto_viaje_co_cod, boleto_viaje_s_cod)
+			VALUES (v_viajero_cod, v_compra_cod, p_cod_servicio_reserva);
+		WHEN 'ENTRADA' THEN
+			INSERT INTO Via_Res (viajero_via_cod, entrada_digital_co_cod, entrada_digital_s_cod)
+			VALUES (v_viajero_cod, v_compra_cod, p_cod_servicio_reserva);
+	END CASE;
+
+	RAISE NOTICE 'Viajero agregado exitosamente. (%/%)', v_cantidad_actual + 1, v_capacidad_max;
+	RETURN TRUE;
+
+EXCEPTION WHEN OTHERS THEN
+	RAISE NOTICE 'Error al agregar viajero: %', SQLERRM;
+	RETURN FALSE;
+END;
+$$ LANGUAGE plpgsql;
+
+
+-- FUNCIÓN PARA ELIMINAR (QUITAR) VIAJEROS
+CREATE OR REPLACE FUNCTION fn_eliminar_viajero(
+	p_cod_usuario INT,
+	p_cod_servicio_reserva INT,
+	p_via_correo VARCHAR
+) RETURNS BOOLEAN AS $$
+DECLARE
+    v_cliente_cod INT;
+	v_compra_cod INT;
+	v_viajero_cod INT;
+	v_borrado BOOLEAN := FALSE;
+BEGIN
+    -- Existe cliente
+	SELECT c.c_cod INTO v_cliente_cod FROM Cliente c JOIN Usuario u ON c.c_cod = u.cliente_c_cod WHERE u.u_cod = p_cod_usuario;
+
+	IF v_cliente_ci IS NULL THEN
+		RAISE NOTICE 'El cliente no se ha encontrado';
+		RETURN FALSE;
+	END IF;
+
+	-- Validar compra activa
+    SELECT fn_obtener_compra_activa(v_cliente_cod) INTO v_compra_cod;
+	IF v_compra_cod IS NULL THEN
+		RAISE NOTICE 'No hay compra activa para eliminar viajeros.';
+		RETURN FALSE;
+	END IF;
+
+	-- Identificar al viajero por correo
+	SELECT via_cod INTO v_viajero_cod FROM Viajero WHERE via_correo = p_via_correo;
+	
+	IF v_viajero_cod IS NULL THEN
+		RAISE NOTICE 'El viajero con correo % no existe.', p_via_correo;
+		RETURN FALSE;
+	END IF;
+
+	-- ELIMINAR DE VIA_RES SEGÚN EL SERVICIO
+	
+	DELETE FROM Via_Res 
+	WHERE viajero_via_cod = v_viajero_cod
+	AND (
+		(boleto_vuelo_co_cod = v_compra_cod AND boleto_vuelo_s_cod = p_cod_servicio_reserva) OR
+		(detalle_hospedaje_co_cod = v_compra_cod AND detalle_hospedaje_s_cod = p_cod_servicio_reserva) OR
+		(detalle_traslado_co_cod = v_compra_cod AND detalle_traslado_s_cod = p_cod_servicio_reserva) OR
+		(boleto_viaje_co_cod = v_compra_cod AND boleto_viaje_s_cod = p_cod_servicio_reserva) OR
+		(entrada_digital_co_cod = v_compra_cod AND entrada_digital_s_cod = p_cod_servicio_reserva)
+	);
+
+	GET DIAGNOSTICS v_borrado = ROW_COUNT;
+
+	IF v_borrado THEN
+		RAISE NOTICE 'Viajero eliminado exitosamente del servicio %.', p_cod_servicio_reserva;
+		RETURN TRUE;
+	ELSE
+		RAISE NOTICE 'El viajero no estaba asociado a este servicio en esta compra.';
+		RETURN FALSE;
+	END IF;
+
+EXCEPTION WHEN OTHERS THEN
+	RAISE NOTICE 'Error al eliminar viajero: %', SQLERRM;
+	RETURN FALSE;
+END;
+$$ LANGUAGE plpgsql;
+
+
 -- ===================================================
 -- FUNCIONES DE REPORTE
 -- ===================================================
@@ -3682,7 +3896,7 @@ RETURNS TABLE (
 BEGIN
     RETURN QUERY
     WITH Resenas_Unificadas AS (
-        -- 1. AEROLÍNEAS (Desde Boleto_Vuelo)
+        -- AEROLÍNEAS (Desde Boleto_Vuelo)
         SELECT 
             'Aerolínea'::VARCHAR AS tipo,
             a.p_nombre AS nombre,
@@ -3696,7 +3910,7 @@ BEGIN
 
         UNION ALL
 
-        -- 2. CRUCEROS (Desde Boleto_Viaje)
+        -- CRUCEROS (Desde Boleto_Viaje)
         SELECT 
             'Compañía de Cruceros'::VARCHAR,
             c.p_nombre,
@@ -3710,7 +3924,7 @@ BEGIN
 
         UNION ALL
 
-        -- 3. OPERADORES TURÍSTICOS (Desde Entrada_Digital - Servicios Adicionales)
+        -- OPERADORES TURÍSTICOS (Desde Entrada_Digital - Servicios Adicionales)
         SELECT 
             'Operador Turístico'::VARCHAR,
             op.p_nombre,
@@ -3724,7 +3938,7 @@ BEGIN
 
 		UNION ALL
 		
-        -- 4. TRANSPORTE TERRESTRE (Desde Detalle_Traslado - Traslado)
+        -- TRANSPORTE TERRESTRE (Desde Detalle_Traslado - Traslado)
 		SELECT 
             'Transporte Terrestre'::VARCHAR,
             tt.p_nombre,
@@ -3738,7 +3952,7 @@ BEGIN
 
 		UNION ALL
 		
-		-- 5. HOTEL (Desde Detalle_Hospedaje - Habitacion)
+		-- HOTEL (Desde Detalle_Hospedaje - Habitacion)
 		SELECT 
             'Hotel'::VARCHAR,
             ho.p_nombre,
@@ -3755,11 +3969,10 @@ BEGIN
         ru.nombre,
         ROUND(AVG(ru.puntaje), 2) AS promedio,
         COUNT(*)::INT AS total_resenas,
-        -- Genera estrellas visuales basadas en el promedio (0-10)
         REPEAT('★', (ROUND(AVG(ru.puntaje))/2)::INT)::VARCHAR AS estrellas
     FROM Resenas_Unificadas ru
     GROUP BY ru.tipo, ru.nombre
-    ORDER BY promedio DESC, ru.nombre; -- Ordenar del mejor calificado al peor
+    ORDER BY promedio DESC, ru.nombre;
 END;
 $$ LANGUAGE plpgsql;
 
@@ -4009,5 +4222,106 @@ BEGIN
 	JOIN Paquetes_Canjeados pc ON pt.pt_cod = pc.pt_cod
 	ORDER BY pt_costo_millas DESC
 	LIMIT 5;
+END;
+$$ LANGUAGE plpgsql;
+
+-- Millas acumuladas por destino (PAIS)
+CREATE OR REPLACE FUNCTION fn_reporte_millas_por_destino()
+RETURNS TABLE (
+    cedula_cliente INT,
+    nombre_cliente VARCHAR,
+    pais_destino VARCHAR,
+    millas_en_pais BIGINT,
+    total_millas_cliente NUMERIC(15),
+    ranking_destino INT -- 1 = El destino que más millas generó
+) AS $$
+BEGIN
+    RETURN QUERY
+    WITH RECURSIVE 
+    -- Encontrar el PAÍS de cualquier lugar
+    Jerarquia_Pais AS (
+        -- Caso Base: Lugares que ya son PAIS
+        SELECT l_cod AS lugar_origen_id, l_cod AS pais_id, l_nombre AS pais_nombre
+        FROM Lugar WHERE l_tipo = 'PAIS'
+        
+        UNION ALL
+        
+        -- Caso Recursivo: Hijos buscando a su padre
+        SELECT c.l_cod, p.pais_id, p.pais_nombre
+        FROM Lugar c
+        JOIN Jerarquia_Pais p ON c.Lugar_l_cod = p.lugar_origen_id
+    ),
+    -- Servicios y Millas por Lugar
+    Servicios_Unificados AS (
+        -- VUELOS
+        SELECT c.cliente_c_cod, s.s_millas_otorgar AS millas, v.lugar_l_cod2 AS lugar_id
+        FROM Boleto_Vuelo bv
+        JOIN Compra c ON bv.compra_co_cod = c.co_cod
+        JOIN Vuelo v ON bv.vuelo_s_cod = v.s_cod
+        JOIN Servicio s ON v.s_cod = s.s_cod
+        WHERE c.co_estado = 'FINALIZADO' AND c.co_es_paquete IS NOT TRUE
+
+        UNION ALL
+
+        -- HOTELES
+        SELECT c.cliente_c_cod, s.s_millas_otorgar AS millas, h.lugar_l_cod AS lugar_id
+        FROM Detalle_Hospedaje dh
+        JOIN Compra c ON dh.compra_co_cod = c.co_cod
+        JOIN Habitacion hab ON dh.habitacion_s_cod = hab.s_cod
+        JOIN Hotel h ON hab.hotel_p_cod = h.p_cod
+        JOIN Servicio s ON hab.s_cod = s.s_cod
+        WHERE c.co_estado = 'FINALIZADO' AND c.co_es_paquete IS NOT TRUE
+
+        UNION ALL
+
+        -- TRASLADOS
+        SELECT c.cliente_c_cod, s.s_millas_otorgar AS millas, t.lugar_l_cod AS lugar_id
+        FROM Detalle_Traslado dt
+        JOIN Compra c ON dt.compra_co_cod = c.co_cod
+        JOIN Traslado t ON dt.traslado_s_cod = t.s_cod
+        JOIN Servicio s ON t.s_cod = s.s_cod
+        WHERE c.co_estado = 'FINALIZADO' AND c.co_es_paquete IS NOT TRUE
+
+        UNION ALL
+
+        -- CRUCEROS
+        SELECT c.cliente_c_cod, s.s_millas_otorgar, vi.lugar_l_cod2
+        FROM Boleto_Viaje bvi
+        JOIN Compra c ON bvi.compra_co_cod = c.co_cod
+        JOIN Viaje vi ON bvi.viaje_s_cod = vi.s_cod
+        JOIN Servicio s ON vi.s_cod = s.s_cod
+        WHERE c.co_estado = 'FINALIZADO' AND c.co_es_paquete IS NOT TRUE
+
+        UNION ALL
+
+        -- ACTIVIDADES
+        SELECT c.cliente_c_cod, s.s_millas_otorgar, sa.lugar_l_cod
+        FROM Entrada_Digital ed
+        JOIN Compra c ON ed.compra_co_cod = c.co_cod
+        JOIN Servicio_Adicional sa ON ed.servicio_adicional_s_cod = sa.s_cod
+        JOIN Servicio s ON sa.s_cod = s.s_cod
+        WHERE c.co_estado = 'FINALIZADO' AND c.co_es_paquete IS NOT TRUE
+    ),
+    -- Agrupación por Cliente y País
+    Millas_Agrupadas AS (
+        SELECT 
+            su.cliente_c_cod, 
+            COALESCE(jp.pais_nombre, 'Continental') AS pais, 
+            SUM(su.millas) AS total_por_pais
+        FROM Servicios_Unificados su
+        LEFT JOIN Jerarquia_Pais jp ON su.lugar_id = jp.lugar_origen_id
+        GROUP BY su.cliente_c_cod, jp.pais_nombre
+    )
+    -- Totales y Ranking
+    SELECT 
+        cli.c_ci,
+        (cli.c_p_nombre || ' ' || cli.c_p_apellido)::VARCHAR AS nombre_completo,
+        ma.pais,
+        ma.total_por_pais,
+        SUM(ma.total_por_pais) OVER(PARTITION BY ma.cliente_c_cod) AS total_acumulado,
+        RANK() OVER(PARTITION BY ma.cliente_c_cod ORDER BY ma.total_por_pais DESC)::INT as ranking
+    FROM Millas_Agrupadas ma
+    JOIN Cliente cli ON ma.cliente_c_cod = cli.c_cod
+    ORDER BY cli.c_ci, ma.total_por_pais DESC;
 END;
 $$ LANGUAGE plpgsql;

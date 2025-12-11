@@ -914,7 +914,7 @@ CREATE TABLE Viajero (
     via_s_nombre VARCHAR(50),
     via_p_apellido VARCHAR(50) NOT NULL,
     via_s_apellido VARCHAR(50),
-    via_correo VARCHAR(50) NOT NULL,
+    via_correo VARCHAR(50) UNIQUE NOT NULL,
     via_fecha_nacimiento DATE NOT NULL
 );
 
@@ -1242,6 +1242,7 @@ ALTER TABLE Reembolso ADD CONSTRAINT Reserva_Check CHECK(
 	(Boleto_Vuelo_co_cod IS NULL AND Boleto_Vuelo_s_cod IS NULL AND Detalle_Traslado_co_cod IS NULL AND Detalle_Traslado_s_cod IS NULL AND Boleto_Viaje_co_cod IS NULL AND Boleto_Viaje_s_cod IS NULL AND Entrada_Digital_co_cod IS NOT NULL AND Entrada_Digital_s_cod IS NOT NULL AND Detalle_Hospedaje_co_cod IS NULL AND Detalle_Hospedaje_s_cod IS NULL) OR
 	(Boleto_Vuelo_co_cod IS NULL AND Boleto_Vuelo_s_cod IS NULL AND Detalle_Traslado_co_cod IS NULL AND Detalle_Traslado_s_cod IS NULL AND Boleto_Viaje_co_cod IS NULL AND Boleto_Viaje_s_cod IS NULL AND Entrada_Digital_co_cod IS NULL AND Entrada_Digital_s_cod IS NULL AND Detalle_Hospedaje_co_cod IS NOT NULL AND Detalle_Hospedaje_s_cod IS NOT NULL)
 );
+ALTER TABLE Usuario ADD CONSTRAINT Check_Correo_Usuario CHECK (u_correo ~* '^[A-Za-z0-9._+%-]+@[A-Za-z0-9.-]+\.[A-Za-z]+$');
 ALTER TABLE Queja ADD CONSTRAINT Reserva_Check CHECK(
 	(Boleto_Vuelo_co_cod IS NOT NULL AND Boleto_Vuelo_s_cod IS NOT NULL AND Detalle_Traslado_co_cod IS NULL AND Detalle_Traslado_s_cod IS NULL AND Boleto_Viaje_co_cod IS NULL AND Boleto_Viaje_s_cod IS NULL AND Entrada_Digital_co_cod IS NULL AND Entrada_Digital_s_cod IS NULL AND Detalle_Hospedaje_co_cod IS NULL AND Detalle_Hospedaje_s_cod IS NULL) OR
 	(Boleto_Vuelo_co_cod IS NULL AND Boleto_Vuelo_s_cod IS NULL AND Detalle_Traslado_co_cod IS NOT NULL AND Detalle_Traslado_s_cod IS NOT NULL AND Boleto_Viaje_co_cod IS NULL AND Boleto_Viaje_s_cod IS NULL AND Entrada_Digital_co_cod IS NULL AND Entrada_Digital_s_cod IS NULL AND Detalle_Hospedaje_co_cod IS NULL AND Detalle_Hospedaje_s_cod IS NULL) OR
@@ -1272,6 +1273,7 @@ ALTER TABLE Usuario ADD CONSTRAINT Usuario_Check CHECK (
 	(Cliente_c_cod IS NULL AND Empleado_e_cod IS NULL AND Aerolinea_p_cod IS NULL AND Transporte_Terrestre_p_cod IS NULL AND Crucero_p_cod IS NULL AND Operador_Turistico_p_cod IS NOT NULL AND Hotel_p_cod IS NULL) OR
 	(Cliente_c_cod IS NULL AND Empleado_e_cod IS NULL AND Aerolinea_p_cod IS NULL AND Transporte_Terrestre_p_cod IS NULL AND Crucero_p_cod IS NULL AND Operador_Turistico_p_cod IS NULL AND Hotel_p_cod IS NOT NULL)
 );
+ALTER TABLE Viajero ADD CONSTRAINT Check_Correo_Viajero CHECK (via_correo ~* '^[A-Za-z0-9._+%-]+@[A-Za-z0-9.-]+\.[A-Za-z]+$');
 ALTER TABLE Via_Res ADD CONSTRAINT Reserva_Check CHECK(
 	(Boleto_Vuelo_co_cod IS NOT NULL AND Boleto_Vuelo_s_cod IS NOT NULL AND Detalle_Traslado_co_cod IS NULL AND Detalle_Traslado_s_cod IS NULL AND Boleto_Viaje_co_cod IS NULL AND Boleto_Viaje_s_cod IS NULL AND Entrada_Digital_co_cod IS NULL AND Entrada_Digital_s_cod IS NULL AND Detalle_Hospedaje_co_cod IS NULL AND Detalle_Hospedaje_s_cod IS NULL) OR
 	(Boleto_Vuelo_co_cod IS NULL AND Boleto_Vuelo_s_cod IS NULL AND Detalle_Traslado_co_cod IS NOT NULL AND Detalle_Traslado_s_cod IS NOT NULL AND Boleto_Viaje_co_cod IS NULL AND Boleto_Viaje_s_cod IS NULL AND Entrada_Digital_co_cod IS NULL AND Entrada_Digital_s_cod IS NULL AND Detalle_Hospedaje_co_cod IS NULL AND Detalle_Hospedaje_s_cod IS NULL) OR
