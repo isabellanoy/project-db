@@ -121,6 +121,178 @@ router.post('/add/actividad', async (req, res) => {
   }
 });
 
+// --- CONSULTAR ITINERARIO (CARRITO ACTIVO) ---
+router.get('/itinerary', async (req, res) => {
+  const userId = req.query.usuario_id;
+
+  if (!userId) return fail(res, 'Falta usuario_id');
+
+  try {
+    // 1. Obtener ID de la compra activa
+    const compraRes = await pool.query('SELECT fn_obtener_compra_activa($1) as id', [userId]);
+    const compraId = compraRes.rows[0].id;
+
+    if (!compraId) {
+      return ok(res, { empty: true, items: [] }, 'No hay itinerario activo');
+    }
+
+    // 2. Obtener detalles de la compra (Monto total, estado, etc.)
+    const infoCompra = await pool.query('SELECT * FROM Compra WHERE co_cod = $1', [compraId]);
+
+    // 3. Obtener cada tipo de servicio asociado a esa compra
+    // Usamos Promise.all para hacer las consultas en paralelo y ser más rápidos
+    const [vuelos, hoteles, cruceros, traslados, actividades] = await Promise.all([
+      // Vuelos
+      pool.query(`
+        SELECT bv.*, v.v_cod_vue, s.s_costo as precio_base, 
+               l_orig.l_nombre as origen, l_dest.l_nombre as destino
+        FROM Boleto_Vuelo bv
+        JOIN Vuelo v ON bv.Vuelo_s_cod = v.s_cod
+        JOIN Servicio s ON v.s_cod = s.s_cod
+        JOIN Lugar l_orig ON v.Lugar_l_cod = l_orig.l_cod
+        JOIN Lugar l_dest ON v.Lugar_l_cod2 = l_dest.l_cod
+        WHERE bv.Compra_co_cod = $1 AND bv.res_anulado = FALSE`, [compraId]),
+      
+      // Hoteles
+      pool.query(`
+        SELECT dh.*, h.p_nombre as nombre_hotel, s.s_costo as precio_base
+        FROM Detalle_Hospedaje dh
+        JOIN Habitacion hab ON dh.Habitacion_s_cod = hab.s_cod
+        JOIN Hotel h ON hab.Hotel_p_cod = h.p_cod
+        JOIN Servicio s ON hab.s_cod = s.s_cod
+        WHERE dh.Compra_co_cod = $1 AND dh.res_anulado = FALSE`, [compraId]),
+
+      // Cruceros
+      pool.query(`
+        SELECT bvi.*, b.b_nombre as barco, s.s_costo as precio_base
+        FROM Boleto_Viaje bvi
+        JOIN Viaje vi ON bvi.Viaje_s_cod = vi.s_cod
+        JOIN Barco b ON vi.Barco_mt_cod = b.mt_cod
+        JOIN Servicio s ON vi.s_cod = s.s_cod
+        WHERE bvi.Compra_co_cod = $1 AND bvi.res_anulado = FALSE`, [compraId]),
+
+      // Traslados
+      pool.query(`
+        SELECT dt.*, l.l_nombre as destino, s.s_costo as precio_base
+        FROM Detalle_Traslado dt
+        JOIN Traslado t ON dt.Traslado_s_cod = t.s_cod
+        JOIN Lugar l ON t.Lugar_l_cod = l.l_cod
+        JOIN Servicio s ON t.s_cod = s.s_cod
+        WHERE dt.Compra_co_cod = $1 AND dt.res_anulado = FALSE`, [compraId]),
+
+      // Actividades
+      pool.query(`
+        SELECT ed.*, sa.sa_nombre as nombre_actividad, s.s_costo as precio_base
+        FROM Entrada_Digital ed
+        JOIN Servicio_Adicional sa ON ed.Servicio_Adicional_s_cod = sa.s_cod
+        JOIN Servicio s ON sa.s_cod = s.s_cod
+        WHERE ed.Compra_co_cod = $1 AND ed.res_anulado = FALSE`, [compraId])
+    ]);
+
+    // 4. Armar respuesta consolidada
+    const itinerario = {
+      compra_id: compraId,
+      info: infoCompra.rows[0],
+      items: [
+        ...vuelos.rows.map(i => ({ type: 'vuelo', ...i })),
+        ...hoteles.rows.map(i => ({ type: 'hotel', ...i })),
+        ...cruceros.rows.map(i => ({ type: 'crucero', ...i })),
+        ...traslados.rows.map(i => ({ type: 'traslado', ...i })),
+        ...actividades.rows.map(i => ({ type: 'actividad', ...i }))
+      ]
+    };
+
+    return ok(res, itinerario, 'Itinerario obtenido');
+
+  } catch (error) {
+    console.error(error);
+    return fail(res, error.message || 'Error al obtener itinerario');
+  }
+});
+
+// =====================================================================
+// RUTAS DE PAGO (CHECKOUT)
+// =====================================================================
+
+// 1. Iniciar Proceso de Pago (Congela el monto y cambia estado a PAGANDO)
+router.post('/checkout/init', async (req, res) => {
+  const { usuario_id, financiado, cuotas, huella_carbono } = req.body;
+
+  if (!usuario_id) return fail(res, 'Falta usuario_id');
+
+  try {
+    // Llama a fn_procesar_a_pago(usuario, es_financiado, cuotas, monto_huella)
+    const result = await pool.query(
+      'SELECT fn_procesar_a_pago($1, $2, $3, $4) as exito',
+      [usuario_id, financiado || false, cuotas || 1, huella_carbono || 0]
+    );
+
+    if (result.rows[0].exito) {
+      return ok(res, null, 'Compra procesada a estado PAGANDO. Proceda a registrar los pagos.');
+    } else {
+      return fail(res, 'No se pudo iniciar el pago. Verifique el estado de su compra.');
+    }
+  } catch (error) {
+    return fail(res, error.message);
+  }
+});
+
+// 2. Pagar con Tarjeta
+router.post('/checkout/pay/card', async (req, res) => {
+  const { 
+    usuario_id, monto, numero, cvc, titular, vencimiento, banco_id, emisor 
+  } = req.body;
+
+  try {
+    // fn_pago_tarjeta(usuario, monto, numero, cvc, titular, vencimiento, banco, emisor)
+    const result = await pool.query(
+      'SELECT fn_pago_tarjeta($1, $2, $3, $4, $5, $6, $7, $8) as exito',
+      [usuario_id, monto, numero, cvc, titular, vencimiento, banco_id, emisor]
+    );
+
+    if (result.rows[0].exito) return ok(res, null, 'Pago con tarjeta registrado exitosamente');
+    return fail(res, 'Error al registrar el pago con tarjeta');
+  } catch (error) {
+    return fail(res, error.message);
+  }
+});
+
+// 3. Pagar con Operación Digital (Zelle, Pago Móvil)
+router.post('/checkout/pay/digital', async (req, res) => {
+  const { usuario_id, monto, referencia } = req.body;
+
+  try {
+    // fn_pago_operacion_digital(usuario, monto, referencia)
+    const result = await pool.query(
+      'SELECT fn_pago_operacion_digital($1, $2, $3) as exito',
+      [usuario_id, monto, referencia]
+    );
+
+    if (result.rows[0].exito) return ok(res, null, 'Pago digital registrado exitosamente');
+    return fail(res, 'Error al registrar el pago digital');
+  } catch (error) {
+    return fail(res, error.message);
+  }
+});
+
+// 4. Pagar con Millas
+router.post('/checkout/pay/miles', async (req, res) => {
+  const { usuario_id, cantidad_millas } = req.body;
+
+  try {
+    // fn_pago_millas(usuario, cantidad)
+    const result = await pool.query(
+      'SELECT fn_pago_millas($1, $2) as exito',
+      [usuario_id, cantidad_millas]
+    );
+
+    if (result.rows[0].exito) return ok(res, null, 'Pago con millas registrado');
+    return fail(res, 'Fondos insuficientes o error al canjear millas');
+  } catch (error) {
+    return fail(res, error.message);
+  }
+});
+
 // =====================================================================
 // RUTAS CRUD (ADMINISTRACIÓN Y CONSULTAS BÁSICAS)
 // =====================================================================

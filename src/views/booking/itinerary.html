@@ -8,81 +8,45 @@
 <body>
     <header class="navbar">
         <div class="navbar__content">
-            <a class="navbar__brand" href="../home/home.html">ViajesUCAB</a>
+            <a class="navbar__brand" href="/">ViajesUCAB</a>
             <div style="display: flex; gap: 10px;">
-                <button class="cta-button" style="background: #000;">Itinerario (2)</button>
-                <a href="../user/profile.html" class="cta-button">Mi Cuenta</a>
+                <a href="/busqueda" class="cta-button" style="background: white; color: black; border: 1px solid black;">Seguir comprando</a>
+                <a href="/perfil" class="cta-button">Mi Cuenta</a>
             </div>
         </div>
     </header>
 
     <main class="wrapper">
-        <div style="display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 1rem; border-bottom: 2px solid #000; padding-bottom: 0.5rem;">
-            <h1 style="font-size: 2.5rem; font-weight: 700;">Itinerario</h1>
-            <span>Huella de carbono total (CO2): <strong>254 kg</strong></span>
+        <div style="display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 2rem; border-bottom: 2px solid #000; padding-bottom: 0.5rem;">
+            <h1 style="font-size: 2.5rem; font-weight: 700;">Mi Itinerario</h1>
         </div>
 
         <div style="display: grid; grid-template-columns: 2fr 1fr; gap: 2rem;">
             <section>
-                <article class="itinerary-item">
-                    <div class="itinerary-item__header">
-                        <h2 style="font-size: 1.2rem; text-decoration: underline;">[1] VUELO</h2>
-                        <div class="price-display">
-                            <span class="main-price">$850</span>
-                            <span class="sub-price">153.450 Bs</span>
-                        </div>
-                    </div>
-                    <p style="font-size: 1.1rem; margin-bottom: 0.5rem;">Caracas (CCS) &#8594; Madrid (MAD)</p>
-                    <p class="hero__text">15/11/2025 - Laser Airlines</p>
-                    <div style="margin-top: 1.5rem; display: flex; gap: 1rem;">
-                        <button style="flex: 1; padding: 0.5rem; border: 1px solid #000; background: transparent;">Modificar</button>
-                        <button style="flex: 1; padding: 0.5rem; border: 1px solid #000; background: transparent;">Eliminar</button>
-                    </div>
-                </article>
-
-                <article class="itinerary-item">
-                    <div class="itinerary-item__header">
-                        <h2 style="font-size: 1.2rem; text-decoration: underline;">[2] TRASLADO TERRESTRE</h2>
-                        <div class="price-display">
-                            <span class="main-price">$45</span>
-                            <span class="sub-price">8.100 Bs</span>
-                        </div>
-                    </div>
-                    <p style="font-size: 1.1rem; margin-bottom: 0.5rem;">Aeropuerto MAD &#8594; Hotel Centro Madrid</p>
-                    <p class="hero__text">15/11/2025 - Uber</p>
-                    <div style="margin-top: 1.5rem; display: flex; gap: 1rem;">
-                        <button style="flex: 1; padding: 0.5rem; border: 1px solid #000; background: transparent;">Modificar</button>
-                        <button style="flex: 1; padding: 0.5rem; border: 1px solid #000; background: transparent;">Eliminar</button>
-                    </div>
-                </article>
+                <p>Cargando...</p>
             </section>
 
-            <aside class="summary-card">
-                <h3 style="margin-bottom: 1.5rem; font-size: 1.2rem;">Resumen de Reservas</h3>
+            <aside class="summary-card" style="height: fit-content;">
+                <h3 style="margin-bottom: 1.5rem; font-size: 1.2rem; font-weight: 700;">Resumen de Reservas</h3>
                 
-                <div class="summary-row"><span>Vuelos:</span><span>$850</span></div>
-                <div class="summary-row"><span>Cruceros:</span><span>$0</span></div>
-                <div class="summary-row"><span>Traslados:</span><span>$45</span></div>
-                <div class="summary-row"><span>Hospedajes:</span><span>$450</span></div>
-                
-                <div style="margin: 1.5rem 0; display: flex; align-items: center; justify-content: space-between;">
-                    <label><input type="checkbox"> Compensar huella de carbono:</label>
-                    <input type="text" style="width: 60px; border: 1px solid #000;">
+                <div class="summary-total" style="border-top: 2px solid #000; margin-top: 1rem; padding-top: 1rem;">
+                    <div style="display: flex; justify-content: space-between; align-items: center;">
+                        <span style="font-size: 1.2rem;">Total:</span>
+                        <span id="totalAmount" style="font-size: 1.5rem; font-weight: 800;">$0.00</span>
+                    </div>
+                    <div id="totalBs" style="font-size: 0.9rem; text-align: right; color: #666; margin-top: 0.25rem;">Bs. 0,00</div>
                 </div>
 
-                <div class="summary-total">
-                    <div>Total: <span style="float: right;">$1.345</span></div>
-                    <div style="font-size: 0.9rem; margin-top: 0.25rem;">242.100 Bs</div>
+                <div style="background: #f8fafc; border: 1px solid #e2e8f0; padding: 0.75rem; margin: 1.5rem 0; border-radius: 5px; display: flex; justify-content: space-between; align-items: center;">
+                    <span style="font-size: 0.9rem;">💎 Millas a ganar:</span>
+                    <strong id="totalMillas" style="color: #2563eb;">0</strong>
                 </div>
 
-                <div style="border: 1px solid #000; padding: 0.5rem; margin: 1rem 0; display: flex; justify-content: space-between;">
-                    <span>Millas a acumular:</span>
-                    <strong>1.430</strong>
-                </div>
-
-                <a href="./checkout.html" class="cta-button" style="background: #000; width: 100%; border-radius: 0;">Ir al Pago</a>
+                <a href="/checkout" class="cta-button" style="background: #000; width: 100%; border-radius: 0; text-align: center;">Ir al Pago</a>
             </aside>
         </div>
     </main>
+
+    <script src="/src/scripts/itinerary.js"></script>
 </body>
 </html>
