@@ -3055,7 +3055,7 @@ BEGIN
 	JOIN Aer_Cla ac ON ca_cod = ac.clase_asiento_ca_cod
 	JOIN Vuelo v ON v.aeronave_mt_cod = ac.aeronave_mt_cod AND s_cod = p_cod_vuelo;
 END;
-$$ LANGUAGE plpgslq;
+$$ LANGUAGE plpgsql;
 
 -- LISTAR VIAJES (CRUCEROS)
 CREATE OR REPLACE FUNCTION fn_listar_viajes()
@@ -3106,7 +3106,7 @@ BEGIN
 	JOIN Bar_Tip bt ON tc_cod = bt.tipo_camarote_tc_cod
 	JOIN Viaje v ON v.barco_mt_cod = bt.barco_mt_cod AND s_cod = p_cod_viaje;
 END;
-$$ LANGUAGE plpgslq;
+$$ LANGUAGE plpgsql;
 
 -- Listar Servicios para un Viaje
 CREATE OR REPLACE FUNCTION fn_listar_servicios_viaje(
@@ -3124,7 +3124,7 @@ BEGIN
 	JOIN Bar_Ser bs ON sb_cod = bs.servicio_barco_sb_cod
 	JOIN Viaje v ON v.barco_mt_cod = bs.barco_mt_cod AND s_cod = p_cod_viaje;
 END;
-$$ LANGUAGE plpgslq;
+$$ LANGUAGE plpgsql;
 
 -- LISTAR TRASLADOS
 CREATE OR REPLACE FUNCTION fn_listar_traslados()
@@ -3169,7 +3169,7 @@ BEGIN
 	JOIN Marca ON mav_cod = marca_mav_cod
 	JOIN Traslado t ON t.transporte_terrestre_p_cod = a.transporte_terrestre_p_cod AND t.s_cod = p_cod_traslado;
 END;
-$$ LANGUAGE plpgslq;
+$$ LANGUAGE plpgsql;
 
 -- LISTAR SERVICIOS ADICIONALES
 CREATE OR REPLACE FUNCTION fn_listar_servicios_adicionales()
