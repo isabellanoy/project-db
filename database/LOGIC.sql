@@ -1628,6 +1628,24 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
+-- Listar Clases de Asiento para un vuelo
+CREATE OR REPLACE FUNCTION fn_listar_clases_asiento_vuelo(
+	p_cod_vuelo INT
+) RETURNS TABLE (
+	cod_clase INT,
+	nombre VARCHAR,
+	descripcion VARCHAR,
+	costo NUMERIC
+) AS $$
+DECLARE
+BEGIN
+	RETURN QUERY 
+	SELECT ca_cod, ca_nombre, ca_descripcion, ca_costo
+	FROM Clase_Asiento
+	JOIN Aer_Cla ac ON ca_cod = ac.clase_asiento_ca_cod
+	JOIN Vuelo v ON v.aeronave_mt_cod = ac.aeronave_mt_cod AND s_cod = p_cod_vuelo;
+END;
+$$ LANGUAGE plpgslq;
 
 -- LISTAR VIAJES (CRUCEROS)
 CREATE OR REPLACE FUNCTION fn_listar_viajes()
@@ -1660,6 +1678,43 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
+-- Listar Tipos de Camarote para un Viaje
+CREATE OR REPLACE FUNCTION fn_listar_tipos_camarote_viaje(
+	p_cod_viaje INT
+) RETURNS TABLE (
+	cod_camarote INT,
+	nombre VARCHAR,
+	descripcion VARCHAR,
+	capacidad INT,
+	costo NUMERIC
+) AS $$
+DECLARE
+BEGIN
+	RETURN QUERY 
+	SELECT tc_cod, tc_nombre, tc_descripcion, tc_capacidad, tc_costo
+	FROM Tipo_Camarote
+	JOIN Bar_Tip bt ON tc_cod = bt.tipo_camarote_tc_cod
+	JOIN Viaje v ON v.barco_mt_cod = bt.barco_mt_cod AND s_cod = p_cod_viaje;
+END;
+$$ LANGUAGE plpgslq;
+
+-- Listar Servicios para un Viaje
+CREATE OR REPLACE FUNCTION fn_listar_servicios_viaje(
+	p_cod_viaje INT
+) RETURNS TABLE (
+	cod_servicio INT,
+	descripcion VARCHAR,
+	costo NUMERIC
+) AS $$
+DECLARE
+BEGIN
+	RETURN QUERY 
+	SELECT sb_cod, sb_descripcion, sb_costo 
+	FROM Servicio_Barco
+	JOIN Bar_Ser bs ON sb_cod = bs.servicio_barco_sb_cod
+	JOIN Viaje v ON v.barco_mt_cod = bs.barco_mt_cod AND s_cod = p_cod_viaje;
+END;
+$$ LANGUAGE plpgslq;
 
 -- LISTAR TRASLADOS
 CREATE OR REPLACE FUNCTION fn_listar_traslados()
@@ -1685,6 +1740,26 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
+-- Listar Vehiculos para un Traslado
+CREATE OR REPLACE FUNCTION fn_listar_vehiculos_traslado(
+	p_cod_traslado INT
+) RETURNS TABLE (
+	cod_vehiculo INT,
+	marca VARCHAR,
+	modelo VARCHAR,
+	capacidad INT,
+	costo_por_km NUMERIC
+) AS $$
+DECLARE
+BEGIN
+	RETURN QUERY 
+	SELECT a.mt_cod, mav_nombre, mv_nombre, a.mt_capacidad, a.a_costo_por_km
+	FROM Automovil a
+	JOIN Modelo ON mv_cod = a.modelo_mv_cod
+	JOIN Marca ON mav_cod = marca_mav_cod
+	JOIN Traslado t ON t.transporte_terrestre_p_cod = a.transporte_terrestre_p_cod AND t.s_cod = p_cod_traslado;
+END;
+$$ LANGUAGE plpgslq;
 
 -- LISTAR SERVICIOS ADICIONALES
 CREATE OR REPLACE FUNCTION fn_listar_servicios_adicionales()
@@ -1711,7 +1786,6 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
-
 -- LISTAR HABITACIONES
 CREATE OR REPLACE FUNCTION fn_listar_habitaciones()
 RETURNS TABLE (
@@ -1720,6 +1794,7 @@ RETURNS TABLE (
     millas INT,
     nombre_hotel VARCHAR,
     numero_habitacion VARCHAR,
+	tipo_habitacion VARCHAR,
 	lugar VARCHAR,
     capacidad INT
 ) AS $$
@@ -1731,14 +1806,20 @@ BEGIN
         s.s_millas_otorgar,
         h.p_nombre AS nombre_hotel,
         hab.ha_numero,
+		th.th_nombre,
 		l.l_nombre,
         hab.ha_capacidad
     FROM Habitacion hab
     JOIN Servicio s ON hab.s_cod = s.s_cod
+	JOIN Tipo_Habitacion th ON hab.tipo_habitacion_th_cod = th.th_cod
     JOIN Hotel h ON hab.hotel_p_cod = h.p_cod
 	JOIN Lugar l ON l.l_cod = h.lugar_l_cod;
 END;
 $$ LANGUAGE plpgsql;
+
+-- ============================================================================
+-- CRUD DE PAQUETE TURISTICO
+-- ============================================================================
 
 CREATE OR REPLACE FUNCTION fn_listar_restricciones_paquete()
 	RETURNS TABLE (
@@ -1750,10 +1831,6 @@ CREATE OR REPLACE FUNCTION fn_listar_restricciones_paquete()
 		RETURN QUERY SELECT rp_cod, rp_caracteristica || ' ' || rp_operador || ' ' || rp_valor_restriccion FROM Restriccion_Paquete;
 	END;
 	$$ LANGUAGE plpgsql;
-
--- ============================================================================
--- CRUD DE PAQUETE TURISTICO
--- ============================================================================
 
 -- CREAR PAQUETE TURISTICO
 CREATE OR REPLACE PROCEDURE sp_crear_paquete_turistico(
@@ -3401,6 +3478,96 @@ BEGIN
 
 	-- Validar si ya completa la compra
 	CALL sp_validar_pagos(v_compra_cod, v_es_financiada);
+	
+	RETURN TRUE;
+END;
+$$ LANGUAGE plpgsql;
+
+-- Pagar con Millas
+CREATE OR REPLACE FUNCTION fn_pago_millas(
+	p_cod_usuario INT,
+	p_monto INT
+) RETURNS BOOLEAN AS $$
+DECLARE
+	v_compra_cod INT;
+	v_cliente_cod INT;
+	v_estado_compra VARCHAR;
+	v_es_paquete_compra BOOLEAN;
+	v_es_financiada BOOLEAN;
+	v_mp_cod INT;
+	v_tasa_milla NUMERIC;
+	v_monto_calculado NUMERIC;
+BEGIN
+	-- Validar monto
+	IF p_monto IS NULL OR p_monto <= 0 THEN
+		RAISE NOTICE 'El monto debe ser positivo';
+		RETURN NULL::BOOLEAN;
+	END IF;
+	
+	-- Existe cliente
+	SELECT c.c_cod INTO v_cliente_cod FROM Cliente c, Usuario u WHERE c.c_cod = u.cliente_c_cod AND u.u_cod = p_cod_usuario;
+	IF v_cliente_cod IS NULL THEN
+		RAISE NOTICE 'El cliente no se ha encontrado';
+		RETURN NULL::BOOLEAN;
+	END IF;
+
+	-- Validar que la compra existe
+    SELECT * INTO v_compra_cod FROM fn_obtener_compra_activa(v_cliente_cod);
+	IF v_compra_cod IS NULL THEN
+		RAISE NOTICE 'No hay ninguna compra EN PROCESO o PAGANDO';
+		RETURN NULL::BOOLEAN;
+	END IF;
+
+	SELECT co_estado, co_es_paquete 
+	INTO v_estado_compra, v_es_paquete_compra 
+	FROM Compra WHERE co_cod = v_compra_cod;
+
+	-- Validar que es compra de itinerario (no paquete)
+    IF v_es_paquete_compra IS TRUE THEN
+        RAISE NOTICE 'Los paquetes se pagan con millas. Pero no con esta funcion.';
+        RETURN NULL::BOOLEAN;
+    END IF;
+	
+	-- Validar si se esta pagando
+	IF v_estado_compra = 'EN PROCESO' THEN
+		RAISE NOTICE 'La compra sigue EN PROCESO. No se puede pagar';
+		RETURN NULL::BOOLEAN;
+	END IF;
+
+	-- Revisar si se financia
+	v_es_financiada := FALSE;
+	IF EXISTS (SELECT 1 FROM Cuota WHERE compra_co_cod = v_compra_cod) THEN
+		v_es_financiada := TRUE;
+	END IF;	
+
+	-- Calcular el monto equivalent de las Millas a Bs
+	SELECT mp_cod INTO v_mp_cod FROM Metodo_Pago WHERE m_cliente_cod = v_cliente_cod;
+	
+	SELECT tca_valor_tasa INTO v_tasa_milla FROM Tasa_Cambio
+	WHERE tca_fecha_hora_fin IS NULL AND tca_divisa_origen = 'Milla';
+
+	IF v_tasa_milla IS NULL THEN
+		RAISE NOTICE 'No se encontro la tasa de la Milla';
+		RETURN NULL::BOOLEAN;
+	END IF;
+
+	v_monto_calculado := ROUND(p_monto/v_tasa_milla, 2);
+
+	INSERT INTO Pago VALUES (v_monto_calculado, CURRENT_TIMESTAMP, v_compra_cod, v_mp_cod);
+	RAISE NOTICE 'Pago creado';
+
+	-- Validar si ya completa la compra
+	CALL sp_validar_pagos(v_compra_cod, v_es_financiada);
+
+	-- Una vez comprobado si se pago o no completo, eliminar el pago y volverlo a insertar con el monto de la milla
+	DELETE FROM Pago WHERE compra_co_cod = v_compra_cod AND metodo_pago_mp_cod = v_mp_cod;
+
+	INSERT INTO Pago VALUES (p_monto, CURRENT_TIMESTAMP, v_compra_cod, v_mp_cod);
+	RAISE NOTICE 'Pago re-insertado (valor milla)';
+
+	-- Descontar las millas
+	UPDATE Metodo_Pago SET m_cant_acumulada = m_cant_acumulada - p_monto 
+	WHERE mp_cod = v_mp_cod;
 	
 	RETURN TRUE;
 END;

@@ -163,6 +163,11 @@ DROP FUNCTION IF EXISTS fn_paquetes_canjeados;
 DROP FUNCTION IF EXISTS fn_reporte_millas_por_destino;
 DROP FUNCTION IF EXISTS fn_eliminar_viajero;
 DROP FUNCTION IF EXISTS fn_agregar_viajero;
+DROP FUNCTION IF EXISTS fn_pago_millas;
+DROP FUNCTION IF EXISTS fn_listar_clases_asiento_vuelo;
+DROP FUNCTION IF EXISTS fn_listar_tipos_camarote_viaje;
+DROP FUNCTION IF EXISTS fn_listar_servicios_viaje;
+DROP FUNCTION IF EXISTS fn_listar_vehiculos_traslado;
 
 DROP PROCEDURE IF EXISTS sp_actualizar_aerolinea;
 DROP PROCEDURE IF EXISTS sp_cambiar_clave_usuario;
