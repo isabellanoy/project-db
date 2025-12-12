@@ -17,6 +17,7 @@ const parseUserId = (req) => {
   return Number.isNaN(parsed) ? null : parsed;
 };
 
+// Documentación de rutas
 router.get('/', (_req, res) => {
   return success(res, {
     basePath: '/api/auth',
@@ -25,51 +26,23 @@ router.get('/', (_req, res) => {
       { method: 'POST', path: '/api/auth/register', description: 'Registra cliente, usuario y método de pago inicial.' },
       { method: 'GET', path: '/api/auth/me', description: 'Devuelve el perfil completo del cliente autenticado.' },
       { method: 'POST', path: '/api/auth/change-password', description: 'Cambia la contraseña validando la clave actual.' }
-    ],
-    hint: 'Usa el método HTTP indicado para cada ruta. Las rutas POST esperan JSON en el cuerpo.'
+    ]
   }, 'Rutas de autenticación disponibles');
 });
 
+// Vista Registro
 router.get('/register', (_req, res) => {
-  return success(
-    res,
-    {
-      method: 'POST',
-      path: '/api/auth/register',
-      requiredFields: [
-        'username',
-        'correo',
-        'clave',
-        'ci',
-        'primer_nombre',
-        'primer_apellido',
-        'fecha_nacimiento',
-        'sexo',
-        'estado_civil'
-      ],
-      optionalFields: ['segundo_nombre', 'segundo_apellido'],
-      hint: 'Envía el cuerpo en JSON. Ejemplo en README y /api/docs.'
-    },
-    'Descripción del endpoint /api/auth/register'
-  );
+  res.sendFile(path.join(process.cwd(), 'src', 'views', 'auth', 'register.html'));
 });
 
-// Registro de Usuario
+// Lógica Registro
 router.post('/register', async (req, res, next) => {
   const {
-    username,
-    correo,
-    clave,
-    ci,
-    primer_nombre: primerNombre,
-    segundo_nombre: segundoNombre,
-    primer_apellido: primerApellido,
-    segundo_apellido: segundoApellido,
-    fecha_nacimiento: fechaNacimiento,
-    sexo,
-    estado_civil: estadoCivil,
-    direccion,
-    lugar_cod: lugarCod
+    username, correo, clave, ci,
+    primer_nombre: primerNombre, segundo_nombre: segundoNombre,
+    primer_apellido: primerApellido, segundo_apellido: segundoApellido,
+    fecha_nacimiento: fechaNacimiento, sexo, estado_civil: estadoCivil,
+    direccion, lugar_cod: lugarCod
   } = req.body ?? {};
 
   const missing = [];
@@ -91,35 +64,30 @@ router.post('/register', async (req, res, next) => {
 
   try {
     const values = [
-      username,
-      correo,
-      clave,
-      Number(ci),
-      primerNombre,
-      segundoNombre ?? null,
-      primerApellido,
-      segundoApellido ?? null,
-      new Date(fechaNacimiento),
-      sexo,
-      estadoCivil,
-      direccion,
-      Number(lugarCod)
+      username, correo, clave, Number(ci),
+      primerNombre, segundoNombre ?? null,
+      primerApellido, segundoApellido ?? null,
+      new Date(fechaNacimiento), sexo, estadoCivil,
+      direccion, Number(lugarCod)
     ];
 
-    const result = await pool.query(
-      'CALL sp_registrar_cliente($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13, $14, $15, $16)', 
-      [...values, null, null, null] 
+    await pool.query(
+      'CALL sp_registrar_cliente($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13, null, null, null)', 
+      values
     );
-
     
-    return success(res, null, 'Cliente registrado correctamente (Verifica en BD)', 201);
-
+    return success(res, null, 'Cliente registrado correctamente', 201);
   } catch (error) {
     return failure(res, error.message || 'Error en base de datos');
   }
 });
 
-// Login de Usuario
+// Vista Login
+router.get('/login', (_req, res) => {
+  res.sendFile(path.join(process.cwd(), 'src', 'views', 'auth', 'login.html'));
+});
+
+// Lógica Login
 router.post('/login', async (req, res, next) => {
   const { username_o_email: usernameOrEmail, clave } = req.body ?? {};
 
@@ -128,17 +96,6 @@ router.post('/login', async (req, res, next) => {
   }
 
   try {
-    const query = `
-      DO $$
-      DECLARE
-        v_uid INT;
-        v_user VARCHAR;
-        v_msg VARCHAR;
-      BEGIN
-        CALL sp_login_usuario('${usernameOrEmail}', '${clave}', v_uid, v_user, v_msg);
-      END $$;
-    `;
-    
     const userResult = await pool.query(
       `SELECT u.u_cod, u.u_username, u.u_hash_clave, r.ro_nombre
        FROM Usuario u
@@ -150,10 +107,9 @@ router.post('/login', async (req, res, next) => {
     const user = userResult.rows[0];
 
     if (!user || user.u_hash_clave !== clave) {
-      return failure(res, 'Credenciales inválidas (Validación Directa)', 401);
+      return failure(res, 'Credenciales inválidas', 401);
     }
 
-    // Login Exitoso
     return success(res, {
       id: user.u_cod,
       username: user.u_username,
@@ -162,6 +118,69 @@ router.post('/login', async (req, res, next) => {
 
   } catch (error) {
     return next(error);
+  }
+});
+
+// --- RUTA QUE FALTABA: PERFIL DE USUARIO ---
+router.get('/me', async (req, res) => {
+  const userId = parseUserId(req); // Usa req.query.usuario_cod o headers
+
+  if (!userId) {
+    return failure(res, 'Falta el parámetro usuario_cod');
+  }
+
+  try {
+    const query = `
+      SELECT 
+        c.c_p_nombre, c.c_s_nombre, c.c_p_apellido, c.c_s_apellido,
+        c.c_ci, c.c_direccion, u.u_correo,
+        COALESCE(mp.m_cant_acumulada, 0) as millas
+      FROM Usuario u
+      JOIN Cliente c ON u.Cliente_c_cod = c.c_cod
+      LEFT JOIN Metodo_Pago mp ON c.c_cod = mp.m_Cliente_cod AND mp.mp_tipo = 'MILLA'
+      WHERE u.u_cod = $1
+    `;
+
+    const result = await pool.query(query, [userId]);
+    const user = result.rows[0];
+
+    if (!user) {
+      return failure(res, 'Usuario no encontrado', 404);
+    }
+
+    const nombreCompleto = `${user.c_p_nombre} ${user.c_p_apellido}`;
+
+    return success(res, {
+      nombre: nombreCompleto,
+      nombre_corto: user.c_p_nombre,
+      correo: user.u_correo,
+      ci: user.c_ci,
+      direccion: user.c_direccion,
+      millas: user.millas
+    }, 'Perfil obtenido');
+
+  } catch (error) {
+    console.error(error);
+    return failure(res, 'Error al obtener perfil');
+  }
+});
+
+// Cambio de contraseña
+router.post('/change-password', async (req, res, next) => {
+  const userId = parseUserId(req);
+  const { clave_actual: claveActual, clave_nueva: claveNueva } = req.body ?? {};
+
+  if (!userId || !claveActual || !claveNueva) {
+    return failure(res, 'Datos incompletos.');
+  }
+
+  try {
+    await pool.query('CALL sp_cambiar_clave_usuario($1,$2,$3, null)', [
+      userId, claveActual, claveNueva
+    ]);
+    return success(res, null, 'Clave actualizada correctamente');
+  } catch (error) {
+    return failure(res, error.message);
   }
 });
 

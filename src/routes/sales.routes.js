@@ -293,6 +293,42 @@ router.post('/checkout/pay/miles', async (req, res) => {
   }
 });
 
+// --- HISTORIAL DE VIAJES ---
+router.get('/history', async (req, res) => {
+  const userId = req.query.usuario_id;
+
+  if (!userId) return fail(res, 'Falta usuario_id');
+
+  try {
+    // 1. Buscamos las compras FINALIZADAS, CANCELADAS o FINANCIADAS
+    // Hacemos el JOIN con Usuario para traducir el u_cod a c_cod
+    const query = `
+      SELECT 
+        co.co_cod, 
+        co.co_fecha_hora, 
+        co.co_monto_total, 
+        co.co_estado, 
+        co.co_millas_a_agregar,
+        co.co_es_paquete,
+        pt.pt_nombre as nombre_paquete
+      FROM Compra co
+      JOIN Cliente c ON co.Cliente_c_cod = c.c_cod
+      JOIN Usuario u ON u.Cliente_c_cod = c.c_cod
+      LEFT JOIN Paquete_Turistico pt ON co.Paquete_Turistico_pt_cod = pt.pt_cod
+      WHERE u.u_cod = $1
+        AND co.co_estado IN ('FINALIZADO', 'CANCELADO', 'FINANCIADO', 'PAGANDO')
+      ORDER BY co.co_fecha_hora DESC
+    `;
+
+    const result = await pool.query(query, [userId]);
+
+    return ok(res, result.rows, 'Historial obtenido');
+  } catch (error) {
+    console.error(error);
+    return fail(res, error.message);
+  }
+});
+
 // =====================================================================
 // RUTAS CRUD (ADMINISTRACIÓN Y CONSULTAS BÁSICAS)
 // =====================================================================

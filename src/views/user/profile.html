@@ -9,13 +9,13 @@
 <body>
     <header class="navbar">
         <div class="navbar__content">
-            <a class="navbar__brand" href="../home/home.html">ViajesUCAB</a>
+            <a class="navbar__brand" href="/">ViajesUCAB</a>
             <nav class="navbar__links">
-                <a href="../home/home.html">Volver a Inicio</a>
+                <a href="/">Volver a Inicio</a>
             </nav>
             <div style="display: flex; gap: 10px;">
-                <button class="cta-button" style="background: #000;">Itinerario (2)</button>
-                <span class="cta-button">Mi Cuenta</span>
+                <a href="/itinerario" class="cta-button" style="background: #000;">Mi Itinerario</a>
+                <span class="cta-button" style="background: #333; cursor: default;">Mi Cuenta</span>
             </div>
         </div>
     </header>
@@ -23,81 +23,70 @@
     <div class="dashboard-container">
         <aside class="sidebar">
             <div class="sidebar__title">
-                <h3>Panel Alessandro</h3>
+                <h3>Panel de Usuario</h3>
             </div>
             <nav class="sidebar__nav">
-                <a href="./profile.html" class="active">Tablero</a>
-                <a href="./my-trips.html">Reservas</a>
+                <a href="/perfil" class="active">Tablero</a>
+                <a href="/mis-viajes">Mis Reservas</a>
                 <a href="#">Métodos de Pago</a>
-                <a href="#">Lista de Deseos</a>
-                <a href="#">Notificaciones</a>
             </nav>
         </aside>
 
         <main class="dashboard-main">
             <div class="central-col">
                 <div class="dashboard-header">
-                    <h1 class="section__title">Viajero 360º</h1>
+                    <h1 class="section__title">Resumen de Cuenta</h1>
                     <div>
-                        <a href="#" style="font-size: 0.9rem; text-decoration: underline;">Cerrar Sesión</a>
+                        <a href="#" id="logoutBtn" style="font-size: 0.9rem; text-decoration: underline; color: #ef4444;">Cerrar Sesión</a>
                     </div>
                 </div>
 
-                <div class="dashboard-card">
+                <div class="dashboard-card" style="border-left: 5px solid #2563eb;">
                     <h3>Millas Acumuladas</h3>
-                    <div class="big-number">15340 millas</div>
+                    <div class="big-number">Cargando...</div>
+                    <p style="font-size: 0.85rem; color: #666; margin-top: 0.5rem;">
+                        Úsalas para canjear paquetes turísticos exclusivos.
+                    </p>
                 </div>
 
                 <div class="dashboard-card">
-                    <h3>Últimos Viajes</h3>
-                    <div class="list-item">
-                        <span>Paquete Cancún - 01/10/2025</span>
-                        <strong>- 500 millas</strong>
-                    </div>
-                    <div class="list-item">
-                        <span>Vuelo a Lima - 15/09/2025</span>
-                        <strong>- 250 millas</strong>
-                    </div>
-                </div>
-                
-                 <div class="dashboard-card" style="border-color: #000;">
-                    <h3>PAGOS PENDIENTES</h3>
-                    <div class="list-item" style="background: #fff;">
-                        <span>Cuota 2/3 - 1.500 Bs</span>
-                        <span>Vence: 01/01/26</span>
-                        <button style="background: black; color: white; border: none; padding: 5px 10px;">Pagar</button>
+                    <h3>Accesos Rápidos</h3>
+                    <div style="display: flex; gap: 1rem; margin-top: 1rem;">
+                        <a href="/busqueda" class="cta-button" style="background: #fff; color: #000; border: 1px solid #000; flex: 1; text-align: center;">Nueva Reserva</a>
+                        <a href="/mis-viajes" class="cta-button" style="background: #000; flex: 1; text-align: center;">Ver Historial</a>
                     </div>
                 </div>
             </div>
 
             <div class="right-col">
                 <div class="dashboard-card" style="height: 100%;">
-                    <h3>Sobre mí</h3>
+                    <h3>Datos Personales</h3>
                     <form>
                         <div class="form-group">
                             <label>Nombre Completo</label>
-                            <input type="text" class="form-input" value="Alessandro" disabled>
+                            <input type="text" name="fullname" class="form-input" disabled>
                         </div>
                         <div class="form-group">
-                            <label>Teléfono</label>
-                            <input type="tel" class="form-input">
+                            <label>Cédula de Identidad</label>
+                            <input type="text" name="ci" class="form-input" disabled>
                         </div>
                         <div class="form-group">
-                            <label>Correo</label>
-                            <input type="email" class="form-input" value="alessandro@ucab.edu.ve">
+                            <label>Correo Electrónico</label>
+                            <input type="email" class="form-input" disabled>
                         </div>
                     </form>
                     
                     <div style="margin-top: 2rem; border-top: 1px solid #eee; padding-top: 1rem;">
-                        <h3>Preferencias</h3>
-                        <div style="display: flex; flex-direction: column; gap: 0.5rem;">
-                            <button class="list-item">🏷️ Viajes en pareja</button>
-                            <button class="list-item">🏷️ Senderismo</button>
+                        <h3>Estado</h3>
+                        <div style="display: flex; align-items: center; gap: 0.5rem; color: #166534; font-weight: 600; background: #dcfce7; padding: 0.5rem; border-radius: 5px;">
+                            <span>✅ Cuenta Verificada</span>
                         </div>
                     </div>
                 </div>
             </div>
         </main>
     </div>
+
+    <script src="/src/scripts/profile.js"></script>
 </body>
 </html>
