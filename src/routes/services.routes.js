@@ -64,6 +64,49 @@ router.get('/catalog/actividades', async (_req, res) => {
   }
 });
 
+// --- RUTAS DE DETALLE (POR ID) ---
+// Reutilizamos las funciones de listar filtrando por ID para obtener el detalle completo
+
+router.get('/catalog/vuelos/:id', async (req, res) => {
+  try {
+    const result = await pool.query('SELECT * FROM fn_listar_vuelos() WHERE cod_servicio = $1', [req.params.id]);
+    if (result.rows.length === 0) return fail(res, 'Vuelo no encontrado', 404);
+    return ok(res, result.rows[0]);
+  } catch (error) { return fail(res, error.message); }
+});
+
+router.get('/catalog/alojamientos/:id', async (req, res) => {
+  try {
+    const result = await pool.query('SELECT * FROM fn_listar_habitaciones() WHERE cod_servicio = $1', [req.params.id]);
+    if (result.rows.length === 0) return fail(res, 'Alojamiento no encontrado', 404);
+    return ok(res, result.rows[0]);
+  } catch (error) { return fail(res, error.message); }
+});
+
+router.get('/catalog/viajes/:id', async (req, res) => {
+  try {
+    const result = await pool.query('SELECT * FROM fn_listar_viajes() WHERE cod_servicio = $1', [req.params.id]);
+    if (result.rows.length === 0) return fail(res, 'Crucero no encontrado', 404);
+    return ok(res, result.rows[0]);
+  } catch (error) { return fail(res, error.message); }
+});
+
+router.get('/catalog/traslados/:id', async (req, res) => {
+  try {
+    const result = await pool.query('SELECT * FROM fn_listar_traslados() WHERE cod_servicio = $1', [req.params.id]);
+    if (result.rows.length === 0) return fail(res, 'Traslado no encontrado', 404);
+    return ok(res, result.rows[0]);
+  } catch (error) { return fail(res, error.message); }
+});
+
+router.get('/catalog/actividades/:id', async (req, res) => {
+  try {
+    const result = await pool.query('SELECT * FROM fn_listar_servicios_adicionales() WHERE cod_servicio = $1', [req.params.id]);
+    if (result.rows.length === 0) return fail(res, 'Actividad no encontrada', 404);
+    return ok(res, result.rows[0]);
+  } catch (error) { return fail(res, error.message); }
+});
+
 // --- RUTAS CRUD (ADMINISTRATIVAS / DETALLE) ---
 const serviceMappings = [
   { path: '/vuelos', table: 'Vuelo', idField: 's_cod' },
