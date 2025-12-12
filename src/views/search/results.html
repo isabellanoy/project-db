@@ -11,9 +11,9 @@
         <div class="navbar__content">
             <a class="navbar__brand" href="../home/home.html">ViajesUCAB</a>
             <nav class="navbar__links">
-                <a href="#">Vuelos</a>
-                <a href="#">Hoteles</a>
-                <a href="#">Paquetes</a>
+                <a href="/busqueda?type=vuelos">Vuelos</a>
+                <a href="/busqueda?type=alojamientos">Hoteles</a>
+                <a href="/busqueda?type=viajes">Cruceros</a>
             </nav>
             <div style="display: flex; gap: 10px;">
                 <a href="../booking/itinerary.html" class="cta-button" style="background: #000;">Itinerario (2)</a>
@@ -28,32 +28,36 @@
         <form class="search-filter-bar">
             <div class="filter-group">
                 <label>Tipo</label>
-                <select class="form-input">
-                    <option>Vuelo</option>
-                    <option>Hotel</option>
-                    <option>Paquete</option>
+                <select class="form-input" id="searchType">
+                    <option value="vuelos">Vuelo</option>
+                    <option value="alojamientos">Hotel</option>
+                    <option value="viajes">Crucero</option>
+                    <option value="traslados">Traslado</option>
+                    <option value="actividades">Actividad</option>
                 </select>
             </div>
             <div class="filter-group">
                 <label>Destino</label>
-                <input type="text" class="form-input" placeholder="¿A dónde vas?">
+                <input type="text" class="form-input" placeholder="¿A dónde vas?" id="searchDest">
             </div>
             <div class="filter-group">
                 <label>Fecha ida</label>
-                <input type="date" class="form-input">
+                <input type="date" class="form-input" id="searchDateStart">
             </div>
             <div class="filter-group">
                 <label>Fecha vuelta</label>
-                <input type="date" class="form-input">
+                <input type="date" class="form-input" id="searchDateEnd">
             </div>
             <div class="filter-group">
                 <label>Nº Viajeros</label>
-                <select class="form-input">
-                    <option>1 viajero</option>
-                    <option>2 viajeros</option>
+                <select class="form-input" id="searchPassengers">
+                    <option value="1">1 viajero</option>
+                    <option value="2">2 viajeros</option>
+                    <option value="3">3 viajeros</option>
+                    <option value="4">4+ viajeros</option>
                 </select>
             </div>
-            <button type="button" class="cta-button" style="background: #000; height: 42px;">Buscar viajes</button>
+            <button type="button" id="mainSearchBtn" class="cta-button" style="background: #000; height: 42px;">Buscar viajes</button>
         </form>
 
         <div class="search-layout">
@@ -62,11 +66,12 @@
                 
                 <div class="filter-section">
                     <h4>Tipo de servicio</h4>
-                    <div class="radio-list">
-                        <label><input type="radio" name="type" checked> Vuelos</label>
-                        <label><input type="radio" name="type"> Hoteles</label>
-                        <label><input type="radio" name="type"> Cruceros</label>
-                        <label><input type="radio" name="type"> Paquetes</label>
+                    <div class="radio-list" id="typeFilters">
+                        <label><input type="radio" name="type" value="vuelos"> Vuelos</label>
+                        <label><input type="radio" name="type" value="alojamientos"> Hoteles</label>
+                        <label><input type="radio" name="type" value="viajes"> Cruceros</label>
+                        <label><input type="radio" name="type" value="traslados"> Traslados</label>
+                        <label><input type="radio" name="type" value="actividades"> Actividades</label>
                     </div>
                 </div>
 
@@ -82,66 +87,22 @@
                     <h4>Promociones</h4>
                     <label class="check-list"><input type="checkbox"> Sólo ofertas</label>
                 </div>
-
-                <div class="filter-section">
-                    <h4>Millas</h4>
-                    <label class="check-list"><input type="checkbox"> Canjeable con millas</label>
-                </div>
             </aside>
 
-            <section>
+            <section id="resultsSection">
                 <div style="display: flex; justify-content: space-between; margin-bottom: 1rem;">
-                    <span>342 resultados encontrados</span>
+                    <span id="resultsCount">Cargando resultados...</span>
                     <select style="padding: 0.25rem;">
                         <option>Ordenar por precio</option>
                     </select>
                 </div>
 
-                <article class="result-card">
-                    <div>
-                        <div class="result-card__header">
-                            <h2 style="font-size: 1.4rem; border-bottom: 1px solid #000; padding-bottom: 5px; display: inline-block;">Hospedaje - BH Hotel</h2>
-                            <span class="rating-box">9.6</span>
-                        </div>
-                        <p>📍 Estación Central, Roma</p>
-                        <p>🕒 5 noches</p>
-                        <div style="margin-top: 1rem;">
-                            <span style="font-size: 1.5rem; font-weight: 600;">$1.183</span>
-                            <span style="font-size: 0.8rem; color: #666;">Bs. 212.940</span>
-                        </div>
-                    </div>
-                    <div style="display: flex; align-items: flex-end;">
-                        <a href="./detail.html" class="cta-button" style="background: #000; border-radius: 0;">Ver</a>
-                    </div>
-                </article>
+                <div id="cardsContainer"></div>
 
-                <article class="result-card">
-                    <div>
-                        <div class="result-card__header">
-                            <h2 style="font-size: 1.4rem; border-bottom: 1px solid #000; padding-bottom: 5px; display: inline-block;">Vuelo - Iberia</h2>
-                        </div>
-                        <p>📍 Caracas (CCS) &#8594; Miami (MIA) &#8594; Madrid (MAD)</p>
-                        <p>🕒 24/11/25 - Salida: 16:40 - Llegada: 17:10+1</p>
-                        <div style="margin-top: 1rem;">
-                            <span style="font-size: 1.5rem; font-weight: 600;">$1.183</span>
-                            <span style="font-size: 0.8rem; color: #666;">Bs. 212.940</span>
-                        </div>
-                    </div>
-                    <div style="display: flex; align-items: flex-end;">
-                        <button class="cta-button" style="background: #000; border-radius: 0;">Ver</button>
-                    </div>
-                </article>
-
-                <div style="display: flex; justify-content: center; gap: 0.5rem; margin-top: 2rem;">
-                    <button style="padding: 0.5rem 1rem;">&lt;</button>
-                    <button style="padding: 0.5rem 1rem; background: #ddd;">1</button>
-                    <button style="padding: 0.5rem 1rem;">2</button>
-                    <button style="padding: 0.5rem 1rem;">...</button>
-                    <button style="padding: 0.5rem 1rem;">9</button>
-                    <button style="padding: 0.5rem 1rem;">&gt;</button>
-                </div>
             </section>
         </div>
     </main>
+
+    <script src="/src/scripts/search.js"></script>
 </body>
 </html>

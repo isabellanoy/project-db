@@ -1,0 +1,167 @@
+(() => {
+  // Referencias al DOM
+  const cardsContainer = document.getElementById('cardsContainer');
+  const resultsCountLabel = document.getElementById('resultsCount');
+  
+  // Referencias para filtros y búsqueda
+  const typeRadios = document.querySelectorAll('input[name="type"]');
+  const mainSearchBtn = document.getElementById('mainSearchBtn');
+  const searchTypeSelect = document.getElementById('searchType');
+
+  // Función para formatear fechas
+  const formatDate = (dateString) => {
+    if (!dateString) return 'Por confirmar';
+    const date = new Date(dateString);
+    return date.toLocaleDateString('es-ES', { 
+      day: '2-digit', month: '2-digit', year: 'numeric', 
+      hour: '2-digit', minute:'2-digit' 
+    });
+  };
+
+  // Función para crear la tarjeta HTML según el tipo de servicio
+  const createCard = (item, type) => {
+    let title, description, details, icon;
+    
+    switch(type) {
+      case 'vuelos':
+        title = `Vuelo ${item.codigo_vuelo}`;
+        icon = '✈️';
+        description = `📍 ${item.origen} &#8594; ${item.destino}`;
+        details = `🕒 Salida: ${formatDate(item.fecha_salida)} | Duración: ${item.duracion_horas}h`;
+        break;
+      case 'alojamientos':
+        title = `Hotel ${item.nombre_hotel}`;
+        icon = '🏨';
+        description = `📍 ${item.lugar} - ${item.tipo_habitacion} (${item.numero_habitacion})`;
+        details = `👥 Capacidad: ${item.capacidad} personas`;
+        break;
+      case 'viajes': // Cruceros
+        title = `Crucero: ${item.nombre_barco}`;
+        icon = '🚢';
+        description = `📍 Salida: ${item.origen} &#8594; Llegada: ${item.destino}`;
+        details = `🕒 Salida: ${formatDate(item.fecha_salida)} | ${item.duracion_dias} días`;
+        break;
+      case 'traslados':
+        title = `Traslado Terrestre`;
+        icon = '🚕';
+        description = `📍 Destino: ${item.lugar_llegada}`;
+        details = `Salida desde: ${item.direccion_terminal_salida}`;
+        break;
+      case 'actividades':
+        title = item.nombre_servicio;
+        icon = '🎟️';
+        description = `📍 Lugar: ${item.lugar}`;
+        details = `👥 Capacidad: ${item.capacidad} personas`;
+        break;
+      default:
+        title = 'Servicio';
+        icon = '🏷️';
+        description = 'Sin descripción';
+        details = '';
+    }
+
+    const priceUsd = parseFloat(item.costo || 0);
+    const priceBs = priceUsd * 60; // Tasa referencial
+
+    // CORRECCIÓN 1: El enlace al detalle también debe usar la ruta correcta si existiera
+    const detailLink = `/detalle?id=${item.cod_servicio}&type=${type}`;
+
+    return `
+      <article class="result-card">
+          <div>
+              <div class="result-card__header">
+                  <h2 style="font-size: 1.4rem; border-bottom: 1px solid #000; padding-bottom: 5px; display: inline-block;">
+                      ${icon} ${title}
+                  </h2>
+              </div>
+              <p style="font-size: 1.1rem; margin: 0.5rem 0;">${description}</p>
+              <p class="hero__text" style="font-size: 0.95rem;">${details}</p>
+              
+              <div style="margin-top: 1rem;">
+                  <span style="font-size: 1.5rem; font-weight: 600;">$${priceUsd.toFixed(2)}</span>
+                  <span style="font-size: 0.8rem; color: #666; display: block;">Aprox. Bs. ${priceBs.toLocaleString('es-VE')}</span>
+                  <span style="font-size: 0.8rem; color: #2563eb; font-weight: 600;">+ ${item.millas || 0} Millas</span>
+              </div>
+          </div>
+          <div style="display: flex; align-items: flex-end; gap: 10px;">
+              <a href="${detailLink}" class="cta-button" style="background: #000; border-radius: 0;">Ver Detalle</a>
+          </div>
+      </article>
+    `;
+  };
+
+  const loadResults = async () => {
+    // 1. Obtener el tipo de servicio de la URL
+    const urlParams = new URLSearchParams(window.location.search);
+    const type = urlParams.get('type') || 'vuelos';
+
+    // 2. Actualizar UI
+    if (typeRadios) {
+        typeRadios.forEach(radio => {
+            radio.checked = (radio.value === type);
+        });
+    }
+    if (searchTypeSelect) {
+        searchTypeSelect.value = type;
+    }
+
+    if(resultsCountLabel) resultsCountLabel.textContent = 'Buscando servicios...';
+    if(cardsContainer) cardsContainer.innerHTML = ''; 
+
+    try {
+      // 3. Fetch al Backend
+      const response = await fetch(`/api/services/catalog/${type}`);
+      const payload = await response.json();
+
+      if (!payload.ok) throw new Error(payload.message || 'Error al obtener datos');
+
+      const data = payload.data;
+
+      // 4. Renderizar
+      if(resultsCountLabel) resultsCountLabel.textContent = `${data.length} resultados encontrados`;
+      
+      if (data.length === 0) {
+        cardsContainer.innerHTML = `
+            <div style="padding: 3rem; text-align: center; width: 100%; grid-column: 1/-1;">
+                <p style="font-size: 1.2rem; color: #666;">No hay servicios disponibles en esta categoría actualmente.</p>
+            </div>`;
+      } else {
+        cardsContainer.innerHTML = data.map(item => createCard(item, type)).join('');
+      }
+
+    } catch (error) {
+      console.error(error);
+      if(resultsCountLabel) resultsCountLabel.textContent = 'Error';
+      if(cardsContainer) cardsContainer.innerHTML = `<p style="color: red; padding: 1rem;">Error de conexión con el servidor.</p>`;
+    }
+  };
+
+  // --- CORRECCIÓN IMPORTANTE AQUÍ ---
+  // Cambiamos la redirección para que use '/busqueda' en lugar de './results.html'
+
+  // 1. Al cambiar el filtro lateral
+  if (typeRadios) {
+      typeRadios.forEach(radio => {
+          radio.addEventListener('change', (e) => {
+              const newType = e.target.value;
+              window.location.href = `/busqueda?type=${newType}`; // <--- CORREGIDO
+          });
+      });
+  }
+
+  // 2. Al hacer clic en el botón principal
+  if (mainSearchBtn) {
+      mainSearchBtn.addEventListener('click', () => {
+          const selectedType = searchTypeSelect.value;
+          window.location.href = `/busqueda?type=${selectedType}`; // <--- CORREGIDO
+      });
+  }
+
+  document.addEventListener('DOMContentLoaded', () => {
+    // Detectamos si estamos en la ruta correcta (/busqueda)
+    if (window.location.pathname.includes('/busqueda')) {
+        loadResults();
+    }
+  });
+
+})();
