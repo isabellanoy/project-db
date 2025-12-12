@@ -10,6 +10,18 @@ const ok = (res, data = null, message = 'OK') =>
 const fail = (res, message = 'Error', status = 500) => 
   res.status(status).json({ ok: false, data: null, message });
 
+// --- UTILIDAD: TASA DE CAMBIO ---
+router.get('/tasa', async (req, res) => {
+  try {
+    const result = await pool.query("SELECT factor_tasa FROM fn_obtener_tasa_actual('USD')");
+    const tasa = result.rows.length > 0 ? parseFloat(result.rows[0].factor_tasa) : 1;
+    
+    return ok(res, { tasa }, 'Tasa obtenida');
+  } catch (error) {
+    return fail(res, error.message);
+  }
+});
+
 // --- RUTAS DE CATÁLOGO (VISTAS PÚBLICAS) ---
 // Estas rutas usan las funciones SQL 'fn_listar_...' para mostrar datos enriquecidos al usuario
 

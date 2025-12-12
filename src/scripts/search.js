@@ -6,6 +6,8 @@
   const mainSearchBtn = document.getElementById('mainSearchBtn');
   const searchTypeSelect = document.getElementById('searchType');
 
+  let currentRate = 1;
+
   const formatDate = (dateString) => {
     if (!dateString) return 'Por confirmar';
     const date = new Date(dateString);
@@ -57,7 +59,7 @@
     }
 
     const priceUsd = parseFloat(item.costo || 0);
-    const priceBs = priceUsd * 60;
+    const priceBs = priceUsd * currentRate;
 
     const detailLink = `/detalle?id=${item.cod_servicio}&type=${type}`;
 
@@ -74,7 +76,7 @@
               
               <div style="margin-top: 1rem;">
                   <span style="font-size: 1.5rem; font-weight: 600;">$${priceUsd.toFixed(2)}</span>
-                  <span style="font-size: 0.8rem; color: #666; display: block;">Aprox. Bs. ${priceBs.toLocaleString('es-VE')}</span>
+                  <span style="font-size: 0.8rem; color: #666; display: block;">Aprox. Bs. ${priceBs.toLocaleString('es-VE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
                   <span style="font-size: 0.8rem; color: #2563eb; font-weight: 600;">+ ${item.millas || 0} Millas</span>
               </div>
           </div>
@@ -89,25 +91,27 @@
     const urlParams = new URLSearchParams(window.location.search);
     const type = urlParams.get('type') || 'vuelos';
 
-    if (typeRadios) {
-        typeRadios.forEach(radio => {
-            radio.checked = (radio.value === type);
-        });
-    }
-    if (searchTypeSelect) {
-        searchTypeSelect.value = type;
-    }
+    if (typeRadios) typeRadios.forEach(r => r.checked = (r.value === type));
+    if (searchTypeSelect) searchTypeSelect.value = type;
 
     if(resultsCountLabel) resultsCountLabel.textContent = 'Buscando servicios...';
     if(cardsContainer) cardsContainer.innerHTML = ''; 
 
     try {
-      const response = await fetch(`/api/services/catalog/${type}`);
-      const payload = await response.json();
+      // 1. Obtener Tasa y Datos en paralelo
+      const [rateRes, dataRes] = await Promise.all([
+        fetch('/api/services/tasa'),
+        fetch(`/api/services/catalog/${type}`)
+      ]);
 
-      if (!payload.ok) throw new Error(payload.message || 'Error al obtener datos');
+      const ratePayload = await rateRes.json();
+      const dataPayload = await dataRes.json();
 
-      const data = payload.data;
+      // Guardar tasa globalmente
+      if (ratePayload.ok) currentRate = ratePayload.data.tasa;
+
+      if (!dataPayload.ok) throw new Error(dataPayload.message);
+      const data = dataPayload.data;
 
       if(resultsCountLabel) resultsCountLabel.textContent = `${data.length} resultados encontrados`;
       
@@ -123,23 +127,21 @@
     } catch (error) {
       console.error(error);
       if(resultsCountLabel) resultsCountLabel.textContent = 'Error';
-      if(cardsContainer) cardsContainer.innerHTML = `<p style="color: red; padding: 1rem;">Error de conexión con el servidor.</p>`;
+      if(cardsContainer) cardsContainer.innerHTML = `<p style="color: red; padding: 1rem;">Error de conexión.</p>`;
     }
   };
 
   if (typeRadios) {
       typeRadios.forEach(radio => {
           radio.addEventListener('change', (e) => {
-              const newType = e.target.value;
-              window.location.href = `/busqueda?type=${newType}`;
+              window.location.href = `/busqueda?type=${e.target.value}`;
           });
       });
   }
 
   if (mainSearchBtn) {
       mainSearchBtn.addEventListener('click', () => {
-          const selectedType = searchTypeSelect.value;
-          window.location.href = `/busqueda?type=${selectedType}`;
+          window.location.href = `/busqueda?type=${searchTypeSelect.value}`;
       });
   }
 
@@ -148,5 +150,4 @@
         loadResults();
     }
   });
-
 })();

@@ -15,13 +15,21 @@
     return;
   }
 
-  const loadDetail = async () => {
+const loadDetail = async () => {
     try {
-      const response = await fetch(`/api/services/catalog/${serviceType}/${serviceId}`);
-      const payload = await response.json();
+      // Pedimos datos y tasa en paralelo
+      const [rateRes, dataRes] = await Promise.all([
+        fetch('/api/services/tasa'),
+        fetch(`/api/services/catalog/${serviceType}/${serviceId}`)
+      ]);
 
-      if (!payload.ok) throw new Error(payload.message);
-      const item = payload.data;
+      const ratePayload = await rateRes.json();
+      const dataPayload = await dataRes.json();
+
+      const currentRate = ratePayload.ok ? ratePayload.data.tasa : 1;
+
+      if (!dataPayload.ok) throw new Error(dataPayload.message);
+      const item = dataPayload.data;
 
       // Renderizar datos básicos
       document.getElementById('serviceTitle').textContent = 
@@ -31,8 +39,10 @@
         item.nombre_servicio || 'Servicio';
 
       const priceUsd = parseFloat(item.costo);
-      document.getElementById('servicePrice').textContent = `$${priceUsd}`;
-      document.getElementById('servicePriceBs').textContent = `Bs. ${(priceUsd * 60).toLocaleString('es-VE')}`;
+      const priceBs = priceUsd * currentRate; // Cálculo real
+
+      document.getElementById('servicePrice').textContent = `$${priceUsd.toFixed(2)}`;
+      document.getElementById('servicePriceBs').textContent = `Bs. ${priceBs.toLocaleString('es-VE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 
       configureOptions(serviceType, item);
 
