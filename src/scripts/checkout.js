@@ -1,15 +1,15 @@
 (() => {
   const userId = localStorage.getItem('userId');
-  if (!userId) window.location.href = '/login'; // Redirección limpia
+  if (!userId) window.location.href = '/login';
 
   // Referencias UI
   const totalLabel = document.querySelector('.summary-total span:last-child');
-  const payBtn = document.querySelector('aside button.cta-button'); // Botón Pagar
+  const payBtn = document.querySelector('aside button.cta-button');
   const financeCheckbox = document.querySelector('input[name="finance"]');
   
   // Inputs de Pago (Simulados para el ejemplo: Tarjeta)
   const cardInputs = {
-    number: document.querySelector('input[placeholder="Número de Tarjeta"]'), // Ajustaremos el HTML para que coincida
+    number: document.querySelector('input[placeholder="Número de Tarjeta"]'),
     holder: document.querySelector('input[placeholder="Titular"]'),
     amount: document.querySelector('input[placeholder="Monto a pagar"]')
   };
@@ -53,22 +53,20 @@
     const amountToPay = document.getElementById('paymentAmount').value;
     
     // Datos falsos de tarjeta para probar (el HTML debe tener estos campos)
-    // En producción, esto viene de los inputs reales
     const cardData = {
         usuario_id: userId,
         monto: amountToPay,
-        numero: "1234567890123456", // Mock
+        numero: "1234567890123456",
         cvc: 123,
         titular: "Usuario Prueba",
         vencimiento: "2028-12-01",
-        banco_id: 1, // ID de un banco existente en tu BD (ej: Banco Venezuela)
+        banco_id: 1,
         emisor: "VISA"
     };
 
     try {
       // A. Iniciar el checkout (Cambiar estado a PAGANDO)
       // Nota: Si ya está en PAGANDO, el backend devolverá error o lo manejará.
-      // Para simplificar, intentamos iniciarlo siempre.
       await fetch('/api/sales/checkout/init', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -90,7 +88,7 @@
 
       if (payResult.ok) {
         alert('¡Pago realizado con éxito! Tu viaje está confirmado.');
-        window.location.href = '/mis-viajes'; // Redirección a ruta limpia
+        window.location.href = '/mis-viajes';
       } else {
         throw new Error(payResult.message);
       }

@@ -121,7 +121,7 @@ router.post('/login', async (req, res, next) => {
   }
 });
 
-// --- RUTA QUE FALTABA: PERFIL DE USUARIO ---
+// --- PERFIL DE USUARIO ---
 router.get('/me', async (req, res) => {
   const userId = parseUserId(req); // Usa req.query.usuario_cod o headers
 

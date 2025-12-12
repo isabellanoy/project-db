@@ -50,10 +50,8 @@
     }
   };
 
-  // Event Listeners
   providerTypeSelect.addEventListener('change', loadProviders);
   
-  // Redirección al crear
   addBtn.addEventListener('click', () => {
     window.location.href = `/admin/crear?type=${providerTypeSelect.value}`;
   });
@@ -66,6 +64,5 @@
     renderTable(filtered);
   });
 
-  // Carga inicial
   loadProviders();
 })();

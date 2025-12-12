@@ -1,14 +1,11 @@
 (() => {
-  // Referencias al DOM
   const cardsContainer = document.getElementById('cardsContainer');
   const resultsCountLabel = document.getElementById('resultsCount');
   
-  // Referencias para filtros y búsqueda
   const typeRadios = document.querySelectorAll('input[name="type"]');
   const mainSearchBtn = document.getElementById('mainSearchBtn');
   const searchTypeSelect = document.getElementById('searchType');
 
-  // Función para formatear fechas
   const formatDate = (dateString) => {
     if (!dateString) return 'Por confirmar';
     const date = new Date(dateString);
@@ -18,7 +15,6 @@
     });
   };
 
-  // Función para crear la tarjeta HTML según el tipo de servicio
   const createCard = (item, type) => {
     let title, description, details, icon;
     
@@ -35,7 +31,7 @@
         description = `📍 ${item.lugar} - ${item.tipo_habitacion} (${item.numero_habitacion})`;
         details = `👥 Capacidad: ${item.capacidad} personas`;
         break;
-      case 'viajes': // Cruceros
+      case 'viajes':
         title = `Crucero: ${item.nombre_barco}`;
         icon = '🚢';
         description = `📍 Salida: ${item.origen} &#8594; Llegada: ${item.destino}`;
@@ -61,9 +57,8 @@
     }
 
     const priceUsd = parseFloat(item.costo || 0);
-    const priceBs = priceUsd * 60; // Tasa referencial
+    const priceBs = priceUsd * 60;
 
-    // CORRECCIÓN 1: El enlace al detalle también debe usar la ruta correcta si existiera
     const detailLink = `/detalle?id=${item.cod_servicio}&type=${type}`;
 
     return `
@@ -91,11 +86,9 @@
   };
 
   const loadResults = async () => {
-    // 1. Obtener el tipo de servicio de la URL
     const urlParams = new URLSearchParams(window.location.search);
     const type = urlParams.get('type') || 'vuelos';
 
-    // 2. Actualizar UI
     if (typeRadios) {
         typeRadios.forEach(radio => {
             radio.checked = (radio.value === type);
@@ -109,7 +102,6 @@
     if(cardsContainer) cardsContainer.innerHTML = ''; 
 
     try {
-      // 3. Fetch al Backend
       const response = await fetch(`/api/services/catalog/${type}`);
       const payload = await response.json();
 
@@ -117,7 +109,6 @@
 
       const data = payload.data;
 
-      // 4. Renderizar
       if(resultsCountLabel) resultsCountLabel.textContent = `${data.length} resultados encontrados`;
       
       if (data.length === 0) {
@@ -136,29 +127,23 @@
     }
   };
 
-  // --- CORRECCIÓN IMPORTANTE AQUÍ ---
-  // Cambiamos la redirección para que use '/busqueda' en lugar de './results.html'
-
-  // 1. Al cambiar el filtro lateral
   if (typeRadios) {
       typeRadios.forEach(radio => {
           radio.addEventListener('change', (e) => {
               const newType = e.target.value;
-              window.location.href = `/busqueda?type=${newType}`; // <--- CORREGIDO
+              window.location.href = `/busqueda?type=${newType}`;
           });
       });
   }
 
-  // 2. Al hacer clic en el botón principal
   if (mainSearchBtn) {
       mainSearchBtn.addEventListener('click', () => {
           const selectedType = searchTypeSelect.value;
-          window.location.href = `/busqueda?type=${selectedType}`; // <--- CORREGIDO
+          window.location.href = `/busqueda?type=${selectedType}`;
       });
   }
 
   document.addEventListener('DOMContentLoaded', () => {
-    // Detectamos si estamos en la ruta correcta (/busqueda)
     if (window.location.pathname.includes('/busqueda')) {
         loadResults();
     }

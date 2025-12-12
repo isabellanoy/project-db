@@ -3,10 +3,9 @@
   const showStatus = (element, message, type = 'info') => {
     if (!element) return;
     element.textContent = message;
-    element.className = `form-status status-${type}`; // Asume estilos CSS para .status-error y .status-success
+    element.className = `form-status status-${type}`;
     element.style.display = message ? 'block' : 'none';
     
-    // Estilos inline básicos por si no hay CSS específico aún
     element.style.color = type === 'error' ? '#ef4444' : type === 'success' ? '#10b981' : '#3b82f6';
     element.style.marginTop = '10px';
     element.style.fontSize = '0.9rem';

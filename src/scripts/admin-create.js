@@ -41,7 +41,6 @@
     const formData = new FormData(form);
     const data = Object.fromEntries(formData.entries());
 
-    // Ajustes de datos según tipo (para cumplir con el backend)
     if(type !== 'aerolineas') {
         data.p_nombre = data.nombre;
         data.p_fecha_afiliacion = new Date().toISOString().split('T')[0];

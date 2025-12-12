@@ -29,7 +29,7 @@ router.get('/', (_req, res) => {
   return ok(res, { message: 'Rutas de proveedores activas' });
 });
 
-// --- AEROLÍNEAS (Con Stored Procedures) ---
+// --- AEROLÍNEAS ---
 
 router.get('/aerolineas', async (_req, res, next) => {
   try {
@@ -47,7 +47,6 @@ router.get('/aerolineas/:id', async (req, res, next) => {
   }
 
   try {
-    // CORRECCIÓN 1: Agregar el cast ::int para que PG encuentre el procedimiento
     const result = await pool.query('CALL sp_obtener_aerolinea_por_id($1::int, null, null, null, null, null)', [aeroId]);
     const rawData = result?.rows?.[0];
 
@@ -55,19 +54,17 @@ router.get('/aerolineas/:id', async (req, res, next) => {
       return fail(res, 'Aerolínea no encontrada', 404);
     }
 
-    // CORRECCIÓN 2: Mapear los nombres de salida del SP a lo que espera el Frontend
     // El SP devuelve: cod, nombre, fecha_afiliacion, fecha_constitucion, lugar_origen
     const mappedData = {
         p_cod: rawData.cod,
         p_nombre: rawData.nombre,
         p_fecha_afiliacion: rawData.fecha_afiliacion,
         a_fecha_constitucion: rawData.fecha_constitucion,
-        lugar_l_cod: rawData.lugar_origen // Mapeo clave para que el select se llene
+        lugar_l_cod: rawData.lugar_origen
     };
 
     return ok(res, mappedData, 'Aerolínea obtenida');
   } catch (error) {
-    // Si sigue fallando, capturamos el error para verlo en consola
     console.error('Error SP Aerolínea:', error); 
     return next(error);
   }
@@ -84,11 +81,9 @@ router.post('/aerolineas', async (req, res, next) => {
   const lugarCodInt = parseIntParam(lugarCod);
 
   try {
-    // Usamos ::int y ::date para asegurar tipos
     const values = [nombre, fechaConstitucionDate, lugarCodInt];
     const result = await pool.query('CALL sp_crear_aerolinea($1, $2::date, $3::int, null)', values);
     
-    // Asumimos éxito si no salta al catch, ya que el SP usa RAISE EXCEPTION para errores
     return ok(res, null, 'Aerolínea creada exitosamente', 201);
   } catch (error) {
     return fail(res, error.message || 'Error al crear aerolínea');
@@ -103,7 +98,6 @@ router.put('/aerolineas/:id', async (req, res, next) => {
   const lugarCodInt = lugarCod !== undefined ? parseIntParam(lugarCod) : null;
 
   try {
-    // Pasamos NULL en fecha afiliación ya que el formulario no lo edita usualmente
     await pool.query('CALL sp_actualizar_aerolinea(null, $1::int, $2, null, $3::date, $4::int)', [
       aeroId,
       nombre,
@@ -120,11 +114,9 @@ router.put('/aerolineas/:id', async (req, res, next) => {
 router.delete('/aerolineas/:id', async (req, res, next) => {
   const aeroId = parseIntParam(req.params.id);
   try {
-    // Eliminación con parámetros de salida capturados si es necesario
     const result = await pool.query('CALL sp_eliminar_aerolinea($1::int, null, null)', [aeroId]);
     const payload = result?.rows?.[0] ?? {};
 
-    // El SP devuelve p_eliminada (boolean) y p_mensaje
     if (payload.p_eliminada === false) {
        return fail(res, payload.p_mensaje, 400);
     }

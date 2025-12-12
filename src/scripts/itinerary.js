@@ -2,7 +2,6 @@
   const listContainer = document.querySelector('section');
   const userId = localStorage.getItem('userId');
 
-  // Redirección corregida al Login
   if (!userId) {
     alert('Inicia sesión para ver tu itinerario');
     window.location.href = '/login';
@@ -75,7 +74,6 @@
       const data = payload.data;
 
       if (!data || data.empty || data.items.length === 0) {
-        // Enlace corregido a /busqueda
         listContainer.innerHTML = `
             <div style="text-align: center; padding: 3rem;">
                 <h3>Tu itinerario está vacío</h3>

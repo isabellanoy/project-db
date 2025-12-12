@@ -72,7 +72,6 @@
             <input type="date" id="dateInput" class="form-input">
         </div>`;
     } 
-    // Se pueden agregar más tipos aquí...
 
     optionsContainer.innerHTML = html;
   };
@@ -83,7 +82,7 @@
     // --- CORRECCIÓN AQUÍ ---
     if (!userId) {
       alert('Debes iniciar sesión para reservar.');
-      window.location.href = '/login'; // Ruta limpia definida en views.routes.js
+      window.location.href = '/login';
       return;
     }
     // -----------------------

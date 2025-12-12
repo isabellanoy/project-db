@@ -15,14 +15,11 @@
     });
   };
 
-  // Renderizar cada tarjeta de viaje
   const createTripCard = (trip) => {
-    // Definir color según estado
-    let statusColor = '#10b981'; // Verde (Finalizado)
+    let statusColor = '#10b981';
     if (trip.co_estado === 'CANCELADO') statusColor = '#ef4444';
     if (trip.co_estado === 'PAGANDO' || trip.co_estado === 'FINANCIADO') statusColor = '#f59e0b';
 
-    // Título del viaje
     const title = trip.co_es_paquete 
       ? `📦 Paquete: ${trip.nombre_paquete || 'Turístico'}` 
       : `✈️ Viaje Personalizado #${trip.co_cod}`;
@@ -54,12 +51,10 @@
   };
 
   const loadHistory = async () => {
-    // Mantener el header y limpiar el resto
     const header = container.querySelector('.dashboard-header');
     container.innerHTML = '';
     container.appendChild(header);
 
-    // Loader
     const loader = document.createElement('p');
     loader.textContent = 'Cargando tus viajes...';
     container.appendChild(loader);
@@ -84,7 +79,6 @@
         return;
       }
 
-      // Inyectar tarjetas
       trips.forEach(trip => {
         container.insertAdjacentHTML('beforeend', createTripCard(trip));
       });
