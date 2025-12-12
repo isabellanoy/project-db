@@ -968,18 +968,6 @@ COMMENT ON COLUMN Vuelo.v_duracion_horas IS 'Duracion en horas del vuelo';
 COMMENT ON COLUMN Vuelo.v_distancia_km IS 'Distancia en km del vuelo';
 
 -- ===================================================
--- CREATE - INDICES
--- ===================================================
-
-CREATE UNIQUE INDEX Nota_Credito__IDX ON Nota_Credito (Reembolso_ree_cod ASC);
--- CREATE UNIQUE INDEX Queja__IDX ON Queja (Reserva_Compra_co_cod ASC);
--- CREATE UNIQUE INDEX Reembolso__IDX ON Reembolso (Reserva_co_cod ASC);
--- CREATE UNIQUE INDEX Resena__IDX ON Resena (Reserva_Compra_co_cod ASC);
-CREATE UNIQUE INDEX Telefono__IDX ON Telefono (Operador_Turistico_p_cod ASC);
-CREATE UNIQUE INDEX Usuario__IDX ON Usuario (Empleado_e_cod ASC);
-CREATE UNIQUE INDEX Usuario__IDXv1 ON Usuario (Cliente_c_cod ASC);
-
--- ===================================================
 -- ALTER - CLAVES FORANEAS
 -- ===================================================
 
