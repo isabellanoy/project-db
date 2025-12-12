@@ -26,24 +26,11 @@ const parseDateOrNull = (value) => {
 };
 
 router.get('/', (_req, res) => {
-  return ok(
-    res,
-    {
-      basePath: '/api/providers',
-      endpoints: [
-        { method: 'GET', path: '/api/providers/aerolineas', description: 'Lista todas las aerolíneas disponibles.' },
-        { method: 'GET', path: '/api/providers/aerolineas/:id', description: 'Obtiene una aerolínea específica.' },
-        { method: 'POST', path: '/api/providers/aerolineas', description: 'Crea una aerolínea validando lugar y fechas.' },
-        { method: 'PUT', path: '/api/providers/aerolineas/:id', description: 'Actualiza una aerolínea permitiendo cambios parciales.' },
-        { method: 'DELETE', path: '/api/providers/aerolineas/:id', description: 'Elimina una aerolínea si no tiene referencias activas.' }
-      ],
-      hint: 'Recuerda enviar JSON válido en los métodos POST y PUT.'
-    },
-    'Rutas para gestión de proveedores disponibles'
-  );
+  return ok(res, { message: 'Rutas de proveedores activas' });
 });
 
-// Aerolíneas - procedimientos almacenados
+// --- AEROLÍNEAS (Con Stored Procedures) ---
+
 router.get('/aerolineas', async (_req, res, next) => {
   try {
     const result = await pool.query('SELECT * FROM fn_buscar_aerolineas()');
@@ -60,15 +47,28 @@ router.get('/aerolineas/:id', async (req, res, next) => {
   }
 
   try {
-    const result = await pool.query('CALL sp_obtener_aerolinea_por_id($1)', [aeroId]);
-    const payload = result?.rows?.[0];
+    // CORRECCIÓN 1: Agregar el cast ::int para que PG encuentre el procedimiento
+    const result = await pool.query('CALL sp_obtener_aerolinea_por_id($1::int, null, null, null, null, null)', [aeroId]);
+    const rawData = result?.rows?.[0];
 
-    if (!payload || payload.cod === null || payload.cod === undefined) {
+    if (!rawData) {
       return fail(res, 'Aerolínea no encontrada', 404);
     }
 
-    return ok(res, payload, 'Aerolínea obtenida');
+    // CORRECCIÓN 2: Mapear los nombres de salida del SP a lo que espera el Frontend
+    // El SP devuelve: cod, nombre, fecha_afiliacion, fecha_constitucion, lugar_origen
+    const mappedData = {
+        p_cod: rawData.cod,
+        p_nombre: rawData.nombre,
+        p_fecha_afiliacion: rawData.fecha_afiliacion,
+        a_fecha_constitucion: rawData.fecha_constitucion,
+        lugar_l_cod: rawData.lugar_origen // Mapeo clave para que el select se llene
+    };
+
+    return ok(res, mappedData, 'Aerolínea obtenida');
   } catch (error) {
+    // Si sigue fallando, capturamos el error para verlo en consola
+    console.error('Error SP Aerolínea:', error); 
     return next(error);
   }
 });
@@ -81,99 +81,61 @@ router.post('/aerolineas', async (req, res, next) => {
   }
 
   const fechaConstitucionDate = parseDateOrNull(fechaConstitucion);
-  if (!fechaConstitucionDate) {
-    return fail(res, 'fecha_constitucion no tiene un formato válido.');
-  }
-
   const lugarCodInt = parseIntParam(lugarCod);
-  if (lugarCodInt === null) {
-    return fail(res, 'lugar_cod debe ser un entero válido.');
-  }
 
   try {
+    // Usamos ::int y ::date para asegurar tipos
     const values = [nombre, fechaConstitucionDate, lugarCodInt];
-    const result = await pool.query('CALL sp_crear_aerolinea($1,$2,$3)', values);
-    const payload = result?.rows?.[0] ?? {};
-    const error = isErrorMessage(payload.p_mensaje);
-
-    if (error) {
-      return fail(res, payload.p_mensaje, 400, payload);
-    }
-
-    return ok(res, payload, payload.p_mensaje || 'Aerolínea creada', 201);
+    const result = await pool.query('CALL sp_crear_aerolinea($1, $2::date, $3::int, null)', values);
+    
+    // Asumimos éxito si no salta al catch, ya que el SP usa RAISE EXCEPTION para errores
+    return ok(res, null, 'Aerolínea creada exitosamente', 201);
   } catch (error) {
-    return next(error);
+    return fail(res, error.message || 'Error al crear aerolínea');
   }
 });
 
 router.put('/aerolineas/:id', async (req, res, next) => {
   const aeroId = parseIntParam(req.params.id);
-  if (aeroId === null) {
-    return fail(res, 'El parámetro id debe ser un entero válido.');
-  }
+  const { nombre, fecha_constitucion: fechaConstitucion, lugar_cod: lugarCod } = req.body ?? {};
 
-  const {
-    nombre,
-    fecha_afiliacion: fechaAfiliacion,
-    fecha_constitucion: fechaConstitucion,
-    lugar_cod: lugarCod
-  } = req.body ?? {};
-
-  const fechaAfiliacionDate = parseDateOrNull(fechaAfiliacion);
-  const fechaConstitucionDate = parseDateOrNull(fechaConstitucion);
+  const fechaConstDate = parseDateOrNull(fechaConstitucion);
   const lugarCodInt = lugarCod !== undefined ? parseIntParam(lugarCod) : null;
-  if (lugarCod !== undefined && lugarCodInt === null) {
-    return fail(res, 'lugar_cod debe ser un entero válido.');
-  }
 
   try {
-    const result = await pool.query('CALL sp_actualizar_aerolinea($1,$2,$3,$4,$5)', [
+    // Pasamos NULL en fecha afiliación ya que el formulario no lo edita usualmente
+    await pool.query('CALL sp_actualizar_aerolinea(null, $1::int, $2, null, $3::date, $4::int)', [
       aeroId,
-      nombre ?? null,
-      fechaAfiliacionDate,
-      fechaConstitucionDate,
+      nombre,
+      fechaConstDate,
       lugarCodInt
     ]);
 
-    const payload = result?.rows?.[0] ?? {};
-    const error = isErrorMessage(payload.p_mensaje);
-
-    if (error) {
-      return fail(res, payload.p_mensaje, 400, payload);
-    }
-
-    const updated = payload.p_registros_actualizados ?? 0;
-    if (updated === 0) {
-      return fail(res, 'Aerolínea no encontrada para actualizar', 404, payload);
-    }
-
-    return ok(res, payload, 'Aerolínea actualizada');
+    return ok(res, null, 'Aerolínea actualizada');
   } catch (error) {
-    return next(error);
+    return fail(res, error.message);
   }
 });
 
 router.delete('/aerolineas/:id', async (req, res, next) => {
   const aeroId = parseIntParam(req.params.id);
-  if (aeroId === null) {
-    return fail(res, 'El parámetro id debe ser un entero válido.');
-  }
-
   try {
-    const result = await pool.query('CALL sp_eliminar_aerolinea($1)', [aeroId]);
+    // Eliminación con parámetros de salida capturados si es necesario
+    const result = await pool.query('CALL sp_eliminar_aerolinea($1::int, null, null)', [aeroId]);
     const payload = result?.rows?.[0] ?? {};
 
-    if (payload.p_eliminada !== true) {
-      return fail(res, payload.p_mensaje || 'No se pudo eliminar la aerolínea', 400, payload);
+    // El SP devuelve p_eliminada (boolean) y p_mensaje
+    if (payload.p_eliminada === false) {
+       return fail(res, payload.p_mensaje, 400);
     }
 
-    return ok(res, payload, payload.p_mensaje || 'Aerolínea eliminada');
+    return ok(res, null, payload.p_mensaje || 'Aerolínea eliminada');
   } catch (error) {
-    return next(error);
+    return fail(res, error.message);
   }
 });
 
-// Otros proveedores usando el generador CRUD
+// --- OTROS PROVEEDORES (CRUD GENÉRICO) ---
 router.use('/hoteles', generateCrud('Hotel', 'p_cod'));
 router.use('/cruceros', generateCrud('Crucero', 'p_cod'));
 router.use('/transportes-terrestres', generateCrud('Transporte_Terrestre', 'p_cod'));

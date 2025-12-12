@@ -2,63 +2,44 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <title>Modificar Entidad | ViajesUCAB</title>
+    <title>Editar Proveedor | ViajesUCAB</title>
     <link rel="stylesheet" href="/src/styles/styles.css">
 </head>
 <body>
     <header class="navbar">
         <div class="navbar__content">
-            <a class="navbar__brand" href="../../home/home.html">ViajesUCAB</a>
+            <a class="navbar__brand" href="/">ViajesUCAB</a>
         </div>
     </header>
 
     <div class="dashboard-container">
-        <aside class="sidebar">
-            <div class="sidebar__title"><h3>Panel [ENTIDAD]</h3></div>
-            <nav class="sidebar__nav">
-                <a href="#" class="active" style="background: #000; color: #fff;">A (Gestión)</a>
-                <a href="#">x</a>
-                <a href="#">Y</a>
-            </nav>
-        </aside>
-
-        <main style="grid-column: 2 / -1;">
+        <main style="grid-column: 1 / -1; max-width: 800px; margin: 0 auto;">
             <div class="crud-form-wrapper">
                 <div class="crud-header">
-                    <h2>Modificar: LASER Airlines</h2>
+                    <h2>Modificar Proveedor</h2>
                 </div>
 
-                <form>
+                <form id="editForm">
                     <div class="form-row">
-                        <label>Nombre Comercial</label>
-                        <input type="text" class="form-input" value="LASER Airlines">
+                        <label>Nombre</label>
+                        <input type="text" name="nombre" id="nombreInput" class="form-input" required>
                     </div>
 
-                    <div class="form-row">
-                        <label>Dirección Fiscal</label>
-                        <input type="text" class="form-input" value="Av. Francisco de Miranda, Caracas">
-                    </div>
+                    <div class="form-row" id="extraFieldsEdit"></div>
 
                     <div class="form-row">
-                        <label>ID de Sistema (No editable)</label>
-                        <input type="text" class="form-input input-locked" value="PRV-001-2025" readonly>
-                    </div>
-
-                    <div class="form-row">
-                        <label>Estado</label>
-                        <select class="form-input">
-                            <option selected>Activo</option>
-                            <option>Inactivo</option>
-                        </select>
+                        <label>Ubicación</label>
+                        <select id="lugarSelectEdit" name="lugar_cod" class="form-input"></select>
                     </div>
 
                     <div class="form-actions" style="justify-content: center;">
-                        <a href="../manage-providers.html" class="btn-secondary">Guardar</a>
-                        <a href="../manage-providers.html" class="btn-danger">Cancelar</a>
+                        <button type="submit" class="btn-secondary">Actualizar</button>
+                        <a href="/admin/proveedores" class="btn-danger">Cancelar</a>
                     </div>
                 </form>
             </div>
         </main>
     </div>
+    <script src="/src/scripts/admin-edit.js"></script>
 </body>
 </html>

@@ -1,73 +1,71 @@
 (() => {
-  const renderProviders = (tableBody, providers = []) => {
-    if (!tableBody) return;
+  const tableBody = document.querySelector('[data-providers-body]');
+  const providerTypeSelect = document.getElementById('providerType');
+  const addBtn = document.getElementById('addBtn');
+  const searchInput = document.getElementById('searchInput');
 
-    if (!Array.isArray(providers) || providers.length === 0) {
-      tableBody.innerHTML = `
-        <tr>
-          <td colspan="4" style="text-align: center; padding: 1.5rem; color: #475569;">
-            No hay aerolíneas registradas todavía.
-          </td>
-        </tr>
-      `;
+  let currentData = [];
+
+  const formatDate = (dateString) => {
+    if (!dateString) return '-';
+    return new Date(dateString).toLocaleDateString('es-ES');
+  };
+
+  const renderTable = (data) => {
+    if (!data || data.length === 0) {
+      tableBody.innerHTML = `<tr><td colspan="4" style="text-align:center; padding:1.5rem;">No se encontraron registros.</td></tr>`;
       return;
     }
 
-    const rows = providers
-      .map((provider) => {
-        const id = provider.cod ?? provider.p_cod ?? '-';
-        const nombre = provider.nombre ?? provider.p_nombre ?? 'Sin nombre';
-        const tipo = provider.tipo ?? 'Aerolínea';
-
-        return `
-          <tr>
-            <td>${id}</td>
-            <td>${nombre}</td>
-            <td>${tipo}</td>
-            <td class="action-links">
-              <a href="#" data-action="view" data-id="${id}">Ver</a>
-              <a href="#" data-action="edit" data-id="${id}">Editar</a>
-              <a href="#" data-action="delete" data-id="${id}" style="color: #ef4444;">Eliminar</a>
-            </td>
-          </tr>
-        `;
-      })
-      .join('');
-
-    tableBody.innerHTML = rows;
+    tableBody.innerHTML = data.map(item => `
+      <tr>
+        <td>${item.p_cod || item.cod}</td>
+        <td>${item.p_nombre || item.nombre}</td>
+        <td>${formatDate(item.p_fecha_afiliacion || item.fecha_afiliacion)}</td>
+        <td class="action-links">
+          <a href="/admin/editar?type=${providerTypeSelect.value}&id=${item.p_cod || item.cod}">Editar</a>
+          <a href="/admin/eliminar?type=${providerTypeSelect.value}&id=${item.p_cod || item.cod}" style="color: #ef4444;">Eliminar</a>
+        </td>
+      </tr>
+    `).join('');
   };
 
-  const showStatus = (element, message, type = 'info') => {
-    if (!element) return;
-    element.textContent = message;
-    element.dataset.status = type;
-    element.style.display = message ? 'block' : 'none';
-  };
-
-  const fetchProviders = async (tableBody, statusElement) => {
-    showStatus(statusElement, 'Cargando aerolíneas...', 'info');
+  const loadProviders = async () => {
+    const type = providerTypeSelect.value;
+    tableBody.innerHTML = `<tr><td colspan="4" style="text-align:center; padding:1.5rem;">Cargando...</td></tr>`;
 
     try {
-      const response = await fetch('/api/aerolineas');
-      const payload = await response.json().catch(() => []);
-
-      if (!response.ok) {
-        throw new Error(payload?.message || 'No se pudo obtener la lista de aerolíneas');
+      const response = await fetch(`/api/providers/${type}`);
+      const payload = await response.json();
+      
+      if(payload.ok) {
+        currentData = payload.data;
+        renderTable(currentData);
+      } else {
+        tableBody.innerHTML = `<tr><td colspan="4" style="text-align:center; color:red;">${payload.message}</td></tr>`;
       }
-
-      renderProviders(tableBody, payload);
-      showStatus(statusElement, `Se cargaron ${payload.length} aerolínea(s).`, 'success');
     } catch (error) {
-      renderProviders(tableBody, []);
-      showStatus(statusElement, error.message, 'error');
+      console.error(error);
+      tableBody.innerHTML = `<tr><td colspan="4" style="text-align:center; color:red;">Error de conexión</td></tr>`;
     }
   };
 
-  document.addEventListener('DOMContentLoaded', () => {
-    const tableBody = document.querySelector('[data-providers-body]');
-    if (!tableBody) return;
-
-    const statusElement = document.querySelector('[data-providers-status]');
-    fetchProviders(tableBody, statusElement);
+  // Event Listeners
+  providerTypeSelect.addEventListener('change', loadProviders);
+  
+  // Redirección al crear
+  addBtn.addEventListener('click', () => {
+    window.location.href = `/admin/crear?type=${providerTypeSelect.value}`;
   });
+
+  searchInput.addEventListener('input', (e) => {
+    const term = e.target.value.toLowerCase();
+    const filtered = currentData.filter(item => 
+      (item.p_nombre || item.nombre || '').toLowerCase().includes(term)
+    );
+    renderTable(filtered);
+  });
+
+  // Carga inicial
+  loadProviders();
 })();

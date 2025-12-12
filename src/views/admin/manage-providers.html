@@ -8,9 +8,9 @@
 <body>
     <header class="navbar">
         <div class="navbar__content">
-            <a class="navbar__brand" href="../home/home.html">ViajesUCAB</a>
+            <a class="navbar__brand" href="/">ViajesUCAB</a>
             <div>
-                <a href="../auth/login.html" style="text-decoration: underline; font-size: 0.9rem;">Cerrar Sesión</a>
+                <a href="/login" style="text-decoration: underline; font-size: 0.9rem;">Cerrar Sesión</a>
             </div>
         </div>
     </header>
@@ -21,25 +21,31 @@
                 <h3>Panel Admin</h3>
             </div>
             <nav class="sidebar__nav">
-                <a href="./manage-providers.html" class="active">Proveedores</a>
-                <a href="#">Paquetes</a>
-                <a href="#">Promociones</a>
-                <a href="#">Tasas de Cambio</a>
-                <a href="./reports.html">Reportes</a>
-                <a href="#">Quejas</a>
+                <a href="/admin/proveedores" class="active">Proveedores</a>
+                <a href="/admin/reportes">Reportes</a>
             </nav>
         </aside>
 
         <main style="grid-column: 2 / -1;">
-            <h1 class="section__title" style="margin-bottom: 1.5rem; border-bottom: 1px solid #000; padding-bottom: 0.5rem;">Gestión de Proveedores</h1>
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; border-bottom: 1px solid #000; padding-bottom: 0.5rem;">
+                <h1 class="section__title" style="margin:0;">Gestión de Proveedores</h1>
+                
+                <select id="providerType" class="form-input" style="width: auto; font-weight: 600;">
+                    <option value="aerolineas">Aerolíneas</option>
+                    <option value="hoteles">Hoteles</option>
+                    <option value="cruceros">Cruceros</option>
+                    <option value="transportes-terrestres">Transporte Terrestre</option>
+                    <option value="operadores-turisticos">Operadores Turísticos</option>
+                </select>
+            </div>
 
             <div class="toolbar">
                 <div class="search-input-group">
-                    <label style="display: block; font-size: 0.85rem; margin-bottom: 0.25rem;">Buscar</label>
-                    <input type="text" class="form-input" style="border: 1px solid #000;">
+                    <input type="text" id="searchInput" class="form-input" placeholder="Buscar por nombre..." style="border: 1px solid #000;">
                 </div>
-                <button class="icon-btn" title="Buscar">🔍</button>
-                <button class="icon-btn" title="Agregar Nuevo" style="font-weight: bold;">+</button>
+                <button id="addBtn" class="icon-btn" title="Agregar Nuevo" style="background: #000; color: white; width: auto; padding: 0 1.5rem;">
+                    + Nuevo Proveedor
+                </button>
             </div>
 
             <div class="data-table-container">
@@ -48,7 +54,7 @@
                         <tr>
                             <th style="width: 60px;">ID</th>
                             <th>Nombre</th>
-                            <th>Tipo</th>
+                            <th>Fecha Afiliación</th>
                             <th style="width: 200px;">Acciones</th>
                         </tr>
                     </thead>
@@ -60,20 +66,9 @@
                         </tr>
                     </tbody>
                 </table>
-                <p class="table-status" data-providers-status style="display: none; margin-top: 0.75rem;"></p>
-            </div>
-
-            <div style="display: flex; justify-content: center; gap: 0.5rem; margin-top: 1.5rem; border: 1px solid #000; width: fit-content; margin-left: auto; margin-right: auto; padding: 0.5rem;">
-                <button style="border: none; background: transparent;">&lt;</button>
-                <button style="background: #e2e8f0; padding: 0.25rem 0.75rem; border: none;">1</button>
-                <button style="background: #e2e8f0; padding: 0.25rem 0.75rem; border: none;">2</button>
-                <button style="background: #e2e8f0; padding: 0.25rem 0.75rem; border: none;">3</button>
-                <span>...</span>
-                <button style="background: #e2e8f0; padding: 0.25rem 0.75rem; border: none;">9</button>
-                <button style="border: none; background: transparent;">&gt;</button>
             </div>
         </main>
     </div>
-    <script src="/src/scripts/manageProviders.js" defer></script>
+    <script src="/src/scripts/manageProviders.js"></script>
 </body>
 </html>
