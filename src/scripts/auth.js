@@ -1,9 +1,15 @@
 (() => {
+  // Función para mostrar mensajes de estado (éxito/error)
   const showStatus = (element, message, type = 'info') => {
     if (!element) return;
     element.textContent = message;
-    element.dataset.status = type;
+    element.className = `form-status status-${type}`; // Asume estilos CSS para .status-error y .status-success
     element.style.display = message ? 'block' : 'none';
+    
+    // Estilos inline básicos por si no hay CSS específico aún
+    element.style.color = type === 'error' ? '#ef4444' : type === 'success' ? '#10b981' : '#3b82f6';
+    element.style.marginTop = '10px';
+    element.style.fontSize = '0.9rem';
   };
 
   const handleLoginSubmit = (form) => {
@@ -20,11 +26,13 @@
       const password = passwordInput.value;
 
       if (!usernameOrEmail || !password) {
-        showStatus(statusElement, 'Debes ingresar tu correo y contraseña.', 'error');
+        showStatus(statusElement, 'Por favor ingresa usuario/correo y contraseña.', 'error');
         return;
       }
 
       showStatus(statusElement, 'Validando credenciales...', 'info');
+      const submitBtn = form.querySelector('button[type="submit"]');
+      if(submitBtn) submitBtn.disabled = true;
 
       try {
         const response = await fetch('/api/auth/login', {
@@ -40,18 +48,37 @@
 
         const payload = await response.json().catch(() => ({}));
 
-        if (!response.ok) {
-          const message = payload?.p_mensaje || payload?.message || 'Credenciales inválidas';
-          showStatus(statusElement, message, 'error');
-          return;
+        if (!response.ok || !payload.ok) {
+          const message = payload.message || payload.p_mensaje || 'Credenciales inválidas';
+          throw new Error(message);
         }
 
-        showStatus(statusElement, 'Inicio de sesión exitoso. Redirigiendo...', 'success');
+        // GUARDAR SESIÓN 
+        // Guardamos el ID que nos devolvió el backend para usarlo en las compras
+        if (payload.data) {
+            localStorage.setItem('userId', payload.data.id);
+            localStorage.setItem('username', payload.data.username);
+            localStorage.setItem('userRole', payload.data.role);
+            console.log('Sesión iniciada para:', payload.data.username);
+        }
+        // -------------------------------------
+
+        showStatus(statusElement, '¡Login exitoso! Redirigiendo...', 'success');
+        
+        // Redirigir al home o al dashboard según corresponda
         setTimeout(() => {
-          window.location.href = '../home/home.html';
-        }, 800);
+          // Si es admin, podríamos enviarlo al panel administrativo
+          if (payload.data.role === 'Administrador' || payload.data.role === 'Gerente de Ventas') {
+             window.location.href = '../admin/reports.html'; 
+          } else {
+             window.location.href = '../home/home.html';
+          }
+        }, 1000);
+
       } catch (error) {
-        showStatus(statusElement, 'No se pudo contactar al servidor. Intenta nuevamente.', 'error');
+        console.error(error);
+        showStatus(statusElement, error.message || 'Error de conexión. Intenta nuevamente.', 'error');
+        if(submitBtn) submitBtn.disabled = false;
       }
     });
   };

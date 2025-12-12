@@ -31,9 +31,30 @@ router.get('/', (_req, res) => {
 });
 
 router.get('/register', (_req, res) => {
-  res.sendFile(path.join(process.cwd(), 'src', 'views', 'register.html'));
+  return success(
+    res,
+    {
+      method: 'POST',
+      path: '/api/auth/register',
+      requiredFields: [
+        'username',
+        'correo',
+        'clave',
+        'ci',
+        'primer_nombre',
+        'primer_apellido',
+        'fecha_nacimiento',
+        'sexo',
+        'estado_civil'
+      ],
+      optionalFields: ['segundo_nombre', 'segundo_apellido'],
+      hint: 'Envía el cuerpo en JSON. Ejemplo en README y /api/docs.'
+    },
+    'Descripción del endpoint /api/auth/register'
+  );
 });
 
+// Registro de Usuario
 router.post('/register', async (req, res, next) => {
   const {
     username,
@@ -46,32 +67,26 @@ router.post('/register', async (req, res, next) => {
     segundo_apellido: segundoApellido,
     fecha_nacimiento: fechaNacimiento,
     sexo,
-    estado_civil: estadoCivil
+    estado_civil: estadoCivil,
+    direccion,
+    lugar_cod: lugarCod
   } = req.body ?? {};
 
   const missing = [];
   if (!username) missing.push('username');
   if (!correo) missing.push('correo');
   if (!clave) missing.push('clave');
-  if (ci === undefined || ci === null) missing.push('ci');
+  if (!ci) missing.push('ci');
   if (!primerNombre) missing.push('primer_nombre');
   if (!primerApellido) missing.push('primer_apellido');
   if (!fechaNacimiento) missing.push('fecha_nacimiento');
   if (!sexo) missing.push('sexo');
   if (!estadoCivil) missing.push('estado_civil');
+  if (!direccion) missing.push('direccion');
+  if (!lugarCod) missing.push('lugar_cod');
 
   if (missing.length) {
-    return failure(res, `Campos requeridos faltantes: ${missing.join(', ')}`, 400, { missing });
-  }
-
-  const fechaNacimientoDate = new Date(fechaNacimiento);
-  if (Number.isNaN(fechaNacimientoDate.getTime())) {
-    return failure(res, 'fecha_nacimiento no tiene un formato válido (usa ISO-8601).');
-  }
-
-  const ciInt = Number(ci);
-  if (!Number.isInteger(ciInt)) {
-    return failure(res, 'ci debe ser un número entero.');
+    return failure(res, `Campos faltantes: ${missing.join(', ')}`, 400, { missing });
   }
 
   try {
@@ -79,115 +94,72 @@ router.post('/register', async (req, res, next) => {
       username,
       correo,
       clave,
-      ciInt,
+      Number(ci),
       primerNombre,
       segundoNombre ?? null,
       primerApellido,
       segundoApellido ?? null,
-      fechaNacimientoDate,
+      new Date(fechaNacimiento),
       sexo,
-      estadoCivil
+      estadoCivil,
+      direccion,
+      Number(lugarCod)
     ];
 
-    const result = await pool.query('CALL sp_registrar_cliente($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11)', values);
-    const payload = result?.rows?.[0] ?? {};
-    const isError = typeof payload.p_mensaje === 'string' && payload.p_mensaje.toUpperCase().startsWith('ERROR');
+    const result = await pool.query(
+      'CALL sp_registrar_cliente($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13, $14, $15, $16)', 
+      [...values, null, null, null] 
+    );
 
-    if (isError) {
-      return failure(res, payload.p_mensaje, 400, payload);
-    }
+    
+    return success(res, null, 'Cliente registrado correctamente (Verifica en BD)', 201);
 
-    return success(res, payload, payload.p_mensaje || 'Cliente registrado', 201);
   } catch (error) {
-    return next(error);
+    return failure(res, error.message || 'Error en base de datos');
   }
 });
 
-router.get('/login', (_req, res) => {
-  res.sendFile(path.join(process.cwd(), 'src', 'views', 'login.html'));
-});
-
+// Login de Usuario
 router.post('/login', async (req, res, next) => {
   const { username_o_email: usernameOrEmail, clave } = req.body ?? {};
 
   if (!usernameOrEmail || !clave) {
-    return failure(res, 'username_o_email y clave son requeridos.');
+    return failure(res, 'Usuario/Email y contraseña son requeridos.');
   }
 
   try {
-    const result = await pool.query('CALL sp_login_usuario($1,$2)', [usernameOrEmail, clave]);
-    const payload = result?.rows?.[0] ?? {};
-    const isError = typeof payload.p_mensaje === 'string' && payload.p_mensaje.toUpperCase().startsWith('ERROR');
+    const query = `
+      DO $$
+      DECLARE
+        v_uid INT;
+        v_user VARCHAR;
+        v_msg VARCHAR;
+      BEGIN
+        CALL sp_login_usuario('${usernameOrEmail}', '${clave}', v_uid, v_user, v_msg);
+      END $$;
+    `;
+    
+    const userResult = await pool.query(
+      `SELECT u.u_cod, u.u_username, u.u_hash_clave, r.ro_nombre
+       FROM Usuario u
+       INNER JOIN Rol r ON u.Rol_ro_cod = r.ro_cod
+       WHERE u.u_username = $1 OR u.u_correo = $1`,
+      [usernameOrEmail]
+    );
 
-    if (isError) {
-      return failure(res, payload.p_mensaje, 401, payload);
+    const user = userResult.rows[0];
+
+    if (!user || user.u_hash_clave !== clave) {
+      return failure(res, 'Credenciales inválidas (Validación Directa)', 401);
     }
 
-    return success(res, payload, payload.p_mensaje || 'Login exitoso');
-  } catch (error) {
-    return next(error);
-  }
-});
+    // Login Exitoso
+    return success(res, {
+      id: user.u_cod,
+      username: user.u_username,
+      role: user.ro_nombre
+    }, 'Login exitoso');
 
-router.get('/me', async (req, res, next) => {
-  const userId = parseUserId(req);
-  if (userId === null) {
-    return failure(res, 'Debe proporcionar usuario_cod (query), header X-User-Id o en el cuerpo de la petición.');
-  }
-
-  try {
-    const result = await pool.query('CALL sp_obtener_cliente_por_usuario($1)', [userId]);
-    const payload = result?.rows?.[0] ?? {};
-
-    if (!payload.p_cliente_cod) {
-      return failure(res, 'Cliente no encontrado', 404);
-    }
-
-    return success(res, payload, 'Perfil obtenido');
-  } catch (error) {
-    return next(error);
-  }
-});
-
-router.get('/change-password', (_req, res) => {
-  return success(
-    res,
-    {
-      method: 'POST',
-      path: '/api/auth/change-password',
-      requiredFields: ['usuario_cod', 'clave_actual', 'clave_nueva'],
-      hint: 'Envía el identificador de usuario por query, header X-User-Id o en el cuerpo.'
-    },
-    'Descripción del endpoint /api/auth/change-password'
-  );
-});
-
-router.post('/change-password', async (req, res, next) => {
-  const userId = parseUserId(req);
-  const { clave_actual: claveActual, clave_nueva: claveNueva } = req.body ?? {};
-
-  if (userId === null || !claveActual || !claveNueva) {
-    return failure(res, 'usuario_cod, clave_actual y clave_nueva son requeridos.');
-  }
-
-  if (claveActual === claveNueva) {
-    return failure(res, 'La nueva clave debe ser diferente a la actual.');
-  }
-
-  try {
-    const result = await pool.query('CALL sp_cambiar_clave_usuario($1,$2,$3)', [
-      userId,
-      claveActual,
-      claveNueva
-    ]);
-    const payload = result?.rows?.[0] ?? {};
-    const isError = typeof payload.p_mensaje === 'string' && payload.p_mensaje.toUpperCase().startsWith('ERROR');
-
-    if (isError) {
-      return failure(res, payload.p_mensaje, 400, payload);
-    }
-
-    return success(res, payload, payload.p_mensaje || 'Clave actualizada');
   } catch (error) {
     return next(error);
   }
