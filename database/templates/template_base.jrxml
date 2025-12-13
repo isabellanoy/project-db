@@ -1,0 +1,110 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Created with Jaspersoft Studio version 6.20.0.final using JasperReports Library version 6.20.0-2bc7ab61d56f459e8176eb05c7705e145cd400ad  -->
+<jasperReport xmlns="http://jasperreports.sourceforge.net/jasperreports" 
+              xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" 
+              xsi:schemaLocation="http://jasperreports.sourceforge.net/jasperreports http://jasperreports.sourceforge.net/xsd/jasperreport.xsd" 
+              name="ComplexReport" pageWidth="595" pageHeight="842" columnWidth="535" leftMargin="20" rightMargin="20" topMargin="20" bottomMargin="20" uuid="7a5c9b49-9dc5-422a-ac69-e92cf61ef530">
+    
+    <property name="com.jaspersoft.studio.data.defaultdataadapter" value="One Empty Record"/>
+    
+    <style name="Title" forecolor="#FFFFFF" fontName="SansSerif" fontSize="26" isBold="false"/>
+    <style name="SubTitle" forecolor="#666666" fontName="SansSerif" fontSize="18" isBold="false"/>
+    <style name="ColumnHeader" forecolor="#666666" fontName="SansSerif" fontSize="12" isBold="true"/>
+    <style name="Detail" fontName="SansSerif" fontSize="12"/>
+    <style name="Row" mode="Transparent">
+        <conditionalStyle>
+            <conditionExpression><![CDATA[$V{REPORT_COUNT}%2 == 0]]></conditionExpression>
+            <style mode="Opaque" backcolor="#F0EFEF"/>
+        </conditionalStyle>
+    </style>
+
+    <parameter name="title" class="java.lang.String"/>
+    
+    <!-- FIELDS_PLACEHOLDER -->
+    {{FIELDS}}
+
+    <background>
+        <band splitType="Stretch"/>
+    </background>
+    
+    <title>
+        <band height="75" splitType="Stretch">
+            <rectangle>
+                <reportElement x="-20" y="-20" width="595" height="95" backcolor="#006699" uuid="2a1297b9-6cda-4299-9065-f98656170d0d"/>
+                <graphicElement>
+                    <pen lineWidth="0.0"/>
+                </graphicElement>
+            </rectangle>
+            <textField>
+                <reportElement style="Title" x="0" y="0" width="555" height="50" uuid="f49fb8f6-2e8d-4f7d-b77a-226874a75368"/>
+                <textElement verticalAlignment="Middle">
+                    <font isBold="true"/>
+                </textElement>
+                <textFieldExpression><![CDATA[$P{title}]]></textFieldExpression>
+            </textField>
+            <staticText>
+                <reportElement style="SubTitle" x="320" y="50" width="233" height="22" forecolor="#CCCCCC" uuid="93233318-7b95-46e2-9f3b-314dd2774312"/>
+                <textElement textAlignment="Right"/>
+                <text><![CDATA[Reporte Generado]]></text>
+            </staticText>
+        </band>
+    </title>
+    
+    <pageHeader>
+        <band splitType="Stretch"/>
+    </pageHeader>
+    
+    <columnHeader>
+        <band height="30" splitType="Stretch">
+            <rectangle>
+                <reportElement x="0" y="0" width="555" height="30" backcolor="#E6E6E6" uuid="a71026aa-c692-4f7f-8f64-92794142f1f4"/>
+                <graphicElement>
+                    <pen lineWidth="0.0"/>
+                </graphicElement>
+            </rectangle>
+            {{COLUMN_HEADERS}}
+        </band>
+    </columnHeader>
+    
+    <detail>
+        <band height="20" splitType="Stretch">
+            <frame>
+                <reportElement style="Row" mode="Opaque" x="0" y="0" width="555" height="20" uuid="b50221b5-8254-440b-8c6f-1f0b138c9259"/>
+                {{DETAIL_FIELDS}}
+            </frame>
+        </band>
+    </detail>
+    
+    <pageFooter>
+        <band height="25" splitType="Stretch">
+            <frame>
+                <reportElement mode="Opaque" x="-20" y="1" width="595" height="24" forecolor="#D0B48E" backcolor="#F2EBDF" uuid="f2324113-3563-4f48-b688-ed82b3098434"/>
+                <textField evaluationTime="Report">
+                    <reportElement style="ColumnHeader" x="533" y="0" width="40" height="20" forecolor="#736343" uuid="9f676d3f-1486-4a48-96ce-fa0a2b7a1577"/>
+                    <textElement verticalAlignment="Middle">
+                        <font size="10" isBold="false"/>
+                    </textElement>
+                    <textFieldExpression><![CDATA[" " + $V{PAGE_NUMBER}]]></textFieldExpression>
+                </textField>
+                <textField>
+                    <reportElement style="ColumnHeader" x="453" y="0" width="80" height="20" forecolor="#736343" uuid="7415bd49-92ea-42ab-bbad-d370dba3cd03"/>
+                    <textElement textAlignment="Right" verticalAlignment="Middle">
+                        <font size="10" isBold="false"/>
+                    </textElement>
+                    <textFieldExpression><![CDATA["Página "+$V{PAGE_NUMBER}+" de"]]></textFieldExpression>
+                </textField>
+                <textField pattern="EEEEE dd MMMMM yyyy">
+                    <reportElement style="ColumnHeader" x="22" y="1" width="197" height="20" forecolor="#736343" uuid="8bf88488-fb5e-4676-a772-7541ba67c472"/>
+                    <textElement verticalAlignment="Middle">
+                        <font size="10" isBold="false"/>
+                    </textElement>
+                    <textFieldExpression><![CDATA[new java.text.SimpleDateFormat("dd/MM/yyyy", new java.util.Locale("es", "ES")).format(new java.util.Date())]]></textFieldExpression>
+                </textField>
+            </frame>
+        </band>
+    </pageFooter>
+    
+    <summary>
+        <band splitType="Stretch"/>
+    </summary>
+</jasperReport>
