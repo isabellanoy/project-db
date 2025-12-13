@@ -1,5 +1,4 @@
 (() => {
-  // Función para mostrar mensajes de estado (éxito/error)
   const showStatus = (element, message, type = 'info') => {
     if (!element) return;
     element.textContent = message;
@@ -53,24 +52,22 @@
         }
 
         // GUARDAR SESIÓN 
-        // Guardamos el ID que nos devolvió el backend para usarlo en las compras
         if (payload.data) {
             localStorage.setItem('userId', payload.data.id);
             localStorage.setItem('username', payload.data.username);
             localStorage.setItem('userRole', payload.data.role);
             console.log('Sesión iniciada para:', payload.data.username);
         }
-        // -------------------------------------
 
         showStatus(statusElement, '¡Login exitoso! Redirigiendo...', 'success');
         
-        // Redirigir al home o al dashboard según corresponda
         setTimeout(() => {
-          // Si es admin, podríamos enviarlo al panel administrativo
+          // Si es admin o gerente, redirigir al panel de reportes
           if (payload.data.role === 'Administrador' || payload.data.role === 'Gerente de Ventas') {
-             window.location.href = '../admin/reports.html'; 
+             window.location.href = '/admin/reportes'; 
           } else {
-             window.location.href = '../home/home.html';
+             // Si es cliente, redirigir al Home
+             window.location.href = '/';
           }
         }, 1000);
 

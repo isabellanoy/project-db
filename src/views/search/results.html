@@ -9,100 +9,18 @@
 <body>
     <header class="navbar">
         <div class="navbar__content">
-            <a class="navbar__brand" href="../home/home.html">ViajesUCAB</a>
+            <a class="navbar__brand" href="/">ViajesUCAB</a>
             <nav class="navbar__links">
                 <a href="/busqueda?type=vuelos">Vuelos</a>
                 <a href="/busqueda?type=alojamientos">Hoteles</a>
                 <a href="/busqueda?type=viajes">Cruceros</a>
             </nav>
             <div style="display: flex; gap: 10px;">
-                <a href="../booking/itinerary.html" class="cta-button" style="background: #000;">Itinerario (2)</a>
-                <a href="../user/profile.html" class="cta-button">Mi Cuenta</a>
+                <a href="/itinerario" class="cta-button" style="background: #000;">Itinerario</a>
+                <a href="/perfil" class="cta-button">Mi Cuenta</a>
             </div>
         </div>
     </header>
-
-    <main class="wrapper">
-        <h1 style="text-align: center; margin-bottom: 1.5rem;">Busca tu próximo viaje</h1>
-
-        <form class="search-filter-bar">
-            <div class="filter-group">
-                <label>Tipo</label>
-                <select class="form-input" id="searchType">
-                    <option value="vuelos">Vuelo</option>
-                    <option value="alojamientos">Hotel</option>
-                    <option value="viajes">Crucero</option>
-                    <option value="traslados">Traslado</option>
-                    <option value="actividades">Actividad</option>
-                </select>
-            </div>
-            <div class="filter-group">
-                <label>Destino</label>
-                <input type="text" class="form-input" placeholder="¿A dónde vas?" id="searchDest">
-            </div>
-            <div class="filter-group">
-                <label>Fecha ida</label>
-                <input type="date" class="form-input" id="searchDateStart">
-            </div>
-            <div class="filter-group">
-                <label>Fecha vuelta</label>
-                <input type="date" class="form-input" id="searchDateEnd">
-            </div>
-            <div class="filter-group">
-                <label>Nº Viajeros</label>
-                <select class="form-input" id="searchPassengers">
-                    <option value="1">1 viajero</option>
-                    <option value="2">2 viajeros</option>
-                    <option value="3">3 viajeros</option>
-                    <option value="4">4+ viajeros</option>
-                </select>
-            </div>
-            <button type="button" id="mainSearchBtn" class="cta-button" style="background: #000; height: 42px;">Buscar viajes</button>
-        </form>
-
-        <div class="search-layout">
-            <aside class="filters-sidebar">
-                <h3 style="margin-bottom: 1.5rem;">Filtros</h3>
-                
-                <div class="filter-section">
-                    <h4>Tipo de servicio</h4>
-                    <div class="radio-list" id="typeFilters">
-                        <label><input type="radio" name="type" value="vuelos"> Vuelos</label>
-                        <label><input type="radio" name="type" value="alojamientos"> Hoteles</label>
-                        <label><input type="radio" name="type" value="viajes"> Cruceros</label>
-                        <label><input type="radio" name="type" value="traslados"> Traslados</label>
-                        <label><input type="radio" name="type" value="actividades"> Actividades</label>
-                    </div>
-                </div>
-
-                <div class="filter-section">
-                    <h4>Moneda</h4>
-                    <select class="form-input">
-                        <option>USD</option>
-                        <option>Bs</option>
-                    </select>
-                </div>
-
-                <div class="filter-section">
-                    <h4>Promociones</h4>
-                    <label class="check-list"><input type="checkbox"> Sólo ofertas</label>
-                </div>
-            </aside>
-
-            <section id="resultsSection">
-                <div style="display: flex; justify-content: space-between; margin-bottom: 1rem;">
-                    <span id="resultsCount">Cargando resultados...</span>
-                    <select style="padding: 0.25rem;">
-                        <option>Ordenar por precio</option>
-                    </select>
-                </div>
-
-                <div id="cardsContainer"></div>
-
-            </section>
-        </div>
-    </main>
-
     <script src="/src/scripts/search.js"></script>
 </body>
 </html>

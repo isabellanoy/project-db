@@ -23,6 +23,9 @@ router.get('/login', (_req, res) => {
   sendView(res, ['auth', 'login.html']);
 });
 
+// Registro -> localhost:3000/registro
+router.get('/registro', (_req, res) => sendView(res, ['auth', 'register.html'])); 
+
 // --- Rutas de Usuario (Cliente) ---
 
 // Perfil -> localhost:3000/perfil

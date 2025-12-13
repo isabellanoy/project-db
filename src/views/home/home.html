@@ -9,88 +9,22 @@
 <body>
     <header class="navbar">
         <div class="navbar__content">
-            <a class="navbar__brand" href="./home.html">ViajesUCAB</a>
+            <a class="navbar__brand" href="/">ViajesUCAB</a>
             <nav class="navbar__links">
-                <a href="#">Vuelos</a>
-                <a href="#">Hoteles</a>
-                <a href="#">Tours</a>
-                <a href="#">Cruceros</a>
-                <a href="#">Paquetes</a>
+                <a href="/busqueda?type=vuelos">Vuelos</a>
+                <a href="/busqueda?type=alojamientos">Hoteles</a>
+                <a href="/busqueda?type=viajes">Cruceros</a>
+                <a href="/busqueda?type=paquetes">Paquetes</a>
             </nav>
             <div style="display: flex; gap: 10px;">
-                <button class="cta-button" style="background: #000;">Itinerario (2)</button>
-                <a href="../user/profile.html" class="cta-button">Mi Cuenta</a>
+                <a href="/itinerario" class="cta-button" style="background: #000;">Itinerario</a>
+                <a href="/perfil" class="cta-button">Mi Cuenta</a>
             </div>
         </div>
     </header>
 
     <main class="wrapper">
-        <section style="margin-bottom: 3rem; text-align: center;">
-            <div class="search-bar-container">
-                <input type="text" class="form-input" placeholder="¿A dónde quieres viajar?" style="padding: 1rem;">
-                <span style="position: absolute; right: 15px; top: 15px;">🔍</span>
-            </div>
-        </section>
-
-        <section style="margin-bottom: 4rem;">
-            <h2 class="section__title">Ofertas Especiales</h2>
-            <div class="offers-grid">
-                <article class="offer-card">
-                    <div>
-                        <h3>Vuelos</h3>
-                        <p class="hero__text" style="font-size: 0.9rem;">Encuentra las mejores ofertas para viajar!</p>
-                        <button style="margin-top: 1rem; padding: 0.5rem 1rem; border: 1px solid #ccc; background: white; cursor: pointer;">Ver Ofertas</button>
-                    </div>
-                    <div class="placeholder-img"></div>
-                </article>
-                 <article class="offer-card">
-                    <div>
-                        <h3>Cruceros</h3>
-                        <p class="hero__text" style="font-size: 0.9rem;">Cruza el mar como nunca antes!</p>
-                        <button style="margin-top: 1rem; padding: 0.5rem 1rem; border: 1px solid #ccc; background: white; cursor: pointer;">Ver Ofertas</button>
-                    </div>
-                    <div class="placeholder-img"></div>
-                </article>
-                 <article class="offer-card">
-                    <div>
-                        <h3>Transporte Terrestre</h3>
-                        <p class="hero__text" style="font-size: 0.9rem;">Trasládate de forma cómoda</p>
-                        <button style="margin-top: 1rem; padding: 0.5rem 1rem; border: 1px solid #ccc; background: white; cursor: pointer;">Ver Ofertas</button>
-                    </div>
-                    <div class="placeholder-img"></div>
-                </article>
-                 <article class="offer-card">
-                    <div>
-                        <h3>Paquetes</h3>
-                        <p class="hero__text" style="font-size: 0.9rem;">Usa tus millas para estos combos de viaje</p>
-                        <button style="margin-top: 1rem; padding: 0.5rem 1rem; border: 1px solid #ccc; background: white; cursor: pointer;">Ver Ofertas</button>
-                    </div>
-                    <div class="placeholder-img"></div>
-                </article>
-            </div>
-        </section>
-
-        <section style="margin-bottom: 4rem;">
-            <h2 class="section__title">Destinos populares</h2>
-            <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 1rem; margin-top: 1rem;">
-                <div style="border: 1px solid #000; padding: 1rem;">
-                    <strong>París, Francia</strong>
-                    <p class="hero__text">Desde $850 USD</p>
-                </div>
-                <div style="border: 1px solid #000; padding: 1rem;">
-                    <strong>Roma, Italia</strong>
-                    <p class="hero__text">Desde $950 USD</p>
-                </div>
-                <div style="border: 1px solid #000; padding: 1rem;">
-                    <strong>Madrid, España</strong>
-                    <p class="hero__text">Desde $800 USD</p>
-                </div>
-                <div style="border: 1px solid #000; padding: 1rem; display: flex; align-items: center; justify-content: center;">
-                    <a href="#">Ver más ></a>
-                </div>
-            </div>
-        </section>
-    </main>
+        </main>
 
     <footer>
         <p>&copy; 2025 ViajesUCAB - Proyecto BD</p>
