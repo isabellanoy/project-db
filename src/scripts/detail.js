@@ -81,7 +81,15 @@ const loadDetail = async () => {
             <label>Fecha Check-in:</label>
             <input type="date" id="dateInput" class="form-input">
         </div>`;
-    } 
+    }  else if (type === 'paquetes') {
+        html += `
+            <div style="background: #f0fdf4; padding: 1rem; border-radius: 5px; width: 100%;">
+                <p style="color: #166534; font-weight: 600;"> Precio en Millas: ${item.pt_costo_millas}</p>
+                <p style="font-size: 0.9rem;">Incluye: ${item.cantidad_servicios || '?'} servicios</p>
+                <p style="font-size: 0.8rem; margin-top:0.5rem;">Recuerde: Solo puede reservar un paquete si no tiene otra compra activa.</p>
+            </div>
+        `;
+    }
 
     optionsContainer.innerHTML = html;
   };
@@ -89,13 +97,11 @@ const loadDetail = async () => {
   const handleAddToCart = async () => {
     const userId = localStorage.getItem('userId');
     
-    // --- CORRECCIÓN AQUÍ ---
     if (!userId) {
       alert('Debes iniciar sesión para reservar.');
       window.location.href = '/login';
       return;
     }
-    // -----------------------
 
     const btn = document.getElementById('addToCartBtn');
     btn.disabled = true;
@@ -110,6 +116,12 @@ const loadDetail = async () => {
         bodyData.vuelo_id = serviceId;
         bodyData.pasajeros = document.getElementById('paxInput').value;
         bodyData.clase_id = document.getElementById('classInput').value;
+    }  else if (serviceType === 'paquetes') {
+        endpoint = '/api/sales/add/paquete';
+        bodyData = { 
+            usuario_id: userId,
+            paquete_id: serviceId
+        };
     } else if (serviceType === 'alojamientos') {
         endpoint = '/api/add/alojamiento';
         bodyData.habitacion_id = serviceId;
@@ -121,7 +133,7 @@ const loadDetail = async () => {
             btn.disabled = false; btn.textContent = 'Agregar al Itinerario';
             return;
         }
-    }
+    } 
 
     try {
       const response = await fetch(endpoint, {
@@ -133,7 +145,7 @@ const loadDetail = async () => {
       const result = await response.json();
 
       if (result.ok) {
-        statusMessage.textContent = '✅ ¡Agregado al itinerario correctamente!';
+        statusMessage.textContent = '¡Agregado al itinerario correctamente!';
         statusMessage.style.backgroundColor = '#dcfce7';
         statusMessage.style.color = '#166534';
         statusMessage.style.display = 'block';
@@ -148,7 +160,7 @@ const loadDetail = async () => {
       }
 
     } catch (error) {
-      statusMessage.textContent = `❌ Error: ${error.message}`;
+      statusMessage.textContent = `Error: ${error.message}`;
       statusMessage.style.backgroundColor = '#fee2e2';
       statusMessage.style.color = '#991b1b';
       statusMessage.style.display = 'block';

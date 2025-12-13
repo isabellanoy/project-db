@@ -51,6 +51,15 @@
         description = `📍 Lugar: ${item.lugar}`;
         details = `👥 Capacidad: ${item.capacidad} personas`;
         break;
+      case 'paquetes':
+        title = item.pt_nombre;
+        icon = '📦';
+        description = item.pt_descripcion || 'Paquete Turístico';
+        details = `👥 Para ${item.pt_cant_personas} personas | 💎 ${item.pt_costo_millas} Millas`;
+        // Los paquetes usan 'pt_costo'
+        item.costo = item.pt_costo; 
+        item.cod_servicio = item.pt_cod; // Mapeo de ID
+        break;
       default:
         title = 'Servicio';
         icon = '🏷️';

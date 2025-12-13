@@ -119,6 +119,72 @@ router.get('/catalog/actividades/:id', async (req, res) => {
   } catch (error) { return fail(res, error.message); }
 });
 
+// --- PAQUETES TURÍSTICOS ---
+
+// 1. Listar Paquetes (Catálogo)
+router.get('/catalog/paquetes', async (_req, res) => {
+  try {
+    const result = await pool.query('SELECT * FROM fn_listar_paquetes_turisticos()');
+    return ok(res, result.rows, 'Paquetes obtenidos');
+  } catch (error) {
+    return fail(res, error.message);
+  }
+});
+
+// 2. Detalle de Paquete (Info + Servicios incluidos)
+router.get('/catalog/paquetes/:id', async (req, res) => {
+  const id = parseInt(req.params.id);
+  try {
+    // Obtenemos info básica
+    const infoRes = await pool.query('SELECT * FROM fn_obtener_paquete_por_id($1)', [id]);
+    if (infoRes.rows.length === 0) return fail(res, 'Paquete no encontrado', 404);
+
+    // Obtenemos los IDs de los servicios incluidos
+    const servRes = await pool.query('SELECT * FROM fn_obtener_servicios_paquete($1)', [id]);
+
+    const paquete = {
+      ...infoRes.rows[0],
+      servicios: servRes.rows.map(r => r.cod_servicio)
+    };
+
+    return ok(res, paquete);
+  } catch (error) {
+    return fail(res, error.message);
+  }
+});
+
+// 3. Crear Paquete (Administrador)
+router.post('/paquetes', async (req, res) => {
+  const { nombre, descripcion, personas, costo, costo_millas, servicios, restriccion } = req.body;
+
+  // Validación básica
+  if (!nombre || !descripcion || !personas || !costo || !costo_millas) {
+    return fail(res, 'Faltan campos obligatorios');
+  }
+
+  // Convertir array de servicios a formato PostgreSQL (array de enteros)
+  // Ejemplo entrada: [1, 2, 5] -> Postgres: "{1,2,5}"
+  // El driver 'pg' suele manejar arrays de JS directamente si se pasan en la consulta paramétrica.
+
+  try {
+    const query = 'CALL sp_crear_paquete_turistico(null, $1, $2, $3, $4, $5, $6, $7)';
+    const values = [
+      nombre, 
+      descripcion, 
+      parseInt(personas), 
+      parseFloat(costo), 
+      parseInt(costo_millas), 
+      servicios || [], // Array de IDs de servicios
+      restriccion || null
+    ];
+
+    await pool.query(query, values);
+    return ok(res, null, 'Paquete creado exitosamente', 201);
+  } catch (error) {
+    return fail(res, error.message);
+  }
+});
+
 // --- RUTAS CRUD (ADMINISTRATIVAS / DETALLE) ---
 const serviceMappings = [
   { path: '/vuelos', table: 'Vuelo', idField: 's_cod' },
