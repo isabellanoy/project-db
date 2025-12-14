@@ -13,8 +13,8 @@ const sendView = (res, segments) => {
 
 // --- Rutas Públicas ---
 
-// Home -> localhost:3000/
-router.get('/', (_req, res) => {
+// Home -> localhost:3000/home
+router.get('/home', (_req, res) => {
   sendView(res, ['home', 'home.html']);
 });
 

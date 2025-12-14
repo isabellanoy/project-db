@@ -21,15 +21,15 @@
     if (trip.co_estado === 'PAGANDO' || trip.co_estado === 'FINANCIADO') statusColor = '#f59e0b';
 
     const title = trip.co_es_paquete 
-      ? `📦 Paquete: ${trip.nombre_paquete || 'Turístico'}` 
-      : `✈️ Viaje Personalizado #${trip.co_cod}`;
+      ? ` Paquete: ${trip.nombre_paquete || 'Turístico'}` 
+      : ` Viaje Personalizado #${trip.co_cod}`;
 
     return `
       <div class="dashboard-card" style="margin-bottom: 1.5rem; border-left: 5px solid ${statusColor};">
           <div style="display: flex; justify-content: space-between; align-items: start;">
               <div>
                   <h3 style="margin-bottom: 0.5rem; font-size: 1.2rem;">${title}</h3>
-                  <p style="color: #666; font-size: 0.9rem;">📅 Fecha de compra: ${formatDate(trip.co_fecha_hora)}</p>
+                  <p style="color: #666; font-size: 0.9rem;"> Fecha de compra: ${formatDate(trip.co_fecha_hora)}</p>
                   <p style="margin-top: 0.5rem; font-weight: 500;">
                     Estado: <span style="color: ${statusColor};">${trip.co_estado}</span>
                   </p>

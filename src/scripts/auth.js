@@ -67,7 +67,7 @@
              window.location.href = '/admin/reportes'; 
           } else {
              // Si es cliente, redirigir al Home
-             window.location.href = '/';
+             window.location.href = '/home';
           }
         }, 1000);
 
