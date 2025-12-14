@@ -4370,6 +4370,48 @@ END;
 $$ LANGUAGE plpgsql;
 
 -- PROCESAMIENTO DE PAGO Y FINALIZACION
+-- Obtener monto restante
+CREATE OR REPLACE FUNCTION fn_obtener_monto_restante(p_cod_usuario INT)
+RETURNS NUMERIC AS $$
+DECLARE
+	v_cliente_cod INT;
+	v_compra_cod INT;
+	v_paquete_cod INT;
+	v_es_paquete BOOLEAN;
+	v_monto_compra NUMERIC;
+	v_monto_pagado NUMERIC;
+
+BEGIN
+    SELECT c.c_cod INTO v_cliente_cod FROM Cliente c, Usuario u WHERE c.c_cod = u.cliente_c_cod AND u.u_cod = p_cod_usuario;
+	IF v_cliente_cod IS NULL THEN
+		RAISE NOTICE 'El cliente no se ha encontrado';
+		RETURN NULL::BOOLEAN;
+	END IF;
+	
+	-- Validar que la compra existe
+    SELECT * INTO v_compra_cod FROM fn_obtener_compra_activa(v_cliente_cod);
+	IF v_compra_cod IS NULL THEN
+		RAISE NOTICE 'No hay compra activa';
+		RETURN NULL::BOOLEAN;
+	END IF;
+
+	SELECT co_es_paquete, paquete_turistico_pt_cod, co_monto_total INTO v_es_paquete, v_paquete_cod, v_monto_compra 
+	FROM Compra WHERE co_cod = v_compra_cod;
+	IF v_es_paquete IS TRUE THEN
+		RETURN (SELECT pt_costo_millas FROM Paquete_Turistico WHERE pt_cod = v_paquete_cod);
+	END IF;
+
+	SELECT SUM(pa_monto) INTO v_monto_pagado FROM Pago WHERE compra_co_cod = v_compra_cod;
+
+	IF v_monto_pagado IS NOT NULL THEN
+		RETURN (v_monto_compra - v_monto_pagado);
+	END IF;
+	
+	RETURN v_monto_compra;
+
+END;
+$$ LANGUAGE plpgsql;
+
 -- (PRIVADA) Calcular millas a agregar por compra
 CREATE OR REPLACE FUNCTION fn_calcular_millas_compra(p_id_compra INT) 
 RETURNS INT AS $$

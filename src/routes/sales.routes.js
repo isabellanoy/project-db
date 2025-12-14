@@ -315,6 +315,51 @@ router.get('/itinerary', async (req, res) => {
   }
 });
 
+router.get('/checkout-summary', async (req, res) => {
+    const { usuario_id } = req.query;
+
+    if (!usuario_id) {
+        return fail(res, 'Falta usuario_id');
+    }
+
+    try {
+        const p_usuario_id = parseInt(usuario_id, 10);
+        if (isNaN(p_usuario_id)) {
+            return fail(res, 'El usuario_id debe ser un número válido.');
+        }
+
+        const clienteRes = await pool.query('SELECT cliente_c_cod FROM Usuario WHERE u_cod = $1', [p_usuario_id]);
+        if (clienteRes.rows.length === 0) {
+            return fail(res, 'Usuario no encontrado');
+        }
+        const clienteId = clienteRes.rows[0].cliente_c_cod;
+
+        const compraRes = await pool.query('SELECT fn_obtener_compra_activa($1) as id', [clienteId]);
+        const compraId = compraRes.rows.length > 0 ? compraRes.rows[0].id : null;
+        
+        if (!compraId) {
+            return ok(res, { empty: true }, 'No hay compra activa');
+        }
+
+        const montoRes = await pool.query('SELECT fn_obtener_monto_restante($1) as amount', [p_usuario_id]);
+        const remainingAmount = montoRes.rows[0].amount;
+
+        const infoCompra = await pool.query('SELECT co_es_paquete FROM Compra WHERE co_cod = $1', [compraId]);
+        const isPackage = infoCompra.rows[0].co_es_paquete;
+
+        return ok(res, {
+            remainingAmount,
+            isPackage,
+            purchaseId: compraId
+        });
+
+    } catch (error) {
+        console.error('Error en checkout-summary:', error);
+        return fail(res, error.message);
+    }
+});
+
+
 // =====================================================================
 // RUTAS DE PAGO (CHECKOUT)
 // =====================================================================

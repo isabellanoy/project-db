@@ -55,7 +55,7 @@
   // 2. Cargar Resumen de la compra
   const loadSummary = async () => {
     try {
-      const response = await fetch(`/api/itinerary?usuario_id=${userId}`);
+      const response = await fetch(`/api/checkout-summary?usuario_id=${userId}`);
       const payload = await response.json();
       if (!payload.ok) throw new Error(payload.message);
 
@@ -66,9 +66,9 @@
         return;
       }
 
-      totalAmount = parseFloat(data.info.co_monto_total);
-      activePurchaseId = data.compra_id;
-      const isPackage = data.info.co_es_paquete === true;
+      totalAmount = parseFloat(data.remainingAmount);
+      activePurchaseId = data.purchaseId;
+      const isPackage = data.isPackage === true;
 
       if (isPackage) {
         regularPaymentDiv.style.display = 'none';
@@ -77,7 +77,7 @@
       } else {
         regularPaymentDiv.style.display = 'block';
         packagePaymentDiv.style.display = 'none';
-        totalAmountLabel.textContent = `${totalAmount.toFixed(2)}`;
+        totalAmountLabel.textContent = `Bs. ${totalAmount.toFixed(2)}`;
         document.getElementById('card-amount').value = totalAmount.toFixed(2);
         document.getElementById('digital-amount').value = totalAmount.toFixed(2);
       }
