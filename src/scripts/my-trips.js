@@ -60,7 +60,7 @@
     container.appendChild(loader);
 
     try {
-      const response = await fetch(`/api/sales/history?usuario_id=${userId}`);
+      const response = await fetch(`/api/history?usuario_id=${userId}`);
       const payload = await response.json();
 
       loader.remove();
