@@ -16,7 +16,35 @@
         </div>
     </header>
     <main class="wrapper">
-        </main>
+        <div class="search-layout" style="grid-template-columns: 1fr; max-width: 800px; margin: 0 auto;">
+            <section>
+                <a href="javascript:history.back()" style="display: block; margin-bottom: 1rem; font-weight: 600;">&lt; Volver</a>
+
+                <article style="border: 1px solid #000; padding: 1.5rem; background: #fff; border-radius: 10px;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+                        <h1 id="serviceTitle" style="font-size: 1.8rem; font-weight: 700;">Cargando...</h1>
+                        <div style="display: flex; gap: 1rem; align-items: center;">
+                            <span class="rating-box">9.6</span>
+                        </div>
+                    </div>
+
+                    <div id="dynamicOptions" class="detail-options-box" style="display: flex; gap: 2rem; flex-wrap: wrap;">
+                        </div>
+
+                    <div style="border: 1px solid #e2e8f0; padding: 1rem; margin-bottom: 1.5rem; background: #f8fafc; border-radius: 5px;">
+                        <span id="servicePrice" style="font-size: 1.5rem; font-weight: 600;">...</span>
+                        <p id="servicePriceBs" style="font-size: 0.8rem; color: #666;">...</p>
+                    </div>
+
+                    <div style="display: flex; gap: 1rem;">
+                        <button id="addToCartBtn" class="cta-button" style="background: #000; border-radius: 0; width: 100%;">
+                            Agregar al Itinerario
+                        </button>
+                    </div>
+                </article>
+            </section>
+        </div>
+    </main>
     <script src="/src/scripts/detail.js"></script>
 </body>
 </html>
