@@ -653,6 +653,7 @@ COMMENT ON COLUMN Resena.r_calificacion IS 'Calificacion colocada sobre la reser
 COMMENT ON COLUMN Resena.r_comentario IS 'El comentario del cliente sobre la reserva';
 
 CREATE TABLE Res_Pro_Ser (
+	rps_cod SERIAL NOT NULL,
 	Pro_Ser_Promocion_pr_cod INT NOT NULL,
     Pro_Ser_Servicio_s_cod INT NOT NULL,
 	Boleto_Vuelo_co_cod INT,
@@ -667,7 +668,8 @@ CREATE TABLE Res_Pro_Ser (
 	Detalle_Hospedaje_s_cod INT	
 );
 
-ALTER TABLE Res_Pro_Ser ADD CONSTRAINT Res_Pro_Ser_PK PRIMARY KEY (Pro_Ser_Promocion_pr_cod, Pro_Ser_Servicio_s_cod);
+ALTER TABLE Res_Pro_Ser ADD CONSTRAINT Res_Pro_Ser_PK PRIMARY KEY (rps_cod);
+ALTER SEQUENCE res_pro_ser_rps_cod_seq RESTART WITH 1;
 
 CREATE TABLE Restaurante (
     re_cod SERIAL NOT NULL,
@@ -1054,6 +1056,7 @@ ALTER TABLE Queja ADD CONSTRAINT Queja_Detalle_Traslado_FK FOREIGN KEY (Detalle_
 ALTER TABLE Queja ADD CONSTRAINT Queja_Boleto_Viaje_FK FOREIGN KEY (Boleto_Viaje_co_cod, Boleto_Viaje_s_cod) REFERENCES Boleto_Viaje (Compra_co_cod, Viaje_s_cod);
 ALTER TABLE Queja ADD CONSTRAINT Queja_Entrada_Digital_FK FOREIGN KEY (Entrada_Digital_co_cod, Entrada_Digital_s_cod) REFERENCES Entrada_Digital (Compra_co_cod, Servicio_Adicional_s_cod);
 ALTER TABLE Queja ADD CONSTRAINT Queja_Detalle_Hospedaje_FK FOREIGN KEY (Detalle_Hospedaje_co_cod, Detalle_Hospedaje_s_cod) REFERENCES Detalle_Hospedaje (Compra_co_cod, Habitacion_s_cod);
+ALTER TABLE Res_Pro_Ser ADD CONSTRAINT Res_Pro_Ser_Pro_Ser_FK FOREIGN KEY (pro_ser_promocion_pr_cod, pro_ser_servicio_s_cod) REFERENCES Pro_Ser (promocion_pr_cod, servicio_s_cod);
 ALTER TABLE Res_Pro_Ser ADD CONSTRAINT Res_Pro_Ser_Boleto_Vuelo_FK FOREIGN KEY (Boleto_Vuelo_co_cod, Boleto_Vuelo_s_cod) REFERENCES Boleto_Vuelo (Compra_co_cod, Vuelo_s_cod);
 ALTER TABLE Res_Pro_Ser ADD CONSTRAINT Res_Pro_Ser_Detalle_Traslado_FK FOREIGN KEY (Detalle_Traslado_co_cod, Detalle_Traslado_s_cod) REFERENCES Detalle_Traslado (Compra_co_cod, Traslado_s_cod);
 ALTER TABLE Res_Pro_Ser ADD CONSTRAINT Res_Pro_Ser_Boleto_Viaje_FK FOREIGN KEY (Boleto_Viaje_co_cod, Boleto_Viaje_s_cod) REFERENCES Boleto_Viaje (Compra_co_cod, Viaje_s_cod);
@@ -3757,10 +3760,6 @@ BEGIN
 	IF v_monto_descuento IS NOT NULL AND v_monto_descuento < v_sub_total THEN
 		RAISE NOTICE 'Descuento menor al subtotal';
 		v_sub_total := v_sub_total - v_monto_descuento;
-
-		INSERT INTO Res_Pro_Ser (pro_ser_promocion_pr_cod, pro_ser_servicio_s_cod, boleto_vuelo_s_cod, boleto_vuelo_co_cod)
-		SELECT promocion_pr_cod, servicio_s_cod, p_id_vuelo, v_compra_cod 
-		FROM Pro_Ser WHERE servicio_s_cod = p_id_vuelo;
 	END IF;
 
 	-- Aplicar la tasa de cambio
@@ -3772,6 +3771,12 @@ BEGIN
     -- Insertar boleto de vuelo
     INSERT INTO Boleto_Vuelo (Compra_co_cod, Vuelo_s_cod, res_costo_sub_total, res_anulado, bv_cant_pasajeros, Clase_Asiento_ca_cod, tasa_cambio_tca_cod)
     VALUES (v_compra_cod, p_id_vuelo, v_sub_total, FALSE, p_cant_pasajeros, p_id_clase_asiento, v_tasa_cambio_cod);
+
+	IF v_monto_descuento IS NOT NULL AND v_monto_descuento < v_sub_total THEN
+		INSERT INTO Res_Pro_Ser (pro_ser_promocion_pr_cod, pro_ser_servicio_s_cod, boleto_vuelo_s_cod, boleto_vuelo_co_cod)
+		SELECT promocion_pr_cod, servicio_s_cod, p_id_vuelo, v_compra_cod 
+		FROM Pro_Ser WHERE servicio_s_cod = p_id_vuelo;
+	END IF;
 	
     -- Actualizar monto total de la compra
     SELECT s_millas_otorgar INTO v_millas_agregar FROM Servicio WHERE s_cod = p_id_vuelo;
@@ -3904,10 +3909,6 @@ BEGIN
 	IF v_monto_descuento IS NOT NULL AND v_monto_descuento < v_sub_total THEN
 		RAISE NOTICE 'Descuento menor al subtotal';
 		v_sub_total := v_sub_total - v_monto_descuento;
-
-		INSERT INTO Res_Pro_Ser (pro_ser_promocion_pr_cod, pro_ser_servicio_s_cod, boleto_viaje_s_cod, boleto_viaje_co_cod)
-		SELECT promocion_pr_cod, servicio_s_cod, p_id_viaje, v_compra_cod 
-		FROM Pro_Ser WHERE servicio_s_cod = p_id_viaje;
 	END IF;
 
 	-- Aplicar la tasa de cambio
@@ -3918,6 +3919,12 @@ BEGIN
 		
     INSERT INTO Boleto_Viaje (Compra_co_cod, Viaje_s_cod, res_costo_sub_total, res_anulado, bvi_cant_pasajeros, Tipo_Camarote_tc_cod, servicio_barco_sb_cod, tasa_cambio_tca_cod)
     VALUES (v_compra_cod, p_id_viaje, v_sub_total, FALSE, p_cant_pasajeros, p_id_tipo_camarote, p_id_servicio_barco, v_tasa_cambio_cod);
+
+	IF v_monto_descuento IS NOT NULL AND v_monto_descuento < v_sub_total THEN
+		INSERT INTO Res_Pro_Ser (pro_ser_promocion_pr_cod, pro_ser_servicio_s_cod, boleto_viaje_s_cod, boleto_viaje_co_cod)
+		SELECT promocion_pr_cod, servicio_s_cod, p_id_viaje, v_compra_cod 
+		FROM Pro_Ser WHERE servicio_s_cod = p_id_viaje;
+	END IF;
 
     SELECT s_millas_otorgar INTO v_millas_agregar FROM Servicio WHERE s_cod = p_id_viaje;
 
@@ -4020,10 +4027,6 @@ BEGIN
 	IF v_monto_descuento IS NOT NULL AND v_monto_descuento < v_sub_total THEN
 		RAISE NOTICE 'Descuento menor al subtotal';
 		v_sub_total := v_sub_total - v_monto_descuento;
-
-		INSERT INTO Res_Pro_Ser (pro_ser_promocion_pr_cod, pro_ser_servicio_s_cod, detalle_hospedaje_s_cod, detalle_hospedaje_co_cod)
-		SELECT promocion_pr_cod, servicio_s_cod, p_id_habitacion, v_compra_cod 
-		FROM Pro_Ser WHERE servicio_s_cod = p_id_habitacion;
 	END IF;
 
 	-- Aplicar la tasa de cambio
@@ -4034,6 +4037,12 @@ BEGIN
 	
     INSERT INTO Detalle_Hospedaje (Compra_co_cod, Habitacion_s_cod, res_costo_sub_total, res_anulado, dh_cant_noches, dh_fecha_hora_check_in, dh_fecha_hora_check_out, tasa_cambio_tca_cod)
     VALUES (v_compra_cod, p_id_habitacion, v_sub_total, FALSE, p_cant_noches, p_fecha_check_in, v_fecha_check_out, v_tasa_cambio_cod);
+
+	IF v_monto_descuento IS NOT NULL AND v_monto_descuento < v_sub_total THEN
+		INSERT INTO Res_Pro_Ser (pro_ser_promocion_pr_cod, pro_ser_servicio_s_cod, detalle_hospedaje_s_cod, detalle_hospedaje_co_cod)
+		SELECT promocion_pr_cod, servicio_s_cod, p_id_habitacion, v_compra_cod 
+		FROM Pro_Ser WHERE servicio_s_cod = p_id_habitacion;
+	END IF;
 
     SELECT s_millas_otorgar INTO v_millas_agregar FROM Servicio WHERE s_cod = p_id_habitacion;
 
@@ -4142,10 +4151,6 @@ BEGIN
 	IF v_monto_descuento IS NOT NULL AND v_monto_descuento < v_sub_total THEN
 		RAISE NOTICE 'Descuento menor al subtotal';
 		v_sub_total := v_sub_total - v_monto_descuento;
-
-		INSERT INTO Res_Pro_Ser (pro_ser_promocion_pr_cod, pro_ser_servicio_s_cod, detalle_traslado_s_cod, detalle_traslado_co_cod)
-		SELECT promocion_pr_cod, servicio_s_cod, p_id_traslado, v_compra_cod 
-		FROM Pro_Ser WHERE servicio_s_cod = p_id_traslado;
 	END IF;
 
 	-- Aplicar la tasa de cambio
@@ -4156,6 +4161,12 @@ BEGIN
 	
     INSERT INTO Detalle_Traslado (Compra_co_cod, Traslado_s_cod, res_costo_sub_total, res_anulado, dt_fecha_hora, Automovil_mt_cod, tasa_cambio_tca_cod)
     VALUES (v_compra_cod, p_id_traslado, v_sub_total, FALSE, p_fecha_traslado, p_id_automovil, v_tasa_cambio_cod);
+
+	IF v_monto_descuento IS NOT NULL AND v_monto_descuento < v_sub_total THEN
+		INSERT INTO Res_Pro_Ser (pro_ser_promocion_pr_cod, pro_ser_servicio_s_cod, detalle_traslado_s_cod, detalle_traslado_co_cod)
+		SELECT promocion_pr_cod, servicio_s_cod, p_id_traslado, v_compra_cod 
+		FROM Pro_Ser WHERE servicio_s_cod = p_id_traslado;
+	END IF;
 
     SELECT s_millas_otorgar INTO v_millas_agregar FROM Servicio WHERE s_cod = p_id_traslado;
 
@@ -4253,10 +4264,6 @@ BEGIN
 	IF v_monto_descuento IS NOT NULL AND v_monto_descuento < v_sub_total THEN
 		RAISE NOTICE 'Descuento menor al subtotal';
 		v_sub_total := v_sub_total - v_monto_descuento;
-
-		INSERT INTO Res_Pro_Ser (pro_ser_promocion_pr_cod, pro_ser_servicio_s_cod, entrada_digital_s_cod, entrada_digital_co_cod)
-		SELECT promocion_pr_cod, servicio_s_cod, p_id_servicio_adicional, v_compra_cod 
-		FROM Pro_Ser WHERE servicio_s_cod = p_id_servicio_adicional;
 	END IF;
 
 	-- Aplicar la tasa de cambio
@@ -4267,6 +4274,12 @@ BEGIN
 
     INSERT INTO Entrada_Digital (Compra_co_cod, Servicio_Adicional_s_cod, res_costo_sub_total, res_anulado, ed_cant_personas, tasa_cambio_tca_cod)
     VALUES (v_compra_cod, p_id_servicio_adicional, v_sub_total, FALSE, p_cant_personas, v_tasa_cambio_cod);
+
+	IF v_monto_descuento IS NOT NULL AND v_monto_descuento < v_sub_total THEN
+		INSERT INTO Res_Pro_Ser (pro_ser_promocion_pr_cod, pro_ser_servicio_s_cod, entrada_digital_s_cod, entrada_digital_co_cod)
+		SELECT promocion_pr_cod, servicio_s_cod, p_id_servicio_adicional, v_compra_cod 
+		FROM Pro_Ser WHERE servicio_s_cod = p_id_servicio_adicional;
+	END IF;
 
 	SELECT s_millas_otorgar INTO v_millas_agregar FROM Servicio WHERE s_cod = p_id_servicio_adicional;
 
@@ -4312,7 +4325,19 @@ BEGIN
 	END IF;
 	
     -- Eliminar todas las reservas asociadas y viajeros
-    v_contador := v_contador + (SELECT COUNT(*) FROM Boleto_Vuelo WHERE Compra_co_cod = v_compra_cod);
+    DELETE FROM Via_Res WHERE boleto_vuelo_co_cod = v_compra_cod 
+	OR detalle_traslado_co_cod = v_compra_cod 
+	OR boleto_viaje_co_cod = v_compra_cod 
+	OR entrada_digital_co_cod = v_compra_cod 
+	OR detalle_hospedaje_co_cod = v_compra_cod; 
+
+	DELETE FROM Res_Pro_Ser WHERE boleto_vuelo_co_cod = v_compra_cod 
+	OR detalle_traslado_co_cod = v_compra_cod 
+	OR boleto_viaje_co_cod = v_compra_cod 
+	OR entrada_digital_co_cod = v_compra_cod 
+	OR detalle_hospedaje_co_cod = v_compra_cod; 
+	
+	v_contador := v_contador + (SELECT COUNT(*) FROM Boleto_Vuelo WHERE Compra_co_cod = v_compra_cod);
     DELETE FROM Boleto_Vuelo WHERE Compra_co_cod = v_compra_cod;
 	RAISE NOTICE 'Boletos de vuelos eliminados. Eliminaciones totales: %', v_contador;
 
@@ -4331,12 +4356,6 @@ BEGIN
     v_contador := v_contador + (SELECT COUNT(*) FROM Entrada_Digital WHERE Compra_co_cod = v_compra_cod);
     DELETE FROM Entrada_Digital WHERE Compra_co_cod = v_compra_cod;
 	RAISE NOTICE 'Entradas digitales eliminadas. Eliminaciones totales: %', v_contador;
-
-	DELETE FROM Via_Res WHERE boleto_vuelo_co_cod = v_compra_cod 
-	OR detalle_traslado_co_cod = v_compra_cod 
-	OR boleto_viaje_co_cod = v_compra_cod 
-	OR entrada_digital_co_cod = v_compra_cod 
-	OR detalle_hospedaje_co_cod = v_compra_cod; 
 	
     -- Eliminar la compra
     DELETE FROM Compra WHERE co_cod = v_compra_cod;
