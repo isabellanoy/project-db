@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Registro | ViajesUCAB</title>
+    <link rel="stylesheet" href="/src/styles/styles.css">
+</head>
+<body>
+    <header class="navbar">
+        <div class="navbar__content">
+            <a class="navbar__brand" href="/">ViajesUCAB</a>
+            <div class="navbar__links">
+                <a href="/login" class="btn-secondary">Iniciar Sesión</a>
+            </div>
+        </div>
+    </header>
+
+    <main class="auth-wrapper" style="align-items: flex-start; padding-top: 2rem; padding-bottom: 2rem;">
+        <div class="auth-card" style="max-width: 800px;">
+            <h2 class="auth-card__title">Crear Cuenta</h2>
+            
+            <form id="registerForm" style="text-align: left;">
+                <h3 style="margin-bottom: 1rem; border-bottom: 1px solid #eee; padding-bottom: 0.5rem;">Datos de Usuario</h3>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+                    <div class="form-group">
+                        <label>Nombre de Usuario *</label>
+                        <input type="text" name="username" class="form-input" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Correo Electrónico *</label>
+                        <input type="email" name="correo" class="form-input" required>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>Contraseña *</label>
+                    <input type="password" name="clave" class="form-input" required minlength="4">
+                </div>
+
+                <h3 style="margin: 1.5rem 0 1rem 0; border-bottom: 1px solid #eee; padding-bottom: 0.5rem;">Datos Personales</h3>
+                
+                <div class="form-group">
+                    <label>Cédula de Identidad *</label>
+                    <input type="number" name="ci" class="form-input" required placeholder="Solo números">
+                </div>
+
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+                    <div class="form-group">
+                        <label>Primer Nombre *</label>
+                        <input type="text" name="primer_nombre" class="form-input" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Segundo Nombre</label>
+                        <input type="text" name="segundo_nombre" class="form-input">
+                    </div>
+                    <div class="form-group">
+                        <label>Primer Apellido *</label>
+                        <input type="text" name="primer_apellido" class="form-input" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Segundo Apellido</label>
+                        <input type="text" name="segundo_apellido" class="form-input">
+                    </div>
+                </div>
+
+                <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 1rem;">
+                    <div class="form-group">
+                        <label>Fecha Nacimiento *</label>
+                        <input type="date" name="fecha_nacimiento" class="form-input" required>
+                        <small style="color: #666; font-size: 0.75rem;">Mayores de 18 años</small>
+                    </div>
+                    <div class="form-group">
+                        <label>Sexo *</label>
+                        <select name="sexo" class="form-input" required>
+                            <option value="">Seleccione...</option>
+                            <option value="M">Masculino</option>
+                            <option value="F">Femenino</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Estado Civil *</label>
+                        <select name="estado_civil" class="form-input" required>
+                            <option value="SOLTERO">Soltero/a</option>
+                            <option value="CASADO">Casado/a</option>
+                        </select>
+                    </div>
+                </div>
+
+                <h3 style="margin: 1.5rem 0 1rem 0; border-bottom: 1px solid #eee; padding-bottom: 0.5rem;">Ubicación</h3>
+                
+                <div class="form-group">
+                    <label>Dirección Física *</label>
+                    <input type="text" name="direccion" class="form-input" required placeholder="Ej. Av. Principal, Edificio A, Apto 4">
+                </div>
+
+                <div class="form-group">
+                    <label>Lugar de Residencia (Parroquia/Ciudad) *</label>
+                    <select name="lugar_cod" id="lugarSelect" class="form-input" required>
+                        <option value="">Cargando lugares...</option>
+                    </select>
+                </div>
+
+                <p id="formMessage" class="form-status" style="display: none; margin-top: 1rem;"></p>
+
+                <div style="margin-top: 2rem;">
+                    <button type="submit" class="btn-block" style="background-color: #000;">Registrarse</button>
+                </div>
+            </form>
+
+            <div class="auth-links" style="justify-content: center; margin-top: 1.5rem;">
+                <span>¿Ya tienes cuenta? <a href="/login" style="font-weight: 600;">Inicia Sesión</a></span>
+            </div>
+        </div>
+    </main>
+
+    <script src="/src/scripts/register.js"></script>
+</body>
+</html>
