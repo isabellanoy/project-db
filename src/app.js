@@ -48,7 +48,8 @@ const apiRoutes = [
   { basePath: '/api/services', router: servicesRoutes },
   { basePath: '/api', router: rolesRoutes },
   { basePath: '/api', router: salesRoutes },
-  { basePath: '/api', router: banksRoutes }
+  { basePath: '/api', router: banksRoutes },
+  { basePath: '/api/promotions', router: promotionsRoutes }
 ];
 
 apiRoutes.forEach(({ basePath, router }) => {
