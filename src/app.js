@@ -9,6 +9,7 @@ const servicesRoutes = require('./routes/services.routes');
 const rolesRoutes = require('./routes/roles.routes');
 const salesRoutes = require('./routes/sales.routes');
 const viewsRoutes = require('./routes/views.routes');
+const promotionsRoutes = require('./routes/promotions.routes');
 
 const app = express();
 

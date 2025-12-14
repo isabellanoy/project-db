@@ -69,6 +69,10 @@ router.get('/inventario', (_req, res) => {
   sendView(res, ['provider', 'inventory.html']);
 });
 
+// --- Promociones ---
+router.get('/admin/promociones', (_req, res) => sendView(res, ['admin', 'manage-promotions.html']));
+router.get('/admin/promociones/crear', (_req, res) => sendView(res, ['admin', 'create-promotion.html']));
+
 // --- Administración ---
 
 router.get('/admin/reportes', (_req, res) => {

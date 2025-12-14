@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Nueva Promoción | Admin</title>
+    <link rel="stylesheet" href="/src/styles/styles.css">
+</head>
+<body>
+    <div class="dashboard-container">
+        <main style="grid-column: 1 / -1; max-width: 800px; margin: 0 auto;">
+            <div class="crud-form-wrapper">
+                <div class="crud-header"><h2>Registrar Promoción</h2></div>
+
+                <form id="promoForm">
+                    <div class="form-row">
+                        <label>Nombre de la Promoción</label>
+                        <input type="text" name="nombre" class="form-input" required placeholder="Ej. Descuento de Verano">
+                    </div>
+
+                    <div class="form-row" style="width: 100px;">
+                        <label>Porcentaje (%)</label>
+                        <input type="number" name="porcentaje" class="form-input" required min="1" max="90">
+                    </div>
+
+                    <div class="form-row">
+                        <label>Tipo de Proveedor</label>
+                        <select id="typeSelect" class="form-input">
+                            <option value="">Seleccione...</option>
+                            <option value="Aerolinea">Aerolínea</option>
+                            <option value="Hotel">Hotel</option>
+                            <option value="Crucero">Crucero</option>
+                            <option value="Transporte">Transporte Terrestre</option>
+                            <option value="Operador">Operador Turístico</option>
+                        </select>
+                    </div>
+
+                    <div class="form-row">
+                        <label>Proveedor</label>
+                        <select id="providerSelect" class="form-input" disabled>
+                            <option value="">Primero seleccione tipo...</option>
+                        </select>
+                    </div>
+
+                    <div class="form-row">
+                        <label>Servicios Aplicables (Mantén Ctrl para seleccionar varios)</label>
+                        <select id="servicesSelect" class="form-input" multiple style="height: 150px;" disabled>
+                            <option value="">Seleccione proveedor...</option>
+                        </select>
+                        <small style="color: #666;">Selecciona al menos uno.</small>
+                    </div>
+
+                    <div class="form-actions" style="justify-content: center;">
+                        <button type="submit" class="btn-primary">Guardar Promoción</button>
+                        <a href="/admin/promociones" class="btn-danger">Cancelar</a>
+                    </div>
+                </form>
+            </div>
+        </main>
+    </div>
+
+    <script>
+        const typeSel = document.getElementById('typeSelect');
+        const provSel = document.getElementById('providerSelect');
+        const servSel = document.getElementById('servicesSelect');
+        const form = document.getElementById('promoForm');
+
+        // 1. Cargar Proveedores al cambiar Tipo
+        typeSel.addEventListener('change', async () => {
+            const type = typeSel.value;
+            provSel.innerHTML = '<option>Cargando...</option>';
+            provSel.disabled = true;
+            servSel.innerHTML = '';
+            
+            if(!type) return;
+
+            // Mapeo de ruta de API según tipo
+            // Usamos las rutas que ya existen en providers.routes
+            let apiRoute = '';
+            if(type === 'Aerolinea') apiRoute = 'aerolineas';
+            else if(type === 'Hotel') apiRoute = 'hoteles';
+            else if(type === 'Crucero') apiRoute = 'cruceros';
+            else if(type === 'Transporte') apiRoute = 'transportes-terrestres';
+            else apiRoute = 'operadores-turisticos';
+
+            const res = await fetch(`/api/providers/${apiRoute}`);
+            const json = await res.json();
+            
+            provSel.innerHTML = '<option value="">Seleccione proveedor...</option>' + 
+                json.data.map(p => `<option value="${p.p_cod || p.cod}">${p.p_nombre || p.nombre}</option>`).join('');
+            provSel.disabled = false;
+        });
+
+        // 2. Cargar Servicios al cambiar Proveedor
+        provSel.addEventListener('change', async () => {
+            const provId = provSel.value;
+            const type = typeSel.value;
+            if(!provId) return;
+
+            servSel.innerHTML = '<option>Cargando servicios...</option>';
+            
+            const res = await fetch(`/api/promotions/services-by-provider?type=${type}&providerId=${provId}`);
+            const json = await res.json();
+
+            servSel.innerHTML = json.data.map(s => `<option value="${s.id}">${s.label} (ID: ${s.id})</option>`).join('');
+            servSel.disabled = false;
+        });
+
+        // 3. Enviar
+        form.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            // Obtener servicios seleccionados
+            const selectedServices = Array.from(servSel.selectedOptions).map(opt => parseInt(opt.value));
+            
+            if(selectedServices.length === 0) {
+                alert('Debe seleccionar al menos un servicio');
+                return;
+            }
+
+            const data = {
+                nombre: form.nombre.value,
+                porcentaje: form.porcentaje.value,
+                id_proveedor: provSel.value,
+                tipo_proveedor: typeSel.value,
+                servicios: selectedServices
+            };
+
+            const res = await fetch('/api/promotions', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify(data)
+            });
+            
+            const result = await res.json();
+            if(result.ok) {
+                alert('Promoción creada!');
+                window.location.href = '/admin/promociones';
+            } else {
+                alert('Error: ' + result.message);
+            }
+        });
+    </script>
+</body>
+</html>

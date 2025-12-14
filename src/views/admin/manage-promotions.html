@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Promociones | Admin</title>
+    <link rel="stylesheet" href="/src/styles/styles.css">
+</head>
+<body>
+    <header class="navbar">
+        <div class="navbar__content">
+            <a class="navbar__brand" href="/">ViajesUCAB</a>
+        </div>
+    </header>
+
+    <div class="dashboard-container">
+        <aside class="sidebar">
+            <div class="sidebar__title"><h3>Panel Admin</h3></div>
+            <nav class="sidebar__nav">
+                <a href="/admin/proveedores">Proveedores</a>
+                <a href="/admin/promociones" class="active">Promociones</a>
+                <a href="/admin/reportes">Reportes</a>
+            </nav>
+        </aside>
+
+        <main style="grid-column: 2 / -1;">
+            <div style="display: flex; justify-content: space-between; margin-bottom: 1.5rem;">
+                <h1 class="section__title">Gestión de Promociones</h1>
+                <a href="/admin/promociones/crear" class="cta-button" style="background: #000;">+ Nueva Promo</a>
+            </div>
+
+            <div class="data-table-container">
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>Nombre</th>
+                            <th>Descuento</th>
+                            <th>Proveedor</th>
+                            <th>Servicios</th>
+                            <th>Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody id="promotionsBody"></tbody>
+                </table>
+            </div>
+        </main>
+    </div>
+    
+    <script>
+        // Script embebido simple para listar
+        fetch('/api/promotions')
+            .then(r => r.json())
+            .then(res => {
+                const tbody = document.getElementById('promotionsBody');
+                if(!res.ok || res.data.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="5" style="text-align:center; padding:1rem;">No hay promociones activas.</td></tr>';
+                    return;
+                }
+                tbody.innerHTML = res.data.map(p => `
+                    <tr>
+                        <td><strong>${p.nombre}</strong></td>
+                        <td style="color: green; font-weight: bold;">${p.porcentaje}%</td>
+                        <td>${p.nombre_proveedor} (${p.tipo_proveedor})</td>
+                        <td>${p.cantidad_servicios} items</td>
+                        <td>
+                            <button onclick="deletePromo(${p.id_promocion})" style="color: red; border:none; background:none; cursor:pointer; text-decoration:underline;">Eliminar</button>
+                        </td>
+                    </tr>
+                `).join('');
+            });
+
+        function deletePromo(id) {
+            if(confirm('¿Eliminar promoción?')) {
+                fetch(`/api/promotions/${id}`, { method: 'DELETE' })
+                    .then(r => r.json())
+                    .then(res => {
+                        if(res.ok) window.location.reload();
+                        else alert(res.message);
+                    });
+            }
+        }
+    </script>
+</body>
+</html>
