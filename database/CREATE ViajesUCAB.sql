@@ -3637,7 +3637,7 @@ BEGIN
     RETURNING co_cod INTO v_compra_cod;
 
 	RAISE NOTICE 'Compra de Itinerario creada exitosamente. ID: %', v_compra_cod;
-	RETURN v_cliente_cod;
+	RETURN v_compra_cod;
 
 EXCEPTION WHEN OTHERS THEN
     RAISE NOTICE 'Error al crear compra: %', SQLERRM;
@@ -4504,6 +4504,8 @@ BEGIN
 	-- Recoger las millas a agregar y otorgarlas
 	SELECT co_millas_a_agregar INTO v_millas_agregar FROM Compra WHERE co_cod = p_compra_cod;
 	v_millas_agregar := v_millas_agregar + (SELECT * FROM fn_calcular_millas_compra(p_compra_cod));
+
+	UPDATE Compra SET co_millas_a_agregar = co_millas_a_agregar + (v_millas_agregar - co_millas_a_agregar) WHERE co_cod = p_compra_cod;
 
 	SELECT c_cod INTO v_cliente_cod FROM Cliente, Compra WHERE c_cod = cliente_c_cod AND co_cod = p_compra_cod;
 
@@ -5464,11 +5466,10 @@ $$ LANGUAGE plpgsql;
 -- Reporte para calificacion promedio
 CREATE OR REPLACE FUNCTION fn_reporte_ranking_proveedores()
 RETURNS TABLE (
-    tipo_proveedor VARCHAR,
-    nombre_proveedor VARCHAR,
-    calificacion_promedio NUMERIC(4, 2),
-    cantidad_resenas INT,
-    clasificacion_estrellas VARCHAR -- Visualización textual (ej: ★★★★★)
+    proveedor VARCHAR,
+    nombre VARCHAR,
+    calificacion NUMERIC(4, 2),
+    cantidad_resenas INT
 ) AS $$
 BEGIN
     RETURN QUERY
@@ -5545,8 +5546,7 @@ BEGIN
         ru.tipo,
         ru.nombre,
         ROUND(AVG(ru.puntaje), 2) AS promedio,
-        COUNT(*)::INT AS total_resenas,
-        REPEAT('★', (ROUND(AVG(ru.puntaje))/2)::INT)::VARCHAR AS estrellas
+        COUNT(*)::INT AS total_resenas
     FROM Resenas_Unificadas ru
     GROUP BY ru.tipo, ru.nombre
     ORDER BY promedio DESC, ru.nombre;
@@ -5557,14 +5557,14 @@ $$ LANGUAGE plpgsql;
 CREATE OR REPLACE FUNCTION fn_reporte_impacto_financiero_millas()
 RETURNS TABLE (
     id_compra INT,
-    fecha_transaccion TIMESTAMP,
+    fecha TIMESTAMP,
     millas_usadas NUMERIC(12,2),
     tasa_milla_bs NUMERIC(10, 4), -- Valor de 1 Milla en VES
     valor_total_bs NUMERIC(15, 2), -- Valor total en VES
-    tasa_usd_historica NUMERIC(10, 4), -- Tasa USD en la fecha
-    valor_cubierto_usd NUMERIC(15, 2), -- Equivalente en USD
-    tasa_eur_historica NUMERIC(10, 4), -- Tasa EUR en la fecha
-    valor_cubierto_eur NUMERIC(15, 2)  -- Equivalente en EUR
+    tasa_usd NUMERIC(10, 4), -- Tasa USD en la fecha
+    usd_cubierto NUMERIC(15, 2), -- Equivalente en USD
+    tasa_eur NUMERIC(10, 4), -- Tasa EUR en la fecha
+    eur_cubierto NUMERIC(15, 2)  -- Equivalente en EUR
 ) AS $$
 BEGIN
     RETURN QUERY
@@ -5726,11 +5726,11 @@ $$ LANGUAGE plpgsql;
 -- Auditoria reembolsos y penalizaciones por cancelacion
 CREATE OR REPLACE FUNCTION fn_auditoria_reembolsos()
 RETURNS TABLE (
-	razon_reembolso VARCHAR,
-	monto_retenido_10 NUMERIC(15,2),
-	monto_devuelto_90 NUMERIC(15,2),
+	razon VARCHAR,
+	retenido NUMERIC(15,2),
+	devuelto NUMERIC(15,2),
 	fecha_reembolso DATE,
-	reserva_cancelada VARCHAR
+	cancelacion VARCHAR
 ) AS $$
 BEGIN
 	RETURN QUERY 
@@ -5805,12 +5805,12 @@ $$ LANGUAGE plpgsql;
 -- Millas acumuladas por destino (PAIS)
 CREATE OR REPLACE FUNCTION fn_reporte_millas_por_destino()
 RETURNS TABLE (
-    cedula_cliente INT,
-    nombre_cliente VARCHAR,
-    pais_destino VARCHAR,
-    millas_en_pais BIGINT,
-    total_millas_cliente NUMERIC(15),
-    ranking_destino INT -- 1 = El destino que más millas generó
+    ci INT,
+    nombre VARCHAR,
+    pais VARCHAR,
+    millas_pais BIGINT,
+    total_millas NUMERIC(15),
+    ranking INT -- 1 = El destino que más millas generó
 ) AS $$
 BEGIN
     RETURN QUERY
