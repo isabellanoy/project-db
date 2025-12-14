@@ -4,8 +4,8 @@ const { generateCrud } = require('../utils/crudGenerator');
 
 const router = express.Router();
 
-const ok = (res, data = null, message = 'OK') => 
-  res.status(200).json({ ok: true, data, message });
+const ok = (res, data = null, message = 'OK', status = 200) => 
+  res.status(status).json({ ok: true, data, message });
 
 const fail = (res, message = 'Error', status = 500) => 
   res.status(status).json({ ok: false, data: null, message });
@@ -15,7 +15,6 @@ router.get('/tasa', async (req, res) => {
   try {
     const result = await pool.query("SELECT factor_tasa FROM fn_obtener_tasa_actual('USD')");
     const tasa = result.rows.length > 0 ? parseFloat(result.rows[0].factor_tasa) : 1;
-    
     return ok(res, { tasa }, 'Tasa obtenida');
   } catch (error) {
     return fail(res, error.message);
@@ -23,66 +22,56 @@ router.get('/tasa', async (req, res) => {
 });
 
 // --- RUTAS DE CATÁLOGO (VISTAS PÚBLICAS) ---
-// Estas rutas usan las funciones SQL 'fn_listar_...' para mostrar datos enriquecidos al usuario
 
-// 1. Catálogo de Vuelos
 router.get('/catalog/vuelos', async (_req, res) => {
   try {
     const result = await pool.query('SELECT * FROM fn_listar_vuelos()');
-    return ok(res, result.rows, 'Catálogo de vuelos obtenido');
-  } catch (error) {
-    console.error(error);
-    return fail(res, 'Error al obtener vuelos');
-  }
+    return ok(res, result.rows);
+  } catch (error) { return fail(res, error.message); }
 });
 
-// 2. Catálogo de Viajes (Cruceros)
 router.get('/catalog/viajes', async (_req, res) => {
   try {
     const result = await pool.query('SELECT * FROM fn_listar_viajes()');
-    return ok(res, result.rows, 'Catálogo de cruceros obtenido');
-  } catch (error) {
-    return fail(res, 'Error al obtener cruceros');
-  }
+    return ok(res, result.rows);
+  } catch (error) { return fail(res, error.message); }
 });
 
-// 3. Catálogo de Alojamientos (Hoteles/Habitaciones)
 router.get('/catalog/alojamientos', async (_req, res) => {
   try {
     const result = await pool.query('SELECT * FROM fn_listar_habitaciones()');
-    return ok(res, result.rows, 'Catálogo de alojamientos obtenido');
-  } catch (error) {
-    return fail(res, 'Error al obtener alojamientos');
-  }
+    return ok(res, result.rows);
+  } catch (error) { return fail(res, error.message); }
 });
 
-// 4. Catálogo de Traslados
 router.get('/catalog/traslados', async (_req, res) => {
   try {
     const result = await pool.query('SELECT * FROM fn_listar_traslados()');
-    return ok(res, result.rows, 'Catálogo de traslados obtenido');
-  } catch (error) {
-    return fail(res, 'Error al obtener traslados');
-  }
+    return ok(res, result.rows);
+  } catch (error) { return fail(res, error.message); }
 });
 
-// 5. Catálogo de Actividades (Servicios Adicionales)
 router.get('/catalog/actividades', async (_req, res) => {
   try {
     const result = await pool.query('SELECT * FROM fn_listar_servicios_adicionales()');
-    return ok(res, result.rows, 'Catálogo de actividades obtenido');
-  } catch (error) {
-    return fail(res, 'Error al obtener actividades');
-  }
+    return ok(res, result.rows);
+  } catch (error) { return fail(res, error.message); }
+});
+
+// 1. Listar Paquetes (Catálogo)
+router.get('/catalog/paquetes', async (_req, res) => {
+  try {
+    const result = await pool.query('SELECT * FROM fn_listar_paquetes_turisticos()');
+    return ok(res, result.rows);
+  } catch (error) { return fail(res, error.message); }
 });
 
 // --- RUTAS DE DETALLE (POR ID) ---
-// Reutilizamos las funciones de listar filtrando por ID para obtener el detalle completo
 
 router.get('/catalog/vuelos/:id', async (req, res) => {
   try {
     const result = await pool.query('SELECT * FROM fn_listar_vuelos() WHERE cod_servicio = $1', [req.params.id]);
-    if (result.rows.length === 0) return fail(res, 'Vuelo no encontrado', 404);
+    if (result.rows.length === 0) return fail(res, 'No encontrado', 404);
     return ok(res, result.rows[0]);
   } catch (error) { return fail(res, error.message); }
 });
@@ -90,7 +79,7 @@ router.get('/catalog/vuelos/:id', async (req, res) => {
 router.get('/catalog/alojamientos/:id', async (req, res) => {
   try {
     const result = await pool.query('SELECT * FROM fn_listar_habitaciones() WHERE cod_servicio = $1', [req.params.id]);
-    if (result.rows.length === 0) return fail(res, 'Alojamiento no encontrado', 404);
+    if (result.rows.length === 0) return fail(res, 'No encontrado', 404);
     return ok(res, result.rows[0]);
   } catch (error) { return fail(res, error.message); }
 });
@@ -98,7 +87,7 @@ router.get('/catalog/alojamientos/:id', async (req, res) => {
 router.get('/catalog/viajes/:id', async (req, res) => {
   try {
     const result = await pool.query('SELECT * FROM fn_listar_viajes() WHERE cod_servicio = $1', [req.params.id]);
-    if (result.rows.length === 0) return fail(res, 'Crucero no encontrado', 404);
+    if (result.rows.length === 0) return fail(res, 'No encontrado', 404);
     return ok(res, result.rows[0]);
   } catch (error) { return fail(res, error.message); }
 });
@@ -106,7 +95,7 @@ router.get('/catalog/viajes/:id', async (req, res) => {
 router.get('/catalog/traslados/:id', async (req, res) => {
   try {
     const result = await pool.query('SELECT * FROM fn_listar_traslados() WHERE cod_servicio = $1', [req.params.id]);
-    if (result.rows.length === 0) return fail(res, 'Traslado no encontrado', 404);
+    if (result.rows.length === 0) return fail(res, 'No encontrado', 404);
     return ok(res, result.rows[0]);
   } catch (error) { return fail(res, error.message); }
 });
@@ -114,59 +103,38 @@ router.get('/catalog/traslados/:id', async (req, res) => {
 router.get('/catalog/actividades/:id', async (req, res) => {
   try {
     const result = await pool.query('SELECT * FROM fn_listar_servicios_adicionales() WHERE cod_servicio = $1', [req.params.id]);
-    if (result.rows.length === 0) return fail(res, 'Actividad no encontrada', 404);
+    if (result.rows.length === 0) return fail(res, 'No encontrado', 404);
     return ok(res, result.rows[0]);
   } catch (error) { return fail(res, error.message); }
-});
-
-// --- PAQUETES TURÍSTICOS ---
-
-// 1. Listar Paquetes (Catálogo)
-router.get('/catalog/paquetes', async (_req, res) => {
-  try {
-    const result = await pool.query('SELECT * FROM fn_listar_paquetes_turisticos()');
-    return ok(res, result.rows, 'Paquetes obtenidos');
-  } catch (error) {
-    return fail(res, error.message);
-  }
 });
 
 // 2. Detalle de Paquete (Info + Servicios incluidos)
 router.get('/catalog/paquetes/:id', async (req, res) => {
   const id = parseInt(req.params.id);
   try {
-    // Obtenemos info básica
     const infoRes = await pool.query('SELECT * FROM fn_obtener_paquete_por_id($1)', [id]);
     if (infoRes.rows.length === 0) return fail(res, 'Paquete no encontrado', 404);
 
-    // Obtenemos los IDs de los servicios incluidos
     const servRes = await pool.query('SELECT * FROM fn_obtener_servicios_paquete($1)', [id]);
 
     const paquete = {
       ...infoRes.rows[0],
       servicios: servRes.rows.map(r => r.cod_servicio)
     };
-
     return ok(res, paquete);
-  } catch (error) {
-    return fail(res, error.message);
-  }
+  } catch (error) { return fail(res, error.message); }
 });
 
-// 3. Crear Paquete (Administrador)
+// --- GESTIÓN ADMINISTRATIVA (CREAR PAQUETE) ---
 router.post('/paquetes', async (req, res) => {
   const { nombre, descripcion, personas, costo, costo_millas, servicios, restriccion } = req.body;
 
-  // Validación básica
   if (!nombre || !descripcion || !personas || !costo || !costo_millas) {
-    return fail(res, 'Faltan campos obligatorios');
+    return fail(res, 'Faltan campos obligatorios', 400);
   }
 
-  // Convertir array de servicios a formato PostgreSQL (array de enteros)
-  // Ejemplo entrada: [1, 2, 5] -> Postgres: "{1,2,5}"
-  // El driver 'pg' suele manejar arrays de JS directamente si se pasan en la consulta paramétrica.
-
   try {
+    // Usamos el Stored Procedure definido en LOGIC.sql
     const query = 'CALL sp_crear_paquete_turistico(null, $1, $2, $3, $4, $5, $6, $7)';
     const values = [
       nombre, 
@@ -174,7 +142,7 @@ router.post('/paquetes', async (req, res) => {
       parseInt(personas), 
       parseFloat(costo), 
       parseInt(costo_millas), 
-      servicios || [], // Array de IDs de servicios
+      servicios || [], 
       restriccion || null
     ];
 
@@ -185,7 +153,7 @@ router.post('/paquetes', async (req, res) => {
   }
 });
 
-// --- RUTAS CRUD (ADMINISTRATIVAS / DETALLE) ---
+// --- RUTAS CRUD GENÉRICAS ---
 const serviceMappings = [
   { path: '/vuelos', table: 'Vuelo', idField: 's_cod' },
   { path: '/viajes', table: 'Viaje', idField: 's_cod' },

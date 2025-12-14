@@ -7,16 +7,13 @@
   const lugarSelect = document.getElementById('lugarSelect');
   const extraFields = document.getElementById('extraFields');
   
-  // Título
   title.textContent = `Registrar ${type.replace('-', ' ').toUpperCase()}`;
 
   // Lógica Especial para PAQUETES
   if (type === 'paquetes') {
-    // 1. Ocultar selector de lugar (los paquetes no tienen un lugar único fijo en la tabla principal)
     if(lugarSelect) lugarSelect.closest('.form-row').style.display = 'none';
     if(lugarSelect) lugarSelect.required = false;
 
-    // 2. Inyectar campos de Paquete
     extraFields.innerHTML = `
         <div class="form-row">
             <label>Descripción</label>
@@ -39,18 +36,17 @@
         <div class="form-row">
             <label>IDs de Servicios (separados por coma)</label>
             <input type="text" name="servicios_input" class="form-input" placeholder="Ej: 1, 5, 23">
-            <small style="color:#666;">Ingrese los IDs de los vuelos, hoteles, etc. que componen el paquete.</small>
+            <small style="color:#666;">Ingrese los IDs de los servicios incluidos (vuelos, hoteles...).</small>
         </div>
     `;
   } else {
-    // Lógica para Proveedores normales (Aerolineas, Hoteles, etc.)
+    // Lógica para Proveedores normales
     if (type === 'aerolineas' || type === 'cruceros') {
         extraFields.innerHTML = `<label>Fecha de Constitución</label><input type="date" name="fecha_constitucion" class="form-input" required>`;
     } else if (type === 'hoteles') {
         extraFields.innerHTML = `<label>Dirección Física</label><input type="text" name="h_direccion" class="form-input" required>`;
     }
     
-    // Cargar Lugares
     fetch('/api/locations?limit=500')
         .then(res => res.json())
         .then(payload => {
@@ -61,25 +57,19 @@
         });
   }
 
-  // Manejo del Submit
   form.addEventListener('submit', async (e) => {
     e.preventDefault();
     const formData = new FormData(form);
     const data = Object.fromEntries(formData.entries());
-    let endpoint = `/api/providers/${type}`; // Por defecto
+    let endpoint = `/api/providers/${type}`; 
 
-    // Ajuste de datos para Paquetes
     if (type === 'paquetes') {
-        endpoint = '/api/services/paquetes'; // Ruta específica definida en services.routes.js
-        
-        // Convertir string "1, 2, 3" a array [1, 2, 3]
+        endpoint = '/api/services/paquetes';
         if (data.servicios_input) {
             data.servicios = data.servicios_input.split(',').map(s => parseInt(s.trim())).filter(n => !isNaN(n));
         }
         delete data.servicios_input;
-    } 
-    // Ajuste para Proveedores
-    else {
+    } else {
         if(type !== 'aerolineas') {
             data.p_nombre = data.nombre;
             data.p_fecha_afiliacion = new Date().toISOString().split('T')[0];
@@ -99,14 +89,12 @@
 
       if(result.ok) {
         alert('Registrado exitosamente');
-        // Redirigir a la lista correcta (para paquetes, no hay vista de lista admin aun, redirigimos a home o search)
-        if(type==='paquetes') window.location.href = '/busqueda?type=paquetes';
+        if(type==='paquetes') window.location.href = '/busqueda?type=paquetes'; 
         else window.location.href = '/admin/proveedores';
       } else {
         alert('Error: ' + (result.message || result.p_mensaje));
       }
     } catch (error) {
-      console.error(error);
       alert('Error de conexión');
     }
   });

@@ -125,10 +125,10 @@ router.post('/add/actividad', async (req, res) => {
 router.post('/add/paquete', async (req, res) => {
   const { usuario_id, paquete_id } = req.body;
 
-  if (!usuario_id || !paquete_id) return fail(res, 'Faltan datos');
+  if (!usuario_id || !paquete_id) return fail(res, 'Faltan datos (usuario_id, paquete_id)');
 
   try {
-    // fn_crear_compra_paquete(usuario_id, paquete_id) devuelve BOOLEAN
+    // Llama a fn_crear_compra_paquete del SQL
     const result = await pool.query(
       'SELECT fn_crear_compra_paquete($1, $2) as exito',
       [usuario_id, paquete_id]
@@ -140,7 +140,7 @@ router.post('/add/paquete', async (req, res) => {
       return fail(res, 'No se pudo reservar. Verifique que no tenga otra compra activa.');
     }
   } catch (error) {
-    return fail(res, error.message); // El SQL lanza notices/excepciones si ya hay compra activa
+    return fail(res, error.message);
   }
 });
 
