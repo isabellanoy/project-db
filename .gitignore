@@ -18,6 +18,7 @@ dist/
 tmp/
 temp/
 .cache/
+reports/
 
 # Editor settings
 .vscode/
