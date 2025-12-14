@@ -24,10 +24,19 @@ router.post('/add/vuelo', async (req, res) => {
   }
 
   try {
+    const p_cod_usuario = parseInt(usuario_id, 10);
+    const p_id_vuelo = parseInt(vuelo_id, 10);
+    const p_cant_pasajeros = parseInt(pasajeros, 10);
+    const p_id_clase_asiento = parseInt(clase_id, 10);
+
+    if (isNaN(p_cod_usuario) || isNaN(p_id_vuelo) || isNaN(p_cant_pasajeros) || isNaN(p_id_clase_asiento)) {
+      return fail(res, 'Los IDs y la cantidad de pasajeros deben ser números válidos.');
+    }
+
     // Llama a fn_agregar_vuelo_a_compra(usuario, vuelo, pax, clase)
     const result = await pool.query(
       'SELECT fn_agregar_vuelo_a_compra($1, $2, $3, $4) as exito',
-      [usuario_id, vuelo_id, pasajeros, clase_id]
+      [p_cod_usuario, p_id_vuelo, p_cant_pasajeros, p_id_clase_asiento]
     );
 
     if (result.rows[0].exito) {
@@ -63,17 +72,29 @@ router.post('/add/alojamiento', async (req, res) => {
 
 // 3. Agregar Crucero (Viaje)
 router.post('/add/viaje', async (req, res) => {
-  const { usuario_id, viaje_id, pasajeros, camarote_id } = req.body;
+  // El servicio de barco es opcional
+  const { usuario_id, viaje_id, pasajeros, camarote_id, servicio_barco_sb_cod } = req.body;
 
   if (!usuario_id || !viaje_id || !pasajeros || !camarote_id) {
-    return fail(res, 'Faltan datos requeridos');
+    return fail(res, 'Faltan datos requeridos (usuario_id, viaje_id, pasajeros, camarote_id)');
   }
 
   try {
-    // p_id_servicio_barco es opcional, enviamos NULL por defecto
+    const p_usuario_id = parseInt(usuario_id, 10);
+    const p_viaje_id = parseInt(viaje_id, 10);
+    const p_pasajeros = parseInt(pasajeros, 10);
+    const p_camarote_id = parseInt(camarote_id, 10);
+    
+    // servicio_barco_sb_cod es opcional, puede ser NaN si no se envía
+    const p_servicio_barco_id = servicio_barco_sb_cod ? parseInt(servicio_barco_sb_cod, 10) : null;
+
+    if (isNaN(p_usuario_id) || isNaN(p_viaje_id) || isNaN(p_pasajeros) || isNaN(p_camarote_id) || (p_servicio_barco_id !== null && isNaN(p_servicio_barco_id))) {
+      return fail(res, 'Los IDs y la cantidad de pasajeros deben ser números válidos.');
+    }
+
     const result = await pool.query(
-      'SELECT fn_agregar_viaje_a_compra($1, $2, $3, $4, NULL) as exito',
-      [usuario_id, viaje_id, pasajeros, camarote_id]
+      'SELECT fn_agregar_viaje_a_compra($1, $2, $3, $4, $5) as exito',
+      [p_usuario_id, p_viaje_id, p_pasajeros, p_camarote_id, p_servicio_barco_id]
     );
 
     if (result.rows[0].exito) return ok(res, null, 'Crucero agregado exitosamente');
@@ -88,13 +109,21 @@ router.post('/add/traslado', async (req, res) => {
   const { usuario_id, traslado_id, automovil_id, fecha } = req.body;
 
   if (!usuario_id || !traslado_id || !automovil_id || !fecha) {
-    return fail(res, 'Faltan datos requeridos');
+    return fail(res, 'Faltan datos requeridos (usuario_id, traslado_id, automovil_id, fecha)');
   }
 
   try {
+    const p_usuario_id = parseInt(usuario_id, 10);
+    const p_traslado_id = parseInt(traslado_id, 10);
+    const p_automovil_id = parseInt(automovil_id, 10);
+
+    if (isNaN(p_usuario_id) || isNaN(p_traslado_id) || isNaN(p_automovil_id)) {
+      return fail(res, 'Los IDs deben ser números válidos.');
+    }
+
     const result = await pool.query(
       'SELECT fn_agregar_traslado_a_compra($1, $2, $3, $4) as exito',
-      [usuario_id, traslado_id, automovil_id, fecha]
+      [p_usuario_id, p_traslado_id, p_automovil_id, fecha]
     );
 
     if (result.rows[0].exito) return ok(res, null, 'Traslado agregado exitosamente');
@@ -108,10 +137,22 @@ router.post('/add/traslado', async (req, res) => {
 router.post('/add/actividad', async (req, res) => {
   const { usuario_id, actividad_id, personas } = req.body;
 
+  if (!usuario_id || !actividad_id || !personas) {
+    return fail(res, 'Faltan datos (usuario_id, actividad_id, personas)');
+  }
+
   try {
+    const p_usuario_id = parseInt(usuario_id, 10);
+    const p_actividad_id = parseInt(actividad_id, 10);
+    const p_personas = parseInt(personas, 10);
+
+    if (isNaN(p_usuario_id) || isNaN(p_actividad_id) || isNaN(p_personas)) {
+      return fail(res, 'Los IDs y la cantidad de personas deben ser números válidos.');
+    }
+
     const result = await pool.query(
       'SELECT fn_agregar_entrada_digital_a_compra($1, $2, $3) as exito',
-      [usuario_id, actividad_id, personas]
+      [p_usuario_id, p_actividad_id, p_personas]
     );
 
     if (result.rows[0].exito) return ok(res, null, 'Actividad agregada exitosamente');
@@ -144,6 +185,35 @@ router.post('/add/paquete', async (req, res) => {
   }
 });
 
+// 7. Cancelar Compra Activa
+router.post('/cancel', async (req, res) => {
+  const { usuario_id } = req.body;
+
+  if (!usuario_id) {
+    return fail(res, 'Falta usuario_id');
+  }
+
+  try {
+    const p_usuario_id = parseInt(usuario_id, 10);
+    if (isNaN(p_usuario_id)) {
+      return fail(res, 'El usuario_id debe ser un número válido.');
+    }
+
+    const result = await pool.query(
+      'SELECT fn_cancelar_compra($1) as exito',
+      [p_usuario_id]
+    );
+
+    if (result.rows[0].exito) {
+      return ok(res, null, 'Compra cancelada exitosamente');
+    } else {
+      return fail(res, 'No se pudo cancelar la compra (posiblemente no hay una compra activa).');
+    }
+  } catch (error) {
+    return fail(res, error.message);
+  }
+});
+
 // --- CONSULTAR ITINERARIO (CARRITO ACTIVO) ---
 router.get('/itinerary', async (req, res) => {
   const userId = req.query.usuario_id;
@@ -151,8 +221,20 @@ router.get('/itinerary', async (req, res) => {
   if (!userId) return fail(res, 'Falta usuario_id');
 
   try {
-    // 1. Obtener ID de la compra activa
-    const compraRes = await pool.query('SELECT fn_obtener_compra_activa($1) as id', [userId]);
+    const p_usuario_id = parseInt(userId, 10);
+    if (isNaN(p_usuario_id)) {
+      return fail(res, 'El usuario_id debe ser un número válido.');
+    }
+
+    // Obtener el cliente_c_cod a partir del u_cod del usuario
+    const clienteRes = await pool.query('SELECT cliente_c_cod FROM Usuario WHERE u_cod = $1', [p_usuario_id]);
+    if (clienteRes.rows.length === 0) {
+      return fail(res, 'Usuario no encontrado. Asegúrese de que el usuario esté asociado a un cliente.');
+    }
+    const clienteId = clienteRes.rows[0].cliente_c_cod;
+
+    // 1. Obtener ID de la compra activa con el cliente_c_cod
+    const compraRes = await pool.query('SELECT fn_obtener_compra_activa($1) as id', [clienteId]);
     const compraId = compraRes.rows[0].id;
 
     if (!compraId) {

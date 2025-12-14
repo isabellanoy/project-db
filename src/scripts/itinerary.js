@@ -50,14 +50,11 @@
           <div class="itinerary-item__header" style="display: flex; justify-content: space-between; border-bottom: 1px solid #eee; padding-bottom: 0.5rem; margin-bottom: 0.5rem;">
               <h2 style="font-size: 1.1rem; font-weight: 700;">${title}</h2>
               <div class="price-display">
-                  <span class="main-price" style="font-weight: 700;">${formatMoney(subtotal)}</span>
+                  <span class="main-price" style="font-weight: 700;">Bs. ${subtotal.toLocaleString('es-VE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
               </div>
           </div>
           <p style="font-size: 1rem; margin-bottom: 0.25rem;">${desc}</p>
           <p class="hero__text" style="font-size: 0.85rem; color: #666;">${details}</p>
-          <div style="margin-top: 1rem; text-align: right;">
-             <button style="color: #ef4444; background: none; border: none; cursor: pointer; font-size: 0.9rem; text-decoration: underline;">Eliminar</button>
-          </div>
       </article>
     `;
   };
@@ -66,7 +63,7 @@
     listContainer.innerHTML = '<p>Cargando itinerario...</p>';
 
     try {
-      const response = await fetch(`/api/sales/itinerary?usuario_id=${userId}`);
+      const response = await fetch(`/api/itinerary?usuario_id=${userId}`);
       const payload = await response.json();
 
       if (!payload.ok) throw new Error(payload.message);
@@ -80,7 +77,7 @@
                 <a href="/busqueda" class="cta-button" style="margin-top: 1rem; background: #000;">Explorar Servicios</a>
             </div>`;
         
-        document.getElementById('totalAmount').textContent = '$0.00';
+        document.getElementById('totalAmount').textContent = 'Bs. 0,00';
         document.getElementById('totalBs').textContent = 'Bs. 0,00';
         document.getElementById('totalMillas').textContent = '0';
         return;
@@ -90,10 +87,9 @@
 
       const total = parseFloat(data.info.co_monto_total);
       const millas = data.info.co_millas_a_agregar;
-      const bsRate = 60; 
 
-      document.getElementById('totalAmount').textContent = formatMoney(total);
-      document.getElementById('totalBs').textContent = `Bs. ${(total * bsRate).toLocaleString('es-VE')}`;
+      document.getElementById('totalAmount').textContent = `Bs. ${total.toLocaleString('es-VE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+      document.getElementById('totalBs').textContent = `Bs. ${total.toLocaleString('es-VE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
       document.getElementById('totalMillas').textContent = millas;
 
     } catch (error) {
@@ -102,5 +98,35 @@
     }
   };
 
-  document.addEventListener('DOMContentLoaded', loadItinerary);
+  document.addEventListener('DOMContentLoaded', () => {
+    loadItinerary();
+
+    const cancelBtn = document.getElementById('cancelPurchaseBtn');
+    if (cancelBtn) {
+      cancelBtn.addEventListener('click', async () => {
+        if (confirm('¿Estás seguro de que deseas cancelar toda la compra? Esta acción no se puede deshacer.')) {
+          try {
+            const response = await fetch('/api/cancel', {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json'
+              },
+              body: JSON.stringify({ usuario_id: userId })
+            });
+
+            const result = await response.json();
+
+            if (result.ok) {
+              alert('Compra cancelada exitosamente.');
+              window.location.reload();
+            } else {
+              throw new Error(result.message);
+            }
+          } catch (error) {
+            alert(`Error al cancelar la compra: ${error.message}`);
+          }
+        }
+      });
+    }
+  });
 })();

@@ -76,6 +76,13 @@ router.get('/catalog/vuelos/:id', async (req, res) => {
   } catch (error) { return fail(res, error.message); }
 });
 
+router.get('/catalog/vuelos/:id/clases', async (req, res) => {
+  try {
+    const result = await pool.query('SELECT * FROM fn_listar_clases_asiento_vuelo($1)', [req.params.id]);
+    return ok(res, result.rows);
+  } catch (error) { return fail(res, error.message); }
+});
+
 router.get('/catalog/alojamientos/:id', async (req, res) => {
   try {
     const result = await pool.query('SELECT * FROM fn_listar_habitaciones() WHERE cod_servicio = $1', [req.params.id]);
@@ -92,11 +99,32 @@ router.get('/catalog/viajes/:id', async (req, res) => {
   } catch (error) { return fail(res, error.message); }
 });
 
+router.get('/catalog/viajes/:id/camarotes', async (req, res) => {
+  try {
+    const result = await pool.query('SELECT * FROM fn_listar_tipos_camarote_viaje($1)', [req.params.id]);
+    return ok(res, result.rows);
+  } catch (error) { return fail(res, error.message); }
+});
+
+router.get('/catalog/viajes/:id/servicios', async (req, res) => {
+  try {
+    const result = await pool.query('SELECT * FROM fn_listar_servicios_viaje($1)', [req.params.id]);
+    return ok(res, result.rows);
+  } catch (error) { return fail(res, error.message); }
+});
+
 router.get('/catalog/traslados/:id', async (req, res) => {
   try {
     const result = await pool.query('SELECT * FROM fn_listar_traslados() WHERE cod_servicio = $1', [req.params.id]);
     if (result.rows.length === 0) return fail(res, 'No encontrado', 404);
     return ok(res, result.rows[0]);
+  } catch (error) { return fail(res, error.message); }
+});
+
+router.get('/catalog/traslados/:id/vehiculos', async (req, res) => {
+  try {
+    const result = await pool.query('SELECT * FROM fn_listar_vehiculos_traslado($1)', [req.params.id]);
+    return ok(res, result.rows);
   } catch (error) { return fail(res, error.message); }
 });
 
