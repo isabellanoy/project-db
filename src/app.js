@@ -8,6 +8,7 @@ const locationsRoutes = require('./routes/locations.routes');
 const servicesRoutes = require('./routes/services.routes');
 const rolesRoutes = require('./routes/roles.routes');
 const salesRoutes = require('./routes/sales.routes');
+const banksRoutes = require('./routes/banks.routes');
 const viewsRoutes = require('./routes/views.routes');
 const promotionsRoutes = require('./routes/promotions.routes');
 
@@ -46,7 +47,8 @@ const apiRoutes = [
   { basePath: '/api/locations', router: locationsRoutes },
   { basePath: '/api/services', router: servicesRoutes },
   { basePath: '/api', router: rolesRoutes },
-  { basePath: '/api', router: salesRoutes }
+  { basePath: '/api', router: salesRoutes },
+  { basePath: '/api', router: banksRoutes }
 ];
 
 apiRoutes.forEach(({ basePath, router }) => {

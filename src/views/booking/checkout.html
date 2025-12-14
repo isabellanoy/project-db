@@ -17,7 +17,108 @@
     </header>
 
     <main class="wrapper">
-        <script src="/src/scripts/checkout.js"></script>
+        <div style="display: grid; grid-template-columns: 2fr 1fr; gap: 2rem;">
+            <section id="paymentMethods">
+                <div style="margin-bottom: 2rem; border-bottom: 1px solid #000; padding-bottom: 0.5rem;">
+                    <h1 style="font-size: 1.5rem;">Método de Pago</h1>
+                </div>
+
+                <div id="regularPayment">
+                    <div style="margin-bottom: 1.5rem; background: #f8fafc; padding: 1rem; border-radius: 5px;">
+                        <label style="display: flex; align-items: center; gap: 10px; cursor: pointer;">
+                            <input type="checkbox" name="finance"> 
+                            <strong>Financiar este viaje</strong> (Paga el 10% hoy y el resto en cuotas)
+                        </label>
+                    </div>
+
+                    <!-- Selector de Método de Pago -->
+                    <div class="payment-method-selector">
+                        <label>
+                            <input type="radio" name="paymentMethod" value="card" checked> Tarjeta
+                        </label>
+                        <label>
+                            <input type="radio" name="paymentMethod" value="digital"> Operación Digital
+                        </label>
+                    </div>
+
+                    <!-- Formulario para Tarjeta -->
+                    <div id="card-form">
+                        <article class="payment-method-card">
+                            <div style="padding: 1rem;">
+                                <div class="form-grid">
+                                    <input type="text" id="card-number" class="form-input" placeholder="Número de Tarjeta (16 dígitos)" pattern="[0-9]{16}" maxlength="16" required>
+                                    <input type="text" id="card-holder" class="form-input" placeholder="Nombre del Titular" required>
+                                    <input type="text" id="card-expiry" class="form-input" placeholder="MM/YY" pattern="(0[1-9]|1[0-2])\/[0-9]{2}" maxlength="5" required>
+                                    <input type="text" id="card-cvc" class="form-input" placeholder="CVC" pattern="[0-9]{3,4}" maxlength="4" required>
+                                    <select id="bank-select" class="form-input" required><option value="">Seleccione un banco...</option></select>
+                                    <select id="card-issuer" class="form-input" required>
+                                        <option value="">Seleccione un emisor...</option>
+                                        <option value="VISA">VISA</option>
+                                        <option value="MasterCard">MasterCard</option>
+                                    </select>
+                                </div>
+                                <label style="display: block; margin-top: 1rem; margin-bottom: 0.5rem;">Monto a pagar:</label>
+                                <input type="number" id="card-amount" class="form-input" style="font-weight: bold;" min="0.01" step="0.01" required>
+                            </div>
+                        </article>
+                    </div>
+
+                    <!-- Formulario para Operación Digital -->
+                    <div id="digital-form" style="display: none;">
+                         <article class="payment-method-card">
+                            <div style="padding: 1rem;">
+                                <label style="display: block; margin-bottom: 0.5rem;">Número de Referencia:</label>
+                                <input type="text" id="digital-ref" class="form-input" pattern="[0-9]+" required>
+                                <label style="display: block; margin-bottom: 0.5rem;">Monto a pagar:</label>
+                                <input type="number" id="digital-amount" class="form-input" style="font-weight: bold;" min="0.01" step="0.01" required>
+                            </div>
+                        </article>
+                    </div>
+                    
+                    <button id="confirmPaymentBtn" class="cta-button" style="background: #000; width: 100%; border-radius: 0; margin-top: 1rem;">
+                        Confirmar Pago
+                    </button>
+                </div>
+
+                <div id="packagePayment" style="display: none;">
+                    <article class="payment-method-card">
+                        <div class="payment-method-header">
+                            <input type="radio" name="method" checked>
+                            <span>Pagar con Millas</span>
+                        </div>
+                        <div style="padding-left: 1.5rem;">
+                            <p style="font-size: 0.9rem; color: #333; margin-bottom: 1rem;">
+                                Esta compra es un paquete especial y solo puede ser pagada con las millas de tu cuenta.
+                            </p>
+                        </div>
+                    </article>
+                    <button id="payWithMilesBtn" class="cta-button" style="background: #1d4ed8; width: 100%; border-radius: 0; margin-top: 1rem;">
+                        💎 Pagar con Millas
+                    </button>
+                </div>
+            </section>
+
+            <aside>
+                <div class="summary-card">
+                    <h3 style="margin-bottom: 1.5rem; font-size: 1.2rem;">Resumen Total</h3>
+                    
+                    <div class="summary-total" style="border: none;">
+                        <div style="display: flex; justify-content: space-between; align-items: center;">
+                            <span>Total Deuda:</span>
+                            <span id="totalAmountLabel" style="font-size: 1.5rem; font-weight: 800;">Cargando...</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div style="margin-top: 2rem; border: 1px solid #000; padding: 1rem; background: #fff;">
+                    <h3 style="font-weight: 700; margin-bottom: 0.5rem; border-bottom: 1px solid #000; padding-bottom: 0.25rem;">Política de Cancelación</h3>
+                    <p style="font-size: 0.85rem; color: #333;">
+                        Reembolso del 90% en cancelaciones. El 10% restante se retiene por gastos administrativos.
+                    </p>
+                </div>
+            </aside>
+        </div>
     </main>
+    <script src="/src/scripts/checkout.js"></script>
 </body>
 </html>

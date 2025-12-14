@@ -380,19 +380,31 @@ router.post('/checkout/pay/digital', async (req, res) => {
   }
 });
 
-// 4. Pagar con Millas
-router.post('/checkout/pay/miles', async (req, res) => {
-  const { usuario_id, cantidad_millas } = req.body;
+// 4. Pagar Paquete (Llama a fn_procesar_a_pago para finalizar la compra de paquete)
+router.post('/checkout/pay/package', async (req, res) => {
+  const { usuario_id } = req.body;
+
+  if (!usuario_id) {
+    return fail(res, 'Falta usuario_id');
+  }
 
   try {
-    // fn_pago_millas(usuario, cantidad)
+    const p_usuario_id = parseInt(usuario_id, 10);
+    if (isNaN(p_usuario_id)) {
+      return fail(res, 'El usuario_id debe ser un número válido.');
+    }
+
     const result = await pool.query(
-      'SELECT fn_pago_millas($1, $2) as exito',
-      [usuario_id, cantidad_millas]
+      'SELECT fn_procesar_a_pago($1, FALSE, 1, 0) as exito',
+      [p_usuario_id]
     );
 
-    if (result.rows[0].exito) return ok(res, null, 'Pago con millas registrado');
-    return fail(res, 'Fondos insuficientes o error al canjear millas');
+    if (result.rows[0].exito) {
+      return ok(res, null, 'Paquete pagado y compra finalizada exitosamente.');
+    } else {
+      // El mensaje de error de la función fn_procesar_a_pago ya maneja la lógica de millas insuficientes
+      return fail(res, 'No se pudo procesar el pago del paquete. Verifique sus millas o el estado de la compra.');
+    }
   } catch (error) {
     return fail(res, error.message);
   }

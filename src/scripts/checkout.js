@@ -3,23 +3,59 @@
   if (!userId) window.location.href = '/login';
 
   // Referencias UI
-  const totalLabel = document.querySelector('.summary-total span:last-child');
-  const payBtn = document.querySelector('aside button.cta-button');
-  const financeCheckbox = document.querySelector('input[name="finance"]');
+  const totalAmountLabel = document.getElementById('totalAmountLabel');
+  const regularPaymentDiv = document.getElementById('regularPayment');
+  const packagePaymentDiv = document.getElementById('packagePayment');
   
-  // Inputs de Pago (Simulados para el ejemplo: Tarjeta)
-  const cardInputs = {
-    number: document.querySelector('input[placeholder="Número de Tarjeta"]'),
-    holder: document.querySelector('input[placeholder="Titular"]'),
-    amount: document.querySelector('input[placeholder="Monto a pagar"]')
+    const confirmPaymentBtn = document.getElementById('confirmPaymentBtn');
+    const payWithMilesBtn = document.getElementById('payWithMilesBtn');
+    
+    const financeCheckbox = document.querySelector('input[name="finance"]');
+    
+    // Referencias a los formularios y sus campos
+    const cardForm = document.getElementById('card-form');
+    const digitalForm = document.getElementById('digital-form');
+    const paymentMethodRadios = document.querySelectorAll('input[name="paymentMethod"]');
+  
+    // Campos de Tarjeta
+    const cardNumberInput = document.getElementById('card-number');
+    const cardHolderInput = document.getElementById('card-holder');
+    const cardExpiryInput = document.getElementById('card-expiry');
+    const cardCvcInput = document.getElementById('card-cvc');
+    const bankSelect = document.getElementById('bank-select');
+    const cardIssuerInput = document.getElementById('card-issuer');
+    const cardAmountInput = document.getElementById('card-amount');
+  
+    // Campos de Operación Digital
+    const digitalRefInput = document.getElementById('digital-ref');
+    const digitalAmountInput = document.getElementById('digital-amount');
+  
+    let totalAmount = 0;  let activePurchaseId = null;
+
+  // 1. Cargar Bancos
+  const loadBanks = async () => {
+    try {
+      const response = await fetch('/api/banks');
+      const payload = await response.json();
+      if (payload.ok && bankSelect) {
+        bankSelect.innerHTML = '<option value="">Seleccione un banco...</option>';
+        payload.data.forEach(bank => {
+          const option = document.createElement('option');
+          option.value = bank.ba_cod;
+          option.textContent = bank.ba_nombre;
+          bankSelect.appendChild(option);
+        });
+      }
+    } catch (error) {
+      console.error('Error cargando bancos:', error);
+      if (bankSelect) bankSelect.innerHTML = '<option value="">Error al cargar bancos</option>';
+    }
   };
 
-  let totalAmount = 0;
-
-  // 1. Cargar Monto Total
+  // 2. Cargar Resumen de la compra
   const loadSummary = async () => {
     try {
-      const response = await fetch(`/api/sales/itinerary?usuario_id=${userId}`);
+      const response = await fetch(`/api/itinerary?usuario_id=${userId}`);
       const payload = await response.json();
       if (!payload.ok) throw new Error(payload.message);
 
@@ -31,43 +67,49 @@
       }
 
       totalAmount = parseFloat(data.info.co_monto_total);
-      
-      // Actualizar UI
-      if(totalLabel) totalLabel.textContent = `$${totalAmount.toFixed(2)}`;
-      
-      // Pre-llenar monto a pagar (por defecto total)
-      const amountInput = document.getElementById('paymentAmount');
-      if(amountInput) amountInput.value = totalAmount.toFixed(2);
+      activePurchaseId = data.compra_id;
+      const isPackage = data.info.co_es_paquete === true;
 
+      if (isPackage) {
+        regularPaymentDiv.style.display = 'none';
+        packagePaymentDiv.style.display = 'block';
+        totalAmountLabel.textContent = `${totalAmount.toLocaleString('es-VE')} Millas`;
+      } else {
+        regularPaymentDiv.style.display = 'block';
+        packagePaymentDiv.style.display = 'none';
+        totalAmountLabel.textContent = `${totalAmount.toFixed(2)}`;
+        document.getElementById('card-amount').value = totalAmount.toFixed(2);
+        document.getElementById('digital-amount').value = totalAmount.toFixed(2);
+      }
     } catch (error) {
       console.error(error);
+      totalAmountLabel.textContent = 'Error';
     }
   };
 
-  // 2. Procesar Pago
+  // 3. Manejar el cambio de método de pago
+  const handleMethodChange = (event) => {
+    if (event.target.value === 'card') {
+      cardForm.style.display = 'block';
+      digitalForm.style.display = 'none';
+    } else {
+      cardForm.style.display = 'none';
+      digitalForm.style.display = 'block';
+    }
+  };
+  
+  // 4. Procesar Pagos
   const handlePayment = async () => {
-    payBtn.disabled = true;
-    payBtn.textContent = 'Procesando...';
+    const selectedMethod = document.querySelector('input[name="paymentMethod"]:checked').value;
+    
+    confirmPaymentBtn.disabled = true;
+    confirmPaymentBtn.textContent = 'Procesando...';
 
     const isFinance = financeCheckbox ? financeCheckbox.checked : false;
-    const amountToPay = document.getElementById('paymentAmount').value;
-    
-    // Datos falsos de tarjeta para probar (el HTML debe tener estos campos)
-    const cardData = {
-        usuario_id: userId,
-        monto: amountToPay,
-        numero: "1234567890123456",
-        cvc: 123,
-        titular: "Usuario Prueba",
-        vencimiento: "2028-12-01",
-        banco_id: 1,
-        emisor: "VISA"
-    };
 
     try {
       // A. Iniciar el checkout (Cambiar estado a PAGANDO)
-      // Nota: Si ya está en PAGANDO, el backend devolverá error o lo manejará.
-      await fetch('/api/sales/checkout/init', {
+      await fetch('/api/checkout/init', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ 
@@ -77,31 +119,85 @@
         })
       });
 
-      // B. Registrar el Pago (Tarjeta en este ejemplo)
-      const payResponse = await fetch('/api/sales/checkout/pay/card', {
+      // B. Registrar el Pago según el método
+      let payEndpoint = '';
+      let payBody = {};
+
+      if (selectedMethod === 'card') {
+        payEndpoint = '/api/checkout/pay/card';
+        payBody = {
+          usuario_id: userId,
+          monto: document.getElementById('card-amount').value,
+          numero: document.getElementById('card-number').value,
+          cvc: document.getElementById('card-cvc').value,
+          titular: document.getElementById('card-holder').value,
+          vencimiento: document.getElementById('card-expiry').value, // Formato YYYY-MM
+          banco_id: document.getElementById('bank-select').value,
+          emisor: document.getElementById('card-issuer').value
+        };
+      } else { // digital
+        payEndpoint = '/api/checkout/pay/digital';
+        payBody = {
+          usuario_id: userId,
+          monto: document.getElementById('digital-amount').value,
+          referencia: document.getElementById('digital-ref').value
+        };
+      }
+      
+      const payResponse = await fetch(payEndpoint, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(cardData)
+        body: JSON.stringify(payBody)
       });
 
       const payResult = await payResponse.json();
 
       if (payResult.ok) {
-        alert('¡Pago realizado con éxito! Tu viaje está confirmado.');
-        window.location.href = '/mis-viajes';
+        alert('Pago procesado correctamente.');
+        window.location.reload();
       } else {
         throw new Error(payResult.message);
       }
 
     } catch (error) {
       alert(`Error en el pago: ${error.message}`);
-      payBtn.disabled = false;
-      payBtn.textContent = 'Pagar';
+      confirmPaymentBtn.disabled = false;
+      confirmPaymentBtn.textContent = 'Confirmar Pago';
     }
   };
 
+  const handleMilesPayment = async () => {
+    payWithMilesBtn.disabled = true;
+    payWithMilesBtn.textContent = 'Procesando...';
+    try {
+      const payResponse = await fetch('/api/checkout/pay/package', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          usuario_id: userId
+        })
+      });
+
+      const payResult = await payResponse.json();
+      if (payResult.ok) {
+        alert('¡Paquete pagado con éxito con tus millas!');
+        window.location.href = '/mis-viajes';
+      } else {
+        throw new Error(payResult.message);
+      }
+    } catch (error) {
+      alert(`Error en el pago: ${error.message}`);
+      payWithMilesBtn.disabled = false;
+      payWithMilesBtn.textContent = '💎 Pagar con Millas';
+    }
+  };
+
+  // Asignar Event Listeners
   document.addEventListener('DOMContentLoaded', () => {
     loadSummary();
-    if(payBtn) payBtn.addEventListener('click', handlePayment);
+    loadBanks();
+    paymentMethodRadios.forEach(radio => radio.addEventListener('change', handleMethodChange));
+    if(confirmPaymentBtn) confirmPaymentBtn.addEventListener('click', handlePayment);
+    if(payWithMilesBtn) payWithMilesBtn.addEventListener('click', handleMilesPayment);
   });
 })();

@@ -144,11 +144,18 @@ router.get('/catalog/paquetes/:id', async (req, res) => {
     if (infoRes.rows.length === 0) return fail(res, 'Paquete no encontrado', 404);
 
     const servRes = await pool.query('SELECT * FROM fn_obtener_servicios_paquete($1)', [id]);
-
+    
+    const dbPackage = infoRes.rows[0];
     const paquete = {
-      ...infoRes.rows[0],
+      pt_cod: dbPackage.cod,
+      pt_nombre: dbPackage.nombre,
+      pt_descripcion: dbPackage.descripcion,
+      pt_cant_personas: dbPackage.cant_personas,
+      pt_costo: dbPackage.costo,
+      pt_costo_millas: dbPackage.costo_millas,
       servicios: servRes.rows.map(r => r.cod_servicio)
     };
+
     return ok(res, paquete);
   } catch (error) { return fail(res, error.message); }
 });
