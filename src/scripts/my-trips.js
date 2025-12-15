@@ -43,7 +43,6 @@
           </div>
           
           <div style="margin-top: 1.5rem; padding-top: 1rem; border-top: 1px solid #eee; display: flex; gap: 1rem;">
-              <button class="btn-secondary" style="padding: 0.5rem 1rem; font-size: 0.85rem;">Ver Detalles</button>
               ${trip.co_estado === 'FINALIZADO' ? '<button class="btn-secondary" style="padding: 0.5rem 1rem; font-size: 0.85rem;">Descargar Factura</button>' : ''}
           </div>
       </div>
