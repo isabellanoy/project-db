@@ -2774,7 +2774,7 @@ INSERT INTO Tipo_Habitacion (th_nombre, th_descripcion) VALUES
 -- CCS -> MAD (Iberia)
 WITH s AS (INSERT INTO Servicio (s_costo, s_millas_otorgar) VALUES (850.00, 4300) RETURNING s_cod)
 INSERT INTO Vuelo (s_cod, v_cod_vue, v_fecha_hora_salida, v_distancia_km, v_duracion_horas, aerolinea_p_cod, lugar_l_cod, lugar_l_cod2, aeronave_mt_cod)
-SELECT s_cod, 'IB6674', '2025-11-20 18:00:00', 7000, 9, 
+SELECT s_cod, 'IB6674', '2026-02-20 18:00:00', 7000, 9, 
     (SELECT p_cod FROM Aerolinea WHERE p_nombre = 'Iberia' LIMIT 1),
     (SELECT l_cod FROM Lugar WHERE l_nombre = 'Distrito Capital' LIMIT 1),
     (SELECT l_cod FROM Lugar WHERE l_nombre = 'España' LIMIT 1),
@@ -2783,7 +2783,7 @@ SELECT s_cod, 'IB6674', '2025-11-20 18:00:00', 7000, 9,
 -- JFK -> LHR (American Airlines)
 WITH s AS (INSERT INTO Servicio (s_costo, s_millas_otorgar) VALUES (600.00, 3400) RETURNING s_cod)
 INSERT INTO Vuelo (s_cod, v_cod_vue, v_fecha_hora_salida, v_distancia_km, v_duracion_horas, aerolinea_p_cod, lugar_l_cod, lugar_l_cod2, aeronave_mt_cod)
-SELECT s_cod, 'AA100', '2025-12-01 18:30:00', 5500, 7, 
+SELECT s_cod, 'AA100', '2026-01-21 18:30:00', 5500, 7, 
     (SELECT p_cod FROM Aerolinea WHERE p_nombre = 'American Airlines' LIMIT 1),
     (SELECT l_cod FROM Lugar WHERE l_nombre = 'Estados Unidos' LIMIT 1), -- Asumiendo JFK en USA
     (SELECT l_cod FROM Lugar WHERE l_nombre = 'Europa' LIMIT 1),
@@ -2792,7 +2792,7 @@ SELECT s_cod, 'AA100', '2025-12-01 18:30:00', 5500, 7,
 -- HND -> LAX (Japan Airlines)
 WITH s AS (INSERT INTO Servicio (s_costo, s_millas_otorgar) VALUES (1200.00, 5400) RETURNING s_cod)
 INSERT INTO Vuelo (s_cod, v_cod_vue, v_fecha_hora_salida, v_distancia_km, v_duracion_horas, aerolinea_p_cod, lugar_l_cod, lugar_l_cod2, aeronave_mt_cod)
-SELECT s_cod, 'JL016', '2025-11-25 17:00:00', 8800, 10, 
+SELECT s_cod, 'JL016', '2026-03-01 17:00:00', 8800, 10, 
     (SELECT p_cod FROM Aerolinea WHERE p_nombre = 'Japan Airlines' LIMIT 1),
     (SELECT l_cod FROM Lugar WHERE l_nombre = 'Japon' LIMIT 1),
     (SELECT l_cod FROM Lugar WHERE l_nombre = 'Los Angeles' LIMIT 1),
@@ -2801,7 +2801,7 @@ SELECT s_cod, 'JL016', '2025-11-25 17:00:00', 8800, 10,
 -- FCO -> MEX (Aeroitalia)
 WITH s AS (INSERT INTO Servicio (s_costo, s_millas_otorgar) VALUES (950.00, 6000) RETURNING s_cod)
 INSERT INTO Vuelo (s_cod, v_cod_vue, v_fecha_hora_salida, v_distancia_km, v_duracion_horas, aerolinea_p_cod, lugar_l_cod, lugar_l_cod2, aeronave_mt_cod)
-SELECT s_cod, 'AZ676', '2025-12-10 10:00:00', 10200, 13, 
+SELECT s_cod, 'AZ676', '2026-01-10 10:00:00', 10200, 13, 
     (SELECT p_cod FROM Aerolinea WHERE p_nombre = 'Aeroitalia' LIMIT 1),
     (SELECT l_cod FROM Lugar WHERE l_nombre = 'Italia' LIMIT 1),
     (SELECT l_cod FROM Lugar WHERE l_nombre = 'Mexico' LIMIT 1),
@@ -2810,7 +2810,7 @@ SELECT s_cod, 'AZ676', '2025-12-10 10:00:00', 10200, 13,
 -- CCS -> PMV (Conviasa - Nacional)
 WITH s AS (INSERT INTO Servicio (s_costo, s_millas_otorgar) VALUES (50.00, 200) RETURNING s_cod)
 INSERT INTO Vuelo (s_cod, v_cod_vue, v_fecha_hora_salida, v_distancia_km, v_duracion_horas, aerolinea_p_cod, lugar_l_cod, lugar_l_cod2, aeronave_mt_cod)
-SELECT s_cod, 'V03012', '2025-11-18 07:00:00', 300, 1, 
+SELECT s_cod, 'V03012', '2026-02-18 07:00:00', 300, 1, 
     (SELECT p_cod FROM Aerolinea WHERE p_nombre = 'Conviasa' LIMIT 1),
     (SELECT l_cod FROM Lugar WHERE l_nombre = 'Distrito Capital' LIMIT 1),
     (SELECT l_cod FROM Lugar WHERE l_nombre = 'Nueva Esparta' LIMIT 1),
@@ -2819,7 +2819,7 @@ SELECT s_cod, 'V03012', '2025-11-18 07:00:00', 300, 1,
 -- SYD -> AKL (Qantas)
 WITH s AS (INSERT INTO Servicio (s_costo, s_millas_otorgar) VALUES (300.00, 1300) RETURNING s_cod)
 INSERT INTO Vuelo (s_cod, v_cod_vue, v_fecha_hora_salida, v_distancia_km, v_duracion_horas, aerolinea_p_cod, lugar_l_cod, lugar_l_cod2, aeronave_mt_cod)
-SELECT s_cod, 'QF143', '2025-11-30 09:00:00', 2100, 3, 
+SELECT s_cod, 'QF143', '2026-03-30 09:00:00', 2100, 3, 
     (SELECT p_cod FROM Aerolinea WHERE p_nombre = 'Red Wings Airlines' LIMIT 1),
     (SELECT l_cod FROM Lugar WHERE l_nombre = 'Australia' LIMIT 1),
     (SELECT l_cod FROM Lugar WHERE l_nombre = 'Nueva Zelanda' LIMIT 1),
@@ -2828,7 +2828,7 @@ SELECT s_cod, 'QF143', '2025-11-30 09:00:00', 2100, 3,
 -- PEK -> SZX (Air China)
 WITH s AS (INSERT INTO Servicio (s_costo, s_millas_otorgar) VALUES (200.00, 1000) RETURNING s_cod)
 INSERT INTO Vuelo (s_cod, v_cod_vue, v_fecha_hora_salida, v_distancia_km, v_duracion_horas, aerolinea_p_cod, lugar_l_cod, lugar_l_cod2, aeronave_mt_cod)
-SELECT s_cod, 'CA1301', '2025-12-05 14:00:00', 1900, 3, 
+SELECT s_cod, 'CA1301', '2026-01-05 14:00:00', 1900, 3, 
     (SELECT p_cod FROM Aerolinea WHERE p_nombre = 'Air China' LIMIT 1),
     (SELECT l_cod FROM Lugar WHERE l_nombre = 'China' LIMIT 1), -- PEK (Beijing) genérico
     (SELECT l_cod FROM Lugar WHERE l_nombre = 'China' LIMIT 1), -- SZX (Shenzhen) genérico
@@ -2837,7 +2837,7 @@ SELECT s_cod, 'CA1301', '2025-12-05 14:00:00', 1900, 3,
 -- MAD -> BCN (Vueling)
 WITH s AS (INSERT INTO Servicio (s_costo, s_millas_otorgar) VALUES (80.00, 300) RETURNING s_cod)
 INSERT INTO Vuelo (s_cod, v_cod_vue, v_fecha_hora_salida, v_distancia_km, v_duracion_horas, aerolinea_p_cod, lugar_l_cod, lugar_l_cod2, aeronave_mt_cod)
-SELECT s_cod, 'VY1001', '2025-11-22 08:00:00', 500, 1, 
+SELECT s_cod, 'VY1001', '2025-12-28 08:00:00', 500, 1, 
     (SELECT p_cod FROM Aerolinea WHERE p_nombre = 'Vueling Airlines' LIMIT 1),
     (SELECT l_cod FROM Lugar WHERE l_nombre = 'España' LIMIT 1),
     (SELECT l_cod FROM Lugar WHERE l_nombre = 'España' LIMIT 1),
@@ -2846,7 +2846,7 @@ SELECT s_cod, 'VY1001', '2025-11-22 08:00:00', 500, 1,
 -- RUH -> JED (Saudia)
 WITH s AS (INSERT INTO Servicio (s_costo, s_millas_otorgar) VALUES (120.00, 500) RETURNING s_cod)
 INSERT INTO Vuelo (s_cod, v_cod_vue, v_fecha_hora_salida, v_distancia_km, v_duracion_horas, aerolinea_p_cod, lugar_l_cod, lugar_l_cod2, aeronave_mt_cod)
-SELECT s_cod, 'SV1020', '2025-12-15 11:00:00', 850, 2, 
+SELECT s_cod, 'SV1020', '2026-02-11 11:00:00', 850, 2, 
     (SELECT p_cod FROM Aerolinea WHERE p_nombre = 'Saudia' LIMIT 1),
     (SELECT l_cod FROM Lugar WHERE l_nombre = 'Riad' LIMIT 1),
     (SELECT l_cod FROM Lugar WHERE l_nombre = 'Arabia Saudita' LIMIT 1),
@@ -2855,7 +2855,7 @@ SELECT s_cod, 'SV1020', '2025-12-15 11:00:00', 850, 2,
 -- MEX -> LAX (Volaris)
 WITH s AS (INSERT INTO Servicio (s_costo, s_millas_otorgar) VALUES (250.00, 1500) RETURNING s_cod)
 INSERT INTO Vuelo (s_cod, v_cod_vue, v_fecha_hora_salida, v_distancia_km, v_duracion_horas, aerolinea_p_cod, lugar_l_cod, lugar_l_cod2, aeronave_mt_cod)
-SELECT s_cod, 'Y4900', '2025-11-28 16:00:00', 2500, 4, 
+SELECT s_cod, 'Y4900', '2025-12-31 16:00:00', 2500, 4, 
     (SELECT p_cod FROM Aerolinea WHERE p_nombre = 'Volaris' LIMIT 1),
     (SELECT l_cod FROM Lugar WHERE l_nombre = 'Mexico' LIMIT 1),
     (SELECT l_cod FROM Lugar WHERE l_nombre = 'Los Angeles' LIMIT 1),
