@@ -1016,16 +1016,32 @@ CREATE OR REPLACE FUNCTION fn_actualizar_nombre_rol(
 
 -- VALIDAR SI UN ROL TIENE UN PERMISO ESPECÍFICO
 CREATE OR REPLACE FUNCTION fn_rol_tiene_permiso(
-    p_id_rol INT,
+    p_cod_usuario INT,
     p_nombre_permiso VARCHAR
 )
 	RETURNS BOOLEAN AS $$
+	DECLARE
+		v_rol_cod INT;
+		v_permiso_cod INT;
 	BEGIN
-	    RETURN EXISTS(
+	    -- Existe cliente
+		SELECT rol_ro_cod INTO v_rol_cod FROM Usuario WHERE u_cod = p_cod_usuario; 
+		
+		-- Buscar el codigo del permiso
+		SELECT pe_cod INTO v_permiso_cod FROM Permiso 
+		WHERE UPPER(pe_nombre) = UPPER(p_nombre_permiso) 
+		LIMIT 1; 
+
+		-- Validar que existe el permiso
+		IF v_permiso_cod IS NULL THEN
+			RAISE NOTICE 'El permiso no existe';
+			RETURN NULL::BOOLEAN;
+		END IF;
+
+		RETURN EXISTS(
 	        SELECT 1 FROM Rol_Per rp
-	        INNER JOIN Permiso p ON rp.Permiso_pe_cod = p.pe_cod
-	        WHERE rp.Rol_ro_cod = p_id_rol 
-	        AND LOWER(p.pe_nombre) = LOWER(p_nombre_permiso)
+	        WHERE rp.rol_ro_cod = v_rol_cod
+			AND rp.permiso_pe_cod = v_permiso_cod
 	    );
 	END;
 	$$ LANGUAGE plpgsql;
@@ -3036,55 +3052,21 @@ $$ LANGUAGE plpgsql;
 
 -- VALIDAR LOS MONTOS DE PAGOS A PROCESAR PARA UNA COMPRA
 CREATE OR REPLACE FUNCTION fn_validar_montos(
-	p_cod_usuario INT,
-	p_montos NUMERIC[],
-	p_es_financiada BOOLEAN DEFAULT FALSE,
-	p_monto_huella NUMERIC DEFAULT 0
+	p_cod_cliente INT,
+	p_cod_compra INT,
+	p_monto NUMERIC,
+	p_es_financiada BOOLEAN DEFAULT FALSE
 )
 RETURNS BOOLEAN AS $$
 DECLARE
-	v_cliente_cod INT;
-	v_compra_cod INT;
-	v_estado_compra VARCHAR;
-	v_es_paquete_compra BOOLEAN;
+	v_compensacion NUMERIC;
 	v_monto_a_pagar NUMERIC(15,2);
 	v_monto_pagado NUMERIC(15,2);
 	v_monto NUMERIC(12,2);
 BEGIN
-	IF ARRAY_LENGTH(p_montos, 1) IS NULL THEN
-		RAISE NOTICE 'Indicar al menos un monto';
-		RETURN NULL::BOOLEAN;
-	END IF;
-	
-	-- Existe cliente
-	SELECT c.c_cod INTO v_cliente_cod FROM Cliente c, Usuario u WHERE c.c_cod = u.cliente_c_cod AND u.u_cod = p_cod_usuario;
-	IF v_cliente_cod IS NULL THEN
-		RAISE NOTICE 'El cliente no se ha encontrado';
-		RETURN NULL::BOOLEAN;
-	END IF;
-
-	-- Validar que la compra existe
-    SELECT * INTO v_compra_cod FROM fn_obtener_compra_activa(v_cliente_cod);
-	IF v_compra_cod IS NULL THEN
-		RAISE NOTICE 'No hay ninguna compra EN PROCESO o PAGANDO';
-		RETURN NULL::BOOLEAN;
-	END IF;
-
-	SELECT co_estado, co_es_paquete, co_monto_total 
-	INTO v_estado_compra, v_es_paquete_compra, v_monto_a_pagar
-	FROM Compra WHERE co_cod = v_compra_cod;
-	
-	-- Validar si es PAGANDO
-	IF v_estado_compra = 'PAGANDO' THEN
-		RAISE NOTICE 'La compra es PAGANDO.';
-		RETURN NULL::BOOLEAN;
-	END IF;
-    
-	-- Validar que es compra de itinerario (no paquete)
-    IF v_es_paquete_compra IS TRUE THEN
-        RAISE NOTICE 'La compra de paquete se paga con millas.';
-        RETURN NULL::BOOLEAN;
-    END IF;	
+	SELECT co_monto_total, COALESCE(co_compensacion_huella, 0) 
+	INTO v_monto_a_pagar, v_compensacion
+	FROM Compra WHERE co_cod = p_cod_compra;
 
 	-- Revisar si se financia, el monto a pagar sera el 10% inicial
 	IF p_es_financiada IS TRUE THEN
@@ -3092,24 +3074,16 @@ BEGIN
 	END IF;
 	
 	-- Mas el monto colocado para la compensacion
-	v_monto_a_pagar := v_monto_a_pagar + p_monto_huella;
-	
-	v_monto_pagado := 0;
-	
-	FOREACH v_monto IN ARRAY p_montos LOOP
-		v_monto_pagado := v_monto_pagado + v_monto;
-		IF v_monto_pagado > v_monto_a_pagar THEN
-			RAISE NOTICE 'Los montos de los pagos sobrepasan el monto total';
-			RETURN FALSE;
-		END IF;
-	END LOOP;
+	v_monto_a_pagar := v_monto_a_pagar + v_compensacion;
 
-	IF v_monto_pagado = v_monto_a_pagar THEN
-		RAISE NOTICE 'Montos adecuados para pagar';
-		RETURN TRUE;
-	ELSE
-		RAISE NOTICE 'Montos insuficientes para pagar';
+	SELECT COALESCE(SUM(pa_monto), 0) INTO v_monto_pagado FROM Pago WHERE compra_co_cod = p_cod_compra;
+
+	IF v_monto_pagado + p_monto > v_monto_a_pagar THEN
+		RAISE NOTICE 'Monto superior';
 		RETURN FALSE;
+	ELSE
+		RAISE NOTICE 'Monto adecuado';
+		RETURN TRUE;
 	END IF;
 END;
 $$ LANGUAGE plpgsql;
@@ -3227,6 +3201,12 @@ BEGIN
 	IF EXISTS (SELECT 1 FROM Cuota WHERE compra_co_cod = v_compra_cod) THEN
 		v_es_financiada := TRUE;
 	END IF;
+	
+	-- Validar que no se pase del monto
+	IF (SELECT * FROM fn_validar_montos(v_cliente_cod, v_compra_cod, p_monto, v_es_financiada)) IS NOT TRUE THEN
+		RAISE NOTICE 'Monto inadecuado para pagar';
+		RETURN NULL::BOOLEAN;
+	END IF;
 
 	IF NOT EXISTS (SELECT 1 FROM Banco WHERE ba_cod = p_tarj_banco_cod) THEN
 		RAISE NOTICE 'El codigo del banco no existe';
@@ -3307,6 +3287,12 @@ BEGIN
 		v_es_financiada := TRUE;
 	END IF;
 
+	-- Validar que no se pase del monto
+	IF (SELECT * FROM fn_validar_montos(v_cliente_cod, v_compra_cod, p_monto, v_es_financiada)) IS NOT TRUE THEN
+		RAISE NOTICE 'Monto inadecuado para pagar';
+		RETURN NULL::BOOLEAN;
+	END IF;
+
 	IF NOT EXISTS (SELECT 1 FROM Banco WHERE ba_cod = p_cheq_banco_cod) THEN
 		RAISE NOTICE 'El codigo del banco no existe';
 		RETURN NULL::BOOLEAN;
@@ -3384,6 +3370,12 @@ BEGIN
 		v_es_financiada := TRUE;
 	END IF;
 
+	-- Validar que no se pase del monto
+	IF (SELECT * FROM fn_validar_montos(v_cliente_cod, v_compra_cod, p_monto, v_es_financiada)) IS NOT TRUE THEN
+		RAISE NOTICE 'Monto inadecuado para pagar';
+		RETURN NULL::BOOLEAN;
+	END IF;
+
 	IF NOT EXISTS (SELECT 1 FROM Banco WHERE ba_cod = p_dep_banco_cod) THEN
 		RAISE NOTICE 'El codigo del banco no existe';
 		RETURN NULL::BOOLEAN;
@@ -3458,7 +3450,13 @@ BEGIN
 	IF EXISTS (SELECT 1 FROM Cuota WHERE compra_co_cod = v_compra_cod) THEN
 		v_es_financiada := TRUE;
 	END IF;
-	
+
+	-- Validar que no se pase del monto
+	IF (SELECT * FROM fn_validar_montos(v_cliente_cod, v_compra_cod, p_monto, v_es_financiada)) IS NOT TRUE THEN
+		RAISE NOTICE 'Monto inadecuado para pagar';
+		RETURN NULL::BOOLEAN;
+	END IF;
+
 	INSERT INTO Metodo_Pago (cliente_c_cod, od_num_referencia, mp_tipo)
 	VALUES (v_cliente_cod, p_op_num_referencia, 'OPERACION_DIGITAL')
 	RETURNING mp_cod INTO v_mp_cod;
@@ -3529,7 +3527,13 @@ BEGIN
 	IF EXISTS (SELECT 1 FROM Cuota WHERE compra_co_cod = v_compra_cod) THEN
 		v_es_financiada := TRUE;
 	END IF;
-	
+
+	-- Validar que no se pase del monto
+	IF (SELECT * FROM fn_validar_montos(v_cliente_cod, v_compra_cod, p_monto, v_es_financiada)) IS NOT TRUE THEN
+		RAISE NOTICE 'Monto inadecuado para pagar';
+		RETURN NULL::BOOLEAN;
+	END IF;
+
 	INSERT INTO Metodo_Pago (cliente_c_cod, u_hash_id, u_direccion_billetera, mp_tipo)
 	VALUES (v_cliente_cod, p_cript_hash_id, p_cript_dir_billetera, 'USDT')
 	RETURNING mp_cod INTO v_mp_cod;
@@ -3614,6 +3618,12 @@ BEGIN
 	END IF;
 
 	v_monto_calculado := ROUND(p_monto/v_tasa_milla, 2);
+
+	-- Validar que no se pase del monto
+	IF (SELECT * FROM fn_validar_montos(v_cliente_cod, v_compra_cod, v_monto_calculado, v_es_financiada)) IS NOT TRUE THEN
+		RAISE NOTICE 'Monto inadecuado para pagar';
+		RETURN NULL::BOOLEAN;
+	END IF;
 
 	INSERT INTO Pago VALUES (v_monto_calculado, CURRENT_TIMESTAMP, v_compra_cod, v_mp_cod);
 	RAISE NOTICE 'Pago creado';
@@ -4552,4 +4562,3 @@ BEGIN
     ORDER BY cli.c_ci, ma.total_por_pais DESC;
 END;
 $$ LANGUAGE plpgsql;
-
