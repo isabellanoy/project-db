@@ -1624,7 +1624,8 @@ BEGIN
     FROM Vuelo v
     JOIN Servicio s ON v.s_cod = s.s_cod
     JOIN Lugar l1 ON v.lugar_l_cod = l1.l_cod     -- Lugar de Salida
-    JOIN Lugar l2 ON v.lugar_l_cod2 = l2.l_cod;   -- Lugar de Llegada
+    JOIN Lugar l2 ON v.lugar_l_cod2 = l2.l_cod   -- Lugar de Llegada
+	WHERE v.v_fecha_hora_salida >= CURRENT_TIMESTAMP;
 END;
 $$ LANGUAGE plpgsql;
 
@@ -1674,7 +1675,8 @@ BEGIN
     JOIN Servicio s ON vi.s_cod = s.s_cod
     JOIN Barco b ON vi.barco_mt_cod = b.mt_cod
     JOIN Lugar l1 ON vi.lugar_l_cod = l1.l_cod
-    JOIN Lugar l2 ON vi.lugar_l_cod2 = l2.l_cod;
+    JOIN Lugar l2 ON vi.lugar_l_cod2 = l2.l_cod
+	WHERE vi.vi_fecha_hora_salida >= CURRENT_TIMESTAMP;
 END;
 $$ LANGUAGE plpgsql;
 
@@ -2990,7 +2992,11 @@ BEGIN
 
 	SELECT SUM(pa_monto) INTO v_monto_pagado FROM Pago WHERE compra_co_cod = v_compra_cod;
 
-	RETURN (v_monto_compra - v_monto_pagado);
+	IF v_monto_pagado IS NOT NULL THEN
+		RETURN (v_monto_compra - v_monto_pagado);
+	END IF;
+	
+	RETURN v_monto_compra;
 
 END;
 $$ LANGUAGE plpgsql;
@@ -4546,3 +4552,4 @@ BEGIN
     ORDER BY cli.c_ci, ma.total_por_pais DESC;
 END;
 $$ LANGUAGE plpgsql;
+

@@ -3037,7 +3037,8 @@ BEGIN
     FROM Vuelo v
     JOIN Servicio s ON v.s_cod = s.s_cod
     JOIN Lugar l1 ON v.lugar_l_cod = l1.l_cod     -- Lugar de Salida
-    JOIN Lugar l2 ON v.lugar_l_cod2 = l2.l_cod;   -- Lugar de Llegada
+    JOIN Lugar l2 ON v.lugar_l_cod2 = l2.l_cod   -- Lugar de Llegada
+	WHERE v.v_fecha_hora_salida >= CURRENT_TIMESTAMP;
 END;
 $$ LANGUAGE plpgsql;
 
@@ -3087,7 +3088,8 @@ BEGIN
     JOIN Servicio s ON vi.s_cod = s.s_cod
     JOIN Barco b ON vi.barco_mt_cod = b.mt_cod
     JOIN Lugar l1 ON vi.lugar_l_cod = l1.l_cod
-    JOIN Lugar l2 ON vi.lugar_l_cod2 = l2.l_cod;
+    JOIN Lugar l2 ON vi.lugar_l_cod2 = l2.l_cod
+	WHERE vi.vi_fecha_hora_salida >= CURRENT_TIMESTAMP;
 END;
 $$ LANGUAGE plpgsql;
 
@@ -4632,6 +4634,9 @@ BEGIN
 		RAISE NOTICE 'La compra sigue EN PROCESO. No se puede pagar';
 		RETURN NULL::BOOLEAN;
 	END IF;
+
+	-- Validar que no se pase del monto
+	
 
 	-- Revisar si se financia
 	v_es_financiada := FALSE;
