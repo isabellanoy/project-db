@@ -188,6 +188,61 @@ router.post('/paquetes', async (req, res) => {
   }
 });
 
+// --- GESTIÓN DE PAQUETES (CRUD) ---
+
+// 1. Eliminar Paquete
+router.delete('/paquetes/:id', async (req, res) => {
+  try {
+    // sp_eliminar_paquete_turistico
+    await pool.query('CALL sp_eliminar_paquete_turistico($1, null)', [req.params.id]);
+    return ok(res, null, 'Paquete eliminado correctamente');
+  } catch (error) {
+    return fail(res, error.message);
+  }
+});
+
+// 2. Actualizar Paquete (Info básica)
+router.put('/paquetes/:id', async (req, res) => {
+  const { nombre, descripcion, personas, costo, costo_millas, restriccion } = req.body;
+  try {
+    // sp_actualizar_paquete_turistico
+    await pool.query('CALL sp_actualizar_paquete_turistico(null, $1, $2, $3, $4, $5, $6, $7)', [
+      parseInt(req.params.id),
+      nombre, 
+      descripcion, 
+      personas ? parseInt(personas) : null, 
+      costo ? parseFloat(costo) : null, 
+      costo_millas ? parseInt(costo_millas) : null,
+      restriccion ? parseInt(restriccion) : null
+    ]);
+    return ok(res, null, 'Paquete actualizado');
+  } catch (error) {
+    return fail(res, error.message);
+  }
+});
+
+// 3. Listar TODOS los servicios (Para el selector de creación de paquete)
+router.get('/options/all-services', async (req, res) => {
+  try {
+    // Query manual unificando tablas para obtener nombres
+    const query = `
+      SELECT s.s_cod as id, v.v_cod_vue || ' (Vuelo)' as label, 'Vuelo' as type FROM Vuelo v JOIN Servicio s ON v.s_cod = s.s_cod
+      UNION ALL
+      SELECT s.s_cod as id, h.p_nombre || ' - ' || ha.ha_numero || ' (Habitación)' as label, 'Hotel' as type FROM Habitacion ha JOIN Hotel h ON ha.Hotel_p_cod = h.p_cod JOIN Servicio s ON ha.s_cod = s.s_cod
+      UNION ALL
+      SELECT s.s_cod as id, b.b_nombre || ' (Crucero)' as label, 'Crucero' as type FROM Viaje vi JOIN Barco b ON vi.Barco_mt_cod = b.mt_cod JOIN Servicio s ON vi.s_cod = s.s_cod
+      UNION ALL
+      SELECT s.s_cod as id, 'Traslado a ' || l.l_nombre as label, 'Traslado' as type FROM Traslado t JOIN Lugar l ON t.Lugar_l_cod = l.l_cod JOIN Servicio s ON t.s_cod = s.s_cod
+      UNION ALL
+      SELECT s.s_cod as id, sa.sa_nombre || ' (Actividad)' as label, 'Actividad' as type FROM Servicio_Adicional sa JOIN Servicio s ON sa.s_cod = s.s_cod
+    `;
+    const result = await pool.query(query);
+    return ok(res, result.rows);
+  } catch (error) {
+    return fail(res, error.message);
+  }
+});
+
 // --- RUTAS CRUD GENÉRICAS ---
 const serviceMappings = [
   { path: '/vuelos', table: 'Vuelo', idField: 's_cod' },

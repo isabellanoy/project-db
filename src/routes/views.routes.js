@@ -96,4 +96,14 @@ router.get('/admin/eliminar', (_req, res) => {
   sendView(res, ['admin', 'crud', 'delete.html']);
 });
 
+router.get('/admin/usuarios', (_req, res) => sendView(res, ['admin', 'manage-users.html']));
+
+// Paquetes
+router.get('/admin/paquetes', (_req, res) => sendView(res, ['admin', 'manage-packages.html']));
+router.get('/admin/paquetes/crear', (_req, res) => sendView(res, ['admin', 'create-package.html']));
+
+// Roles
+router.get('/admin/roles', (_req, res) => sendView(res, ['admin', 'manage-roles.html']));
+router.get('/admin/roles/crear', (_req, res) => sendView(res, ['admin', 'create-role.html']));
+
 module.exports = router;

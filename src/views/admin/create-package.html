@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Nuevo Paquete | Admin</title>
+    <link rel="stylesheet" href="/src/styles/styles.css">
+</head>
+<body>
+    <div class="dashboard-container">
+        <main style="grid-column: 1 / -1; max-width: 800px; margin: 0 auto;">
+            <div class="crud-form-wrapper">
+                <div class="crud-header"><h2>Crear Paquete Turístico</h2></div>
+
+                <form id="packageForm">
+                    <div class="form-row">
+                        <label>Nombre del Paquete</label>
+                        <input type="text" name="nombre" class="form-input" required placeholder="Ej. Escapada Romántica">
+                    </div>
+                    <div class="form-row">
+                        <label>Descripción</label>
+                        <textarea name="descripcion" class="form-input" required></textarea>
+                    </div>
+                    <div class="form-row" style="display:flex; gap:1rem;">
+                        <div style="flex:1">
+                            <label>Costo ($)</label>
+                            <input type="number" name="costo" class="form-input" required min="0" step="0.01">
+                        </div>
+                        <div style="flex:1">
+                            <label>Costo en Millas</label>
+                            <input type="number" name="costo_millas" class="form-input" required min="0">
+                        </div>
+                        <div style="flex:1">
+                            <label>Personas</label>
+                            <input type="number" name="personas" class="form-input" required min="1" value="2">
+                        </div>
+                    </div>
+
+                    <div class="form-row">
+                        <label>Seleccionar Servicios Incluidos (Mantén Ctrl para varios)</label>
+                        <select id="servicesSelect" class="form-input" multiple style="height: 200px;" required>
+                            <option>Cargando servicios...</option>
+                        </select>
+                        <small style="color:#666;">Seleccione al menos uno.</small>
+                    </div>
+
+                    <div class="form-actions" style="justify-content: center;">
+                        <button type="submit" class="btn-primary">Guardar Paquete</button>
+                        <a href="/admin/paquetes" class="btn-danger">Cancelar</a>
+                    </div>
+                </form>
+            </div>
+        </main>
+    </div>
+
+    <script>
+        const servSel = document.getElementById('servicesSelect');
+        const form = document.getElementById('packageForm');
+
+        // Cargar todos los servicios disponibles
+        fetch('/api/services/options/all-services')
+            .then(res => res.json())
+            .then(json => {
+                if(json.ok) {
+                    servSel.innerHTML = json.data.map(s => 
+                        `<option value="${s.id}">[${s.type}] ${s.label}</option>`
+                    ).join('');
+                } else {
+                    servSel.innerHTML = '<option>Error cargando datos</option>';
+                }
+            });
+
+        form.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const selectedServices = Array.from(servSel.selectedOptions).map(opt => parseInt(opt.value));
+            
+            if(selectedServices.length === 0) {
+                alert('Debe seleccionar al menos un servicio');
+                return;
+            }
+
+            const data = {
+                nombre: form.nombre.value,
+                descripcion: form.descripcion.value,
+                personas: form.personas.value,
+                costo: form.costo.value,
+                costo_millas: form.costo_millas.value,
+                servicios: selectedServices
+            };
+
+            const res = await fetch('/api/services/paquetes', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify(data)
+            });
+            
+            const result = await res.json();
+            if(result.ok) {
+                alert('Paquete creado exitosamente');
+                window.location.href = '/admin/paquetes';
+            } else {
+                alert('Error: ' + result.message);
+            }
+        });
+    </script>
+</body>
+</html>

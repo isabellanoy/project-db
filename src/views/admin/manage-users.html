@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Gestión de Usuarios | Admin</title>
+    <link rel="stylesheet" href="/src/styles/styles.css">
+</head>
+<body>
+    <header class="navbar">
+        <div class="navbar__content">
+            <a class="navbar__brand" href="/">ViajesUCAB</a>
+        </div>
+    </header>
+
+    <div class="dashboard-container">
+        <aside class="sidebar">
+            <div class="sidebar__title"><h3>Panel Admin</h3></div>
+            <nav class="sidebar__nav">
+                <a href="/admin/proveedores">Proveedores</a>
+                <a href="/admin/paquetes">Paquetes</a>
+                <a href="/admin/promociones">Promociones</a>
+                <a href="/admin/roles">Roles</a>
+                <a href="/admin/reportes">Reportes</a>
+                <a href="/admin/usuarios" class="active">Usuarios</a> 
+            </nav>
+        </aside>
+
+        <main style="grid-column: 2 / -1;">
+            <h1 class="section__title">Gestión de Usuarios y Roles</h1>
+
+            <div class="data-table-container">
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Usuario</th>
+                            <th>Correo</th>
+                            <th>Rol Actual</th>
+                            <th>Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody id="usersBody">
+                        <tr><td colspan="5" style="text-align:center;">Cargando...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </main>
+    </div>
+
+    <div id="roleModal" class="modal-overlay">
+        <div class="modal-card">
+            <h3>Asignar Nuevo Rol</h3>
+            <p>Usuario: <strong id="modalUserName">...</strong></p>
+            
+            <div class="form-group">
+                <select id="newRoleSelect" class="form-input"></select>
+            </div>
+
+            <div style="display: flex; gap: 1rem; justify-content: center; margin-top: 1.5rem;">
+                <button onclick="closeModal()" class="btn-secondary">Cancelar</button>
+                <button onclick="saveRole()" class="btn-primary">Guardar Cambios</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let selectedUserId = null;
+        const modal = document.getElementById('roleModal');
+        const roleSelect = document.getElementById('newRoleSelect');
+
+        // 1. Cargar Usuarios
+        const loadUsers = async () => {
+            const res = await fetch('/api/users');
+            const json = await res.json();
+            const tbody = document.getElementById('usersBody');
+            
+            if(!json.ok) return;
+
+            tbody.innerHTML = json.data.map(u => `
+                <tr>
+                    <td>${u.u_cod}</td>
+                    <td><strong>${u.u_username}</strong></td>
+                    <td>${u.u_correo}</td>
+                    <td><span class="rating-box" style="font-weight:500; font-size:0.8rem;">${u.ro_nombre}</span></td>
+                    <td>
+                        <button onclick="openModal(${u.u_cod}, '${u.u_username}', ${u.ro_cod})" 
+                                class="btn-secondary" style="padding: 0.25rem 0.5rem; font-size: 0.8rem;">
+                            Cambiar Rol
+                        </button>
+                    </td>
+                </tr>
+            `).join('');
+        };
+
+        // 2. Cargar Roles (para el select)
+        const loadRoles = async () => {
+            const res = await fetch('/api/roles'); // Reusa la ruta existente
+            const json = await res.json();
+            if(json.ok) {
+                roleSelect.innerHTML = json.data.map(r => 
+                    `<option value="${r.cod || r.ro_cod}">${r.nombre_rol || r.ro_nombre}</option>`
+                ).join('');
+            }
+        };
+
+        function openModal(id, name, currentRole) {
+            selectedUserId = id;
+            document.getElementById('modalUserName').textContent = name;
+            roleSelect.value = currentRole; // Pre-selecciona el rol actual
+            modal.classList.add('active');
+        }
+
+        function closeModal() {
+            modal.classList.remove('active');
+            selectedUserId = null;
+        }
+
+        async function saveRole() {
+            const newRoleId = roleSelect.value;
+            
+            const res = await fetch(`/api/users/${selectedUserId}/role`, {
+                method: 'PUT',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({ roleId: newRoleId })
+            });
+
+            const json = await res.json();
+            if(json.ok) {
+                alert('Rol actualizado');
+                closeModal();
+                loadUsers(); // Recargar tabla
+            } else {
+                alert('Error: ' + json.message);
+            }
+        }
+
+        // Init
+        loadUsers();
+        loadRoles();
+    </script>
+</body>
+</html>

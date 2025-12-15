@@ -2,7 +2,7 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <title>Promociones | Admin</title>
+    <title>Roles y Permisos | Admin</title>
     <link rel="stylesheet" href="/src/styles/styles.css">
 </head>
 <body>
@@ -18,8 +18,8 @@
             <nav class="sidebar__nav">
                 <a href="/admin/proveedores">Proveedores</a>
                 <a href="/admin/paquetes">Paquetes</a>
-                <a href="/admin/promociones" class="active">Promociones</a>
-                <a href="/admin/roles">Roles</a>
+                <a href="/admin/promociones">Promociones</a>
+                <a href="/admin/roles" class="active">Roles</a>
                 <a href="/admin/reportes">Reportes</a>
                 <a href="/admin/usuarios">Usuarios</a>
             </nav>
@@ -27,53 +27,44 @@
 
         <main style="grid-column: 2 / -1;">
             <div style="display: flex; justify-content: space-between; margin-bottom: 1.5rem;">
-                <h1 class="section__title">Gestión de Promociones</h1>
-                <a href="/admin/promociones/crear" class="cta-button" style="background: #000;">+ Nueva Promo</a>
+                <h1 class="section__title">Gestión de Roles</h1>
+                <a href="/admin/roles/crear" class="cta-button" style="background: #000;">+ Nuevo Rol</a>
             </div>
 
             <div class="data-table-container">
                 <table class="data-table">
                     <thead>
                         <tr>
-                            <th>Nombre</th>
-                            <th>Descuento</th>
-                            <th>Proveedor</th>
-                            <th>Servicios</th>
+                            <th>Rol</th>
+                            <th>Permisos Asignados</th>
                             <th>Acciones</th>
                         </tr>
                     </thead>
-                    <tbody id="promotionsBody"></tbody>
+                    <tbody id="rolesBody"></tbody>
                 </table>
             </div>
         </main>
     </div>
     
     <script>
-        // Script embebido simple para listar
-        fetch('/api/promotions')
+        fetch('/api/roles')
             .then(r => r.json())
             .then(res => {
-                const tbody = document.getElementById('promotionsBody');
-                if(!res.ok || res.data.length === 0) {
-                    tbody.innerHTML = '<tr><td colspan="5" style="text-align:center; padding:1rem;">No hay promociones activas.</td></tr>';
-                    return;
-                }
-                tbody.innerHTML = res.data.map(p => `
+                const tbody = document.getElementById('rolesBody');
+                tbody.innerHTML = res.data.map(r => `
                     <tr>
-                        <td><strong>${p.nombre}</strong></td>
-                        <td style="color: green; font-weight: bold;">${p.porcentaje}%</td>
-                        <td>${p.nombre_proveedor} (${p.tipo_proveedor})</td>
-                        <td>${p.cantidad_servicios} items</td>
+                        <td><strong>${r.nombre_rol}</strong></td>
+                        <td style="font-size:0.85rem; color:#555;">${r.descripcion_permisos || 'Ninguno'}</td>
                         <td>
-                            <button onclick="deletePromo(${p.id_promocion})" style="color: red; border:none; background:none; cursor:pointer; text-decoration:underline;">Eliminar</button>
+                            <button onclick="deleteRole(${r.cod})" class="btn-danger" style="padding: 0.25rem 0.5rem; font-size: 0.8rem;">Eliminar</button>
                         </td>
                     </tr>
                 `).join('');
             });
 
-        function deletePromo(id) {
-            if(confirm('¿Eliminar promoción?')) {
-                fetch(`/api/promotions/${id}`, { method: 'DELETE' })
+        function deleteRole(id) {
+            if(confirm('¿Eliminar este rol? Asegúrese de que no tenga usuarios asignados.')) {
+                fetch(`/api/roles/${id}`, { method: 'DELETE' })
                     .then(r => r.json())
                     .then(res => {
                         if(res.ok) window.location.reload();

@@ -152,4 +152,34 @@ router.get('/permisos', async (_req, res, next) => {
   }
 });
 
+// Actualizar nombre del Rol
+router.put('/roles/:id', async (req, res, next) => {
+  const { nombre } = req.body;
+  try {
+    // fn_actualizar_nombre_rol
+    const result = await pool.query('SELECT * FROM fn_actualizar_nombre_rol($1, $2)', [req.params.id, nombre]);
+    if (result.rows[0].exito) return res.json({ ok: true, message: 'Rol actualizado' });
+    return res.status(400).json({ ok: false, message: result.rows[0].mensaje });
+  } catch (error) {
+    return next(error);
+  }
+});
+
+// Eliminar Rol
+router.delete('/roles/:id', async (req, res, next) => {
+  try {
+    // No hay sp_eliminar_rol, usamos DELETE directo
+    // Primero eliminar referencias en Rol_Per
+    await pool.query('DELETE FROM Rol_Per WHERE Rol_ro_cod = $1', [req.params.id]);
+    const result = await pool.query('DELETE FROM Rol WHERE ro_cod = $1 RETURNING *', [req.params.id]);
+    
+    if (result.rows.length > 0) return res.json({ ok: true, message: 'Rol eliminado' });
+    return res.status(404).json({ ok: false, message: 'Rol no encontrado o tiene usuarios asociados' });
+  } catch (error) {
+    // Error probable: FK constraint con Usuario
+    if (error.code === '23503') return res.status(400).json({ ok: false, message: 'No se puede eliminar: Hay usuarios con este rol.' });
+    return next(error);
+  }
+});
+
 module.exports = router;

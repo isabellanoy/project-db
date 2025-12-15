@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Nuevo Rol | Admin</title>
+    <link rel="stylesheet" href="/src/styles/styles.css">
+    <style>
+        .perm-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 10px; margin-top: 10px; }
+        .perm-item { background: #f8fafc; padding: 5px; border: 1px solid #e2e8f0; border-radius: 4px; font-size: 0.9rem; }
+    </style>
+</head>
+<body>
+    <div class="dashboard-container">
+        <main style="grid-column: 1 / -1; max-width: 800px; margin: 0 auto;">
+            <div class="crud-form-wrapper">
+                <div class="crud-header"><h2>Crear Nuevo Rol</h2></div>
+
+                <form id="roleForm">
+                    <div class="form-row">
+                        <label>Nombre del Rol</label>
+                        <input type="text" name="nombre" class="form-input" required placeholder="Ej. Supervisor de Ventas">
+                    </div>
+
+                    <div class="form-row">
+                        <label>Asignar Permisos</label>
+                        <div id="permissionsContainer" class="perm-grid">
+                            Cargando permisos...
+                        </div>
+                    </div>
+
+                    <div class="form-actions" style="justify-content: center;">
+                        <button type="submit" class="btn-primary">Guardar Rol</button>
+                        <a href="/admin/roles" class="btn-danger">Cancelar</a>
+                    </div>
+                </form>
+            </div>
+        </main>
+    </div>
+
+    <script>
+        const container = document.getElementById('permissionsContainer');
+        const form = document.getElementById('roleForm');
+
+        // Cargar permisos disponibles
+        fetch('/api/permisos')
+            .then(res => res.json())
+            .then(json => {
+                if(json.ok) {
+                    container.innerHTML = json.data.map(p => `
+                    <label class="perm-item">
+                        <input type="checkbox" name="permiso" value="${p.cod}"> 
+                        ${p.nombre_permiso} <small style="color:#666">(${p.tipo_permiso})</small>
+                    </label>
+                `).join('');
+                }
+            });
+
+        form.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const selectedPerms = Array.from(document.querySelectorAll('input[name="permiso"]:checked'))
+                                       .map(cb => parseInt(cb.value));
+
+            const data = {
+                nombre: form.nombre.value,
+                permisos: selectedPerms // Backend espera array de enteros
+            };
+
+            const res = await fetch('/api/roles', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify(data)
+            });
+            
+            const result = await res.json();
+            if(result.ok) {
+                alert('Rol creado exitosamente');
+                window.location.href = '/admin/roles';
+            } else {
+                alert('Error: ' + result.message);
+            }
+        });
+    </script>
+</body>
+</html>
