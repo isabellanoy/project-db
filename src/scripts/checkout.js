@@ -188,7 +188,7 @@
     } catch (error) {
       alert(`Error en el pago: ${error.message}`);
       payWithMilesBtn.disabled = false;
-      payWithMilesBtn.textContent = '💎 Pagar con Millas';
+      payWithMilesBtn.textContent = ' Pagar con Millas';
     }
   };
 
