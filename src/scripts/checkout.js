@@ -7,30 +7,31 @@
   const regularPaymentDiv = document.getElementById('regularPayment');
   const packagePaymentDiv = document.getElementById('packagePayment');
   
-    const confirmPaymentBtn = document.getElementById('confirmPaymentBtn');
-    const payWithMilesBtn = document.getElementById('payWithMilesBtn');
+  const confirmPaymentBtn = document.getElementById('confirmPaymentBtn');
+  const payWithMilesBtn = document.getElementById('payWithMilesBtn');
     
-    const financeCheckbox = document.querySelector('input[name="finance"]');
+  const financeCheckbox = document.querySelector('input[name="finance"]');
     
-    // Referencias a los formularios y sus campos
-    const cardForm = document.getElementById('card-form');
-    const digitalForm = document.getElementById('digital-form');
-    const paymentMethodRadios = document.querySelectorAll('input[name="paymentMethod"]');
+  // Referencias a los formularios y sus campos
+  const cardForm = document.getElementById('card-form');
+  const digitalForm = document.getElementById('digital-form');
+  const paymentMethodRadios = document.querySelectorAll('input[name="paymentMethod"]');
   
-    // Campos de Tarjeta
-    const cardNumberInput = document.getElementById('card-number');
-    const cardHolderInput = document.getElementById('card-holder');
-    const cardExpiryInput = document.getElementById('card-expiry');
-    const cardCvcInput = document.getElementById('card-cvc');
-    const bankSelect = document.getElementById('bank-select');
-    const cardIssuerInput = document.getElementById('card-issuer');
-    const cardAmountInput = document.getElementById('card-amount');
+  // Campos de Tarjeta
+  const cardNumberInput = document.getElementById('card-number');
+  const cardHolderInput = document.getElementById('card-holder');
+  const cardExpiryInput = document.getElementById('card-expiry');
+  const cardCvcInput = document.getElementById('card-cvc');
+  const bankSelect = document.getElementById('bank-select');
+  const cardIssuerInput = document.getElementById('card-issuer');
+  const cardAmountInput = document.getElementById('card-amount');
   
-    // Campos de Operación Digital
-    const digitalRefInput = document.getElementById('digital-ref');
-    const digitalAmountInput = document.getElementById('digital-amount');
+  // Campos de Operación Digital
+  const digitalRefInput = document.getElementById('digital-ref');
+  const digitalAmountInput = document.getElementById('digital-amount');
   
-    let totalAmount = 0;  let activePurchaseId = null;
+  let totalAmount = 0;  
+  let activePurchaseId = null;
 
   // 1. Cargar Bancos
   const loadBanks = async () => {
@@ -78,8 +79,16 @@
         regularPaymentDiv.style.display = 'block';
         packagePaymentDiv.style.display = 'none';
         totalAmountLabel.textContent = `Bs. ${totalAmount.toFixed(2)}`;
-        document.getElementById('card-amount').value = totalAmount.toFixed(2);
-        document.getElementById('digital-amount').value = totalAmount.toFixed(2);
+        
+        // Asignamos el valor y también el atributo MAX
+        if (cardAmountInput) {
+            cardAmountInput.value = totalAmount.toFixed(2);
+            cardAmountInput.max = totalAmount.toFixed(2);
+        }
+        if (digitalAmountInput) {
+            digitalAmountInput.value = totalAmount.toFixed(2);
+            digitalAmountInput.max = totalAmount.toFixed(2);
+        }
       }
     } catch (error) {
       console.error(error);
@@ -127,20 +136,20 @@
         payEndpoint = '/api/checkout/pay/card';
         payBody = {
           usuario_id: userId,
-          monto: document.getElementById('card-amount').value,
-          numero: document.getElementById('card-number').value,
-          cvc: document.getElementById('card-cvc').value,
-          titular: document.getElementById('card-holder').value,
-          vencimiento: document.getElementById('card-expiry').value, // Formato YYYY-MM
-          banco_id: document.getElementById('bank-select').value,
-          emisor: document.getElementById('card-issuer').value
+          monto: cardAmountInput.value, // Usamos la variable definida arriba
+          numero: cardNumberInput.value,
+          cvc: cardCvcInput.value,
+          titular: cardHolderInput.value,
+          vencimiento: cardExpiryInput.value,
+          banco_id: bankSelect.value,
+          emisor: cardIssuerInput.value
         };
       } else { // digital
         payEndpoint = '/api/checkout/pay/digital';
         payBody = {
           usuario_id: userId,
-          monto: document.getElementById('digital-amount').value,
-          referencia: document.getElementById('digital-ref').value
+          monto: digitalAmountInput.value,
+          referencia: digitalRefInput.value
         };
       }
       
@@ -192,12 +201,25 @@
     }
   };
 
+  // Función auxiliar para forzar el máximo
+  const enforceMaxAmount = (e) => {
+      const input = e.target;
+      if (input.max && parseFloat(input.value) > parseFloat(input.max)) {
+          input.value = input.max;
+      }
+  };
+
   // Asignar Event Listeners
   document.addEventListener('DOMContentLoaded', () => {
     loadSummary();
     loadBanks();
     paymentMethodRadios.forEach(radio => radio.addEventListener('change', handleMethodChange));
+    
     if(confirmPaymentBtn) confirmPaymentBtn.addEventListener('click', handlePayment);
     if(payWithMilesBtn) payWithMilesBtn.addEventListener('click', handleMilesPayment);
+
+    // --- AGREGAR VALIDACIÓN DE MONTO MÁXIMO EN TIEMPO REAL ---
+    if(cardAmountInput) cardAmountInput.addEventListener('input', enforceMaxAmount);
+    if(digitalAmountInput) digitalAmountInput.addEventListener('input', enforceMaxAmount);
   });
 })();
