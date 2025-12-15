@@ -105,7 +105,7 @@
     } else if (type === 'paquetes') {
       html += `
         <div style="background: #f0fdf4; padding: 1rem; border-radius: 5px; width: 100%;">
-            <p style="color: #166534; font-weight: 600;">💎 Precio en Millas: ${item.pt_costo_millas}</p>
+            <p style="color: #166534; font-weight: 600;"> Precio en Millas: ${item.pt_costo_millas}</p>
             <p style="font-size: 0.9rem;">Capacidad: ${item.pt_cant_personas} personas</p>
             <p style="font-size: 0.8rem; margin-top:0.5rem; color: #b91c1c;">Importante: Solo puede reservar un paquete si NO tiene una compra activa.</p>
         </div>`;

@@ -35,7 +35,7 @@
                   </p>
               </div>
               <div style="text-align: right;">
-                  <div class="big-number" style="font-size: 1.5rem;">$${parseFloat(trip.co_monto_total).toFixed(2)}</div>
+                  <div class="big-number" style="font-size: 1.5rem;">Bs. ${parseFloat(trip.co_monto_total).toFixed(2)}</div>
                   <div style="color: #2563eb; font-weight: 600; font-size: 0.9rem;">
                     +${trip.co_millas_a_agregar} Millas
                   </div>

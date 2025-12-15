@@ -9,11 +9,12 @@
 <body>
     <header class="navbar">
         <div class="navbar__content">
-            <a class="navbar__brand" href="/">ViajesUCAB</a>
+            <a class="navbar__brand" href="/home">ViajesUCAB</a>
             <nav class="navbar__links">
                 <a href="/busqueda?type=vuelos">Vuelos</a>
                 <a href="/busqueda?type=alojamientos">Hoteles</a>
                 <a href="/busqueda?type=viajes">Cruceros</a>
+                <a href="/busqueda?type=paquetes">Paquetes</a>
             </nav>
             <div style="display: flex; gap: 10px;">
                 <a href="/itinerario" class="cta-button" style="background: #000;">Itinerario</a>
@@ -24,7 +25,7 @@
     <main class="wrapper">
         <h1 style="text-align: center; margin-bottom: 1.5rem;">Busca tu próximo viaje</h1>
 
-        <form class="search-filter-bar">
+        <!-- <form class="search-filter-bar">
             <div class="filter-group">
                 <label>Tipo</label>
                 <select class="form-input" id="searchType">
@@ -58,7 +59,7 @@
                 </select>
             </div>
             <button type="button" id="mainSearchBtn" class="cta-button" style="background: #000; height: 42px;">Buscar viajes</button>
-        </form>
+        </form> -->
 
         <div class="search-layout">
             <aside class="filters-sidebar">
@@ -75,14 +76,14 @@
                         <label><input type="radio" name="type" value="paquetes"> Paquetes</label>
                     </div>
                 </div>
-
+<!-- 
                 <div class="filter-section">
                     <h4>Moneda</h4>
                     <select class="form-input">
                         <option>USD</option>
                         <option>Bs</option>
                     </select>
-                </div>
+                </div> -->
 
                 <div class="filter-section">
                     <h4>Promociones</h4>
