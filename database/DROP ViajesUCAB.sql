@@ -169,6 +169,7 @@ DROP FUNCTION IF EXISTS fn_listar_tipos_camarote_viaje;
 DROP FUNCTION IF EXISTS fn_listar_servicios_viaje;
 DROP FUNCTION IF EXISTS fn_listar_vehiculos_traslado;
 DROP FUNCTION IF EXISTS fn_obtener_monto_restante;
+DROP FUNCTION IF EXISTS fn_generar_factura;
 
 DROP PROCEDURE IF EXISTS sp_actualizar_aerolinea;
 DROP PROCEDURE IF EXISTS sp_cambiar_clave_usuario;

@@ -5953,3 +5953,176 @@ BEGIN
     ORDER BY cli.c_ci, ma.total_por_pais DESC;
 END;
 $$ LANGUAGE plpgsql;
+
+-- FUNCION PARA GENERAR FACTURA DE COMPRA
+CREATE OR REPLACE FUNCTION fn_generar_factura(p_compra_cod INT)
+RETURNS TABLE (
+    compra_cod INT,
+    fecha_compra TIMESTAMP,
+    cliente_ci INT,
+    cliente_nombre VARCHAR,
+    cliente_direccion VARCHAR,
+    monto_total_compra NUMERIC(15,2),
+    compensacion_huella NUMERIC(12,2),
+    es_paquete BOOLEAN,
+    paquete_nombre VARCHAR,
+    tipo_servicio VARCHAR,
+    servicio_descripcion VARCHAR,
+    servicio_info_adicional_1 VARCHAR,
+    servicio_info_adicional_2 VARCHAR,
+    cantidad INT,
+    costo_subtotal NUMERIC(12,2)
+) AS $$
+DECLARE
+    v_es_paquete BOOLEAN;
+BEGIN
+    -- Verificar si la compra es un paquete
+    SELECT co_es_paquete INTO v_es_paquete FROM Compra WHERE co_cod = p_compra_cod;
+
+    -- Si es un paquete, devolver la informacion del paquete como un solo item
+    IF v_es_paquete THEN
+        RETURN QUERY
+        SELECT
+            c.co_cod,
+            c.co_fecha_hora,
+            cli.c_CI,
+            (cli.c_p_nombre || ' ' || cli.c_p_apellido)::VARCHAR,
+            cli.c_direccion,
+            c.co_monto_total,
+            c.co_compensacion_huella,
+            c.co_es_paquete,
+            pt.pt_nombre::VARCHAR,
+            'Paquete Turístico'::VARCHAR,
+            pt.pt_descripcion::VARCHAR,
+            ('Para ' || pt.pt_cant_personas || ' persona(s)')::VARCHAR,
+            NULL::VARCHAR,
+            1,
+            pt.pt_costo
+        FROM Compra c
+        JOIN Cliente cli ON c.cliente_c_cod = cli.c_cod
+        JOIN Paquete_Turistico pt ON c.paquete_turistico_pt_cod = pt.pt_cod
+        WHERE c.co_cod = p_compra_cod;
+
+    -- Si no es un paquete, devolver los servicios individuales
+    ELSE
+        RETURN QUERY
+        WITH Compra_Base AS (
+            SELECT
+                c.co_cod,
+                c.co_fecha_hora,
+                cli.c_CI,
+                (cli.c_p_nombre || ' ' || cli.c_p_apellido)::VARCHAR AS cliente_nombre,
+                cli.c_direccion,
+                c.co_monto_total,
+                c.co_compensacion_huella,
+                c.co_es_paquete,
+                NULL::VARCHAR AS paquete_nombre
+            FROM Compra c
+            JOIN Cliente cli ON c.cliente_c_cod = cli.c_cod
+            WHERE c.co_cod = p_compra_cod
+        )
+        -- Vuelos
+        SELECT
+            cb.co_cod, cb.co_fecha_hora, cb.c_ci, cb.cliente_nombre, cb.c_direccion,
+            cb.co_monto_total, cb.co_compensacion_huella, cb.co_es_paquete, cb.paquete_nombre,
+            'Vuelo'::VARCHAR,
+            ('Vuelo ' || v.v_cod_vue || ' de ' || l_origen.l_nombre || ' a ' || l_destino.l_nombre)::VARCHAR,
+            ('Aerolínea: ' || aer.p_nombre || ' - Clase: ' || ca.ca_nombre)::VARCHAR,
+            ('Fecha: ' || TO_CHAR(v.v_fecha_hora_salida, 'YYYY-MM-DD HH24:MI'))::VARCHAR,
+            bv.bv_cant_pasajeros,
+            bv.res_costo_sub_total
+        FROM Compra_Base cb
+        JOIN Boleto_Vuelo bv ON cb.co_cod = bv.compra_co_cod
+        JOIN Vuelo v ON bv.vuelo_s_cod = v.s_cod
+        JOIN Aerolinea aer ON v.aerolinea_p_cod = aer.p_cod
+        JOIN Lugar l_origen ON v.lugar_l_cod = l_origen.l_cod
+        JOIN Lugar l_destino ON v.lugar_l_cod2 = l_destino.l_cod
+        JOIN Clase_Asiento ca ON bv.clase_asiento_ca_cod = ca.ca_cod
+        WHERE bv.res_anulado IS NOT TRUE
+
+        UNION ALL
+
+        -- Hospedajes
+        SELECT
+            cb.co_cod, cb.co_fecha_hora, cb.c_ci, cb.cliente_nombre, cb.c_direccion,
+            cb.co_monto_total, cb.co_compensacion_huella, cb.co_es_paquete, cb.paquete_nombre,
+            'Hospedaje'::VARCHAR,
+            ('Estadía en ' || h.p_nombre || ', ' || l.l_nombre)::VARCHAR,
+            ('Habitación: ' || th.th_nombre)::VARCHAR,
+            ('Check-in: ' || TO_CHAR(dh.dh_fecha_hora_check_in, 'YYYY-MM-DD'))::VARCHAR,
+            dh.dh_cant_noches,
+            dh.res_costo_sub_total
+        FROM Compra_Base cb
+        JOIN Detalle_Hospedaje dh ON cb.co_cod = dh.compra_co_cod
+        JOIN Habitacion hab ON dh.habitacion_s_cod = hab.s_cod
+        JOIN Hotel h ON hab.hotel_p_cod = h.p_cod
+        JOIN Tipo_Habitacion th ON hab.tipo_habitacion_th_cod = th.th_cod
+        JOIN Lugar l ON h.lugar_l_cod = l.l_cod
+        WHERE dh.res_anulado IS NOT TRUE
+
+        UNION ALL
+
+        -- Traslados
+        SELECT
+            cb.co_cod, cb.co_fecha_hora, cb.c_ci, cb.cliente_nombre, cb.c_direccion,
+            cb.co_monto_total, cb.co_compensacion_huella, cb.co_es_paquete, cb.paquete_nombre,
+            'Traslado'::VARCHAR,
+            ('Traslado desde ' || l_origen.l_nombre || ' a ' || term.to_direccion)::VARCHAR,
+            ('Vehículo: ' || mo.mv_nombre || ' (' || ma.mav_nombre || ')')::VARCHAR,
+            ('Fecha: ' || TO_CHAR(dt.dt_fecha_hora, 'YYYY-MM-DD HH24:MI'))::VARCHAR,
+            1, -- Cantidad es siempre 1 para un traslado
+            dt.res_costo_sub_total
+        FROM Compra_Base cb
+        JOIN Detalle_Traslado dt ON cb.co_cod = dt.compra_co_cod
+        JOIN Traslado t ON dt.traslado_s_cod = t.s_cod
+        JOIN Automovil a ON dt.automovil_mt_cod = a.mt_cod
+        JOIN Modelo mo ON a.modelo_mv_cod = mo.mv_cod
+        JOIN Marca ma ON mo.marca_mav_cod = ma.mav_cod
+        JOIN Lugar l_origen ON t.lugar_l_cod = l_origen.l_cod
+        JOIN Terminal_Operacion term ON t.terminal_operacion_to_cod = term.to_cod
+        WHERE dt.res_anulado IS NOT TRUE
+
+        UNION ALL
+
+        -- Cruceros (Boleto de Viaje)
+        SELECT
+            cb.co_cod, cb.co_fecha_hora, cb.c_ci, cb.cliente_nombre, cb.c_direccion,
+            cb.co_monto_total, cb.co_compensacion_huella, cb.co_es_paquete, cb.paquete_nombre,
+            'Crucero'::VARCHAR,
+            ('Viaje en crucero ' || cru.p_nombre || ' de ' || l_origen.l_nombre || ' a ' || l_destino.l_nombre)::VARCHAR,
+            ('Barco: ' || bar.b_nombre || ' - Camarote: ' || tc.tc_nombre)::VARCHAR,
+            ('Salida: ' || TO_CHAR(v.vi_fecha_hora_salida, 'YYYY-MM-DD HH24:MI'))::VARCHAR,
+            bvi.bvi_cant_pasajeros,
+            bvi.res_costo_sub_total
+        FROM Compra_Base cb
+        JOIN Boleto_Viaje bvi ON cb.co_cod = bvi.compra_co_cod
+        JOIN Viaje v ON bvi.viaje_s_cod = v.s_cod
+        JOIN Crucero cru ON v.crucero_p_cod = cru.p_cod
+        JOIN Lugar l_origen ON v.lugar_l_cod = l_origen.l_cod
+        JOIN Lugar l_destino ON v.lugar_l_cod2 = l_destino.l_cod
+        JOIN Tipo_Camarote tc ON bvi.tipo_camarote_tc_cod = tc.tc_cod
+        JOIN Barco bar ON v.barco_mt_cod = bar.mt_cod
+        WHERE bvi.res_anulado IS NOT TRUE
+
+        UNION ALL
+
+        -- Actividades (Entrada Digital)
+        SELECT
+            cb.co_cod, cb.co_fecha_hora, cb.c_ci, cb.cliente_nombre, cb.c_direccion,
+            cb.co_monto_total, cb.co_compensacion_huella, cb.co_es_paquete, cb.paquete_nombre,
+            'Actividad Turística'::VARCHAR,
+            sa.sa_nombre::VARCHAR,
+            ('Lugar: ' || l.l_nombre)::VARCHAR,
+            ('Operador: ' || ot.p_nombre)::VARCHAR,
+            ed.ed_cant_personas,
+            ed.res_costo_sub_total
+        FROM Compra_Base cb
+        JOIN Entrada_Digital ed ON cb.co_cod = ed.compra_co_cod
+        JOIN Servicio_Adicional sa ON ed.servicio_adicional_s_cod = sa.s_cod
+        JOIN Operador_Turistico ot ON sa.operador_turistico_p_cod = ot.p_cod
+        JOIN Lugar l ON sa.lugar_l_cod = l.l_cod
+        WHERE ed.res_anulado IS NOT TRUE;
+    END IF;
+END;
+$$ LANGUAGE plpgsql;
+

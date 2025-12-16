@@ -43,7 +43,7 @@
           </div>
           
           <div style="margin-top: 1.5rem; padding-top: 1rem; border-top: 1px solid #eee; display: flex; gap: 1rem;">
-              ${trip.co_estado === 'FINALIZADO' ? '<button class="btn-secondary" style="padding: 0.5rem 1rem; font-size: 0.85rem;">Descargar Factura</button>' : ''}
+              ${trip.co_estado === 'FINALIZADO' ? `<button class="btn-secondary download-invoice-btn" data-compra-id="${trip.co_cod}" style="padding: 0.5rem 1rem; font-size: 0.85rem;">Descargar Factura</button>` : ''}
           </div>
       </div>
     `;
@@ -87,6 +87,41 @@
       loader.textContent = 'Error al cargar el historial.';
     }
   };
+
+  document.addEventListener('click', async (event) => {
+    if (event.target.classList.contains('download-invoice-btn')) {
+      const compraId = event.target.dataset.compraId;
+      event.target.disabled = true;
+      event.target.textContent = 'Generando...';
+
+      try {
+        const response = await fetch('/api/jasper/invoice', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ compra_cod: parseInt(compraId) }),
+        });
+
+        if (!response.ok) {
+          const errorText = await response.text();
+          throw new Error(`Error ${response.status}: ${errorText}`);
+        }
+
+        const blob = await response.blob();
+        const url = window.URL.createObjectURL(blob);
+        window.open(url, '_blank');
+        window.URL.revokeObjectURL(url);
+
+      } catch (error) {
+        console.error('Error al generar factura:', error);
+        alert('No se pudo generar la factura. Inténtalo de nuevo.');
+      } finally {
+        event.target.disabled = false;
+        event.target.textContent = 'Descargar Factura';
+      }
+    }
+  });
 
   document.addEventListener('DOMContentLoaded', loadHistory);
 })();
