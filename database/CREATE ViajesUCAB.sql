@@ -5030,7 +5030,7 @@ BEGIN
 		RETURN NULL::BOOLEAN;
 	END IF;
 
-	v_monto_calculado := ROUND(p_monto/v_tasa_milla, 2);
+	v_monto_calculado := p_monto * v_tasa_milla;
 
 	-- Validar que no se pase del monto
 	IF (SELECT * FROM fn_validar_montos(v_cliente_cod, v_compra_cod, v_monto_calculado, v_es_financiada)) IS NOT TRUE THEN
@@ -5043,12 +5043,6 @@ BEGIN
 
 	-- Validar si ya completa la compra
 	CALL sp_validar_pagos(v_compra_cod, v_es_financiada);
-
-	-- Una vez comprobado si se pago o no completo, eliminar el pago y volverlo a insertar con el monto de la milla
-	DELETE FROM Pago WHERE compra_co_cod = v_compra_cod AND metodo_pago_mp_cod = v_mp_cod;
-
-	INSERT INTO Pago VALUES (p_monto, CURRENT_TIMESTAMP, v_compra_cod, v_mp_cod);
-	RAISE NOTICE 'Pago re-insertado (valor milla)';
 
 	-- Descontar las millas
 	UPDATE Metodo_Pago SET m_cant_acumulada = m_cant_acumulada - p_monto 
@@ -5092,6 +5086,7 @@ DECLARE
 	v_millas_disponibles BIGINT;
 	v_millas_a_descontar INT;
 	v_cod_milla INT;
+	v_tasa_milla NUMERIC;
 BEGIN
 	SELECT mp_cod, m_cant_acumulada INTO v_cod_milla, v_millas_disponibles 
 	FROM Metodo_Pago 
@@ -5106,7 +5101,15 @@ BEGIN
 		RETURN FALSE;
 	END IF;
 
-	INSERT INTO Pago VALUES (v_millas_a_descontar, CURRENT_TIMESTAMP, p_compra_cod, v_cod_milla);
+	SELECT tca_valor_tasa INTO v_tasa_milla 
+	FROM Tasa_Cambio WHERE tca_divisa_origen = 'MILLA' AND tca_fecha_hora_fin IS NULL;
+
+	IF v_tasa_milla IS NULL THEN
+		RAISE NOTICE 'No se encontro la tasa de las millas';
+		RETURN FALSE;
+	END IF;
+
+	INSERT INTO Pago VALUES (v_millas_a_descontar * v_tasa_milla, CURRENT_TIMESTAMP, p_compra_cod, v_cod_milla);
 	RAISE NOTICE 'Pago con millas efectuado';
 	
 	UPDATE Metodo_Pago SET m_cant_acumulada = m_cant_acumulada - v_millas_a_descontar 
@@ -5646,7 +5649,7 @@ BEGIN
         SELECT 
             p.compra_co_cod,
             p.pa_fecha_hora AS fecha_pago,
-            p.pa_monto AS cantidad_millas -- Asumiendo que m_cant_acumulada guarda lo usado en la tx
+            p.pa_monto AS cantidad_millas
         FROM Pago p
         JOIN Metodo_Pago mp ON p.metodo_pago_mp_cod = mp.mp_cod
         WHERE mp.mp_tipo = 'MILLA'
@@ -5722,77 +5725,52 @@ BEGIN
 			(COALESCE(lug_sa3.l_nombre, '') <> 'Venezuela') AND
 			(COALESCE(lug_sa4.l_nombre, '') <> 'Venezuela'))
     )
-    SELECT 
-        pm.compra_co_cod,
-        pm.fecha_pago,
-        pm.cantidad_millas,
+        SELECT
+        pm.compra_co_cod AS id_compra,
+        pm.fecha_pago AS fecha,
         
-        -- Obtener Tasa Histórica de la Milla (MILLA -> VES)
-        COALESCE((
-            SELECT tca_valor_tasa FROM Tasa_Cambio 
-            WHERE tca_divisa_origen = 'MILLA' 
-              AND pm.fecha_pago >= tca_fecha_hora_tasa 
-              AND (tca_fecha_hora_fin IS NULL OR pm.fecha_pago < tca_fecha_hora_fin)
-            ORDER BY tca_fecha_hora_tasa DESC LIMIT 1
-        ), 0) AS tasa_milla,
+		-- Dividir por la tasa de Milla
+        ROUND(pm.cantidad_millas / NULLIF(tasa.milla, 0), 2) AS millas_usadas,
+        tasa.milla AS tasa_milla_bs,
+        pm.cantidad_millas AS valor_total_bs,
+        tasa.usd AS tasa_usd,
+        
+		-- Bs a USD
+        ROUND(pm.cantidad_millas / NULLIF(tasa.usd, 0), 2) AS usd_cubierto,
 
-        -- Calcular Valor en VES
-        (pm.cantidad_millas * COALESCE((
-            SELECT tca_valor_tasa FROM Tasa_Cambio 
-            WHERE tca_divisa_origen = 'MILLA' 
-              AND pm.fecha_pago >= tca_fecha_hora_tasa 
-              AND (tca_fecha_hora_fin IS NULL OR pm.fecha_pago < tca_fecha_hora_fin)
-            ORDER BY tca_fecha_hora_tasa DESC LIMIT 1
-        ), 0)) AS valor_ves,
+        tasa.eur AS tasa_eur,
 
-        -- Obtener Tasa Histórica USD (USD -> VES)
-        COALESCE((
-            SELECT tca_valor_tasa FROM Tasa_Cambio 
-            WHERE tca_divisa_origen = 'USD' 
-              AND pm.fecha_pago >= tca_fecha_hora_tasa 
-              AND (tca_fecha_hora_fin IS NULL OR pm.fecha_pago < tca_fecha_hora_fin)
-            ORDER BY tca_fecha_hora_tasa DESC LIMIT 1
-        ), 1) AS tasa_usd, -- Evitar división por cero
+        -- Bs a EUR
+        ROUND(pm.cantidad_millas / NULLIF(tasa.eur, 0), 2) AS eur_cubierto
 
-        -- Calcular Valor Cubierto en USD (Valor VES / Tasa USD)
-        ROUND(
-            (pm.cantidad_millas * 
-			COALESCE(
-			(SELECT tca_valor_tasa 
-			FROM Tasa_Cambio WHERE tca_divisa_origen = 'MILLA' 
-			AND pm.fecha_pago >= tca_fecha_hora_tasa ORDER BY tca_fecha_hora_tasa DESC LIMIT 1), 0)) 
-            / 
-            NULLIF(COALESCE(
-			(SELECT tca_valor_tasa 
-			FROM Tasa_Cambio WHERE tca_divisa_origen = 'USD' 
-			AND pm.fecha_pago >= tca_fecha_hora_tasa ORDER BY tca_fecha_hora_tasa DESC LIMIT 1), 1), 0)
-        , 2) AS valor_usd,
+    FROM 
+        Pagos_Milla pm
+    JOIN 
+        Compras_Internacionales ci ON pm.compra_co_cod = ci.co_cod
+    -- Query para obtener las tasas aparte
+    CROSS JOIN LATERAL (
+        SELECT
+            -- Tasa Histórica de la Milla (Bs / Milla)
+            (SELECT tca_valor_tasa FROM Tasa_Cambio 
+             WHERE tca_divisa_origen = 'MILLA' 
+               AND pm.fecha_pago >= tca_fecha_hora_tasa 
+               AND (tca_fecha_hora_fin IS NULL OR pm.fecha_pago < tca_fecha_hora_fin)
+             ORDER BY tca_fecha_hora_tasa DESC LIMIT 1) AS milla,
+            
+            -- Tasa Histórica USD (Bs / USD)
+            (SELECT tca_valor_tasa FROM Tasa_Cambio 
+             WHERE tca_divisa_origen = 'USD' 
+               AND pm.fecha_pago >= tca_fecha_hora_tasa 
+               AND (tca_fecha_hora_fin IS NULL OR pm.fecha_pago < tca_fecha_hora_fin)
+             ORDER BY tca_fecha_hora_tasa DESC LIMIT 1) AS usd,
 
-        -- Obtener Tasa Histórica EUR (EUR -> VES)
-        COALESCE((
-            SELECT tca_valor_tasa FROM Tasa_Cambio 
-            WHERE tca_divisa_origen = 'EUR' 
-              AND pm.fecha_pago >= tca_fecha_hora_tasa 
-              AND (tca_fecha_hora_fin IS NULL OR pm.fecha_pago < tca_fecha_hora_fin)
-            ORDER BY tca_fecha_hora_tasa DESC LIMIT 1
-        ), 1) AS tasa_eur,
-
-        -- Calcular Valor Cubierto en EUR
-        ROUND(
-            (pm.cantidad_millas * 
-			COALESCE(
-			(SELECT tca_valor_tasa 
-			FROM Tasa_Cambio WHERE tca_divisa_origen = 'MILLA' 
-			AND pm.fecha_pago >= tca_fecha_hora_tasa ORDER BY tca_fecha_hora_tasa DESC LIMIT 1), 0)) 
-            / 
-            NULLIF(COALESCE(
-			(SELECT tca_valor_tasa 
-			FROM Tasa_Cambio WHERE tca_divisa_origen = 'EUR' 
-			AND pm.fecha_pago >= tca_fecha_hora_tasa ORDER BY tca_fecha_hora_tasa DESC LIMIT 1), 1), 0)
-        , 2) AS valor_eur
-
-    FROM Pagos_Milla pm
-    JOIN Compras_Internacionales ci ON pm.compra_co_cod = ci.co_cod;
+            -- Tasa Histórica EUR (Bs / EUR)
+            (SELECT tca_valor_tasa FROM Tasa_Cambio 
+             WHERE tca_divisa_origen = 'EUR' 
+               AND pm.fecha_pago >= tca_fecha_hora_tasa 
+               AND (tca_fecha_hora_fin IS NULL OR pm.fecha_pago < tca_fecha_hora_fin)
+             ORDER BY tca_fecha_hora_tasa DESC LIMIT 1) AS eur
+    ) AS tasa;
 END;
 $$ LANGUAGE plpgsql;
 
