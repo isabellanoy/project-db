@@ -13,7 +13,12 @@
     '/admin/reportes': 'ver_reportes_financieros',
     '/mis-viajes': 'ver_mis_pagos',
     '/perfil': 'ver_mi_perfil',
-    '/busqueda': 'ver_servicios'
+    '/busqueda': 'ver_servicios',
+    '/admin/promociones': 'gestionar_promociones',
+    '/admin/roles': 'gestionar_roles',
+    '/admin/paquetes': 'gestionar_paquetes',
+    '/admin/usuarios': 'gestionar_usuarios',
+    '/admin/proveedores': 'gestionar_proveedores'
   };
 
   const currentPage = window.location.pathname;

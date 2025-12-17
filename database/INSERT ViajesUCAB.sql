@@ -1967,6 +1967,7 @@ INSERT INTO Permiso (pe_nombre, pe_tipo) VALUES ('editar_usuario', 'usuario');
 INSERT INTO Permiso (pe_nombre, pe_tipo) VALUES ('eliminar_usuario', 'usuario');
 INSERT INTO Permiso (pe_nombre, pe_tipo) VALUES ('ver_usuarios', 'usuario');
 INSERT INTO Permiso (pe_nombre, pe_tipo) VALUES ('asignar_rol', 'usuario');
+INSERT INTO Permiso (pe_nombre, pe_tipo) VALUES ('gestionar_usuarios', 'usuario');
 
 -- Permisos de Gestión de Roles y Permisos
 INSERT INTO Permiso (pe_nombre, pe_tipo) VALUES ('crear_rol', 'rol');
@@ -1974,8 +1975,11 @@ INSERT INTO Permiso (pe_nombre, pe_tipo) VALUES ('editar_rol', 'rol');
 INSERT INTO Permiso (pe_nombre, pe_tipo) VALUES ('eliminar_rol', 'rol');
 INSERT INTO Permiso (pe_nombre, pe_tipo) VALUES ('ver_roles', 'rol');
 INSERT INTO Permiso (pe_nombre, pe_tipo) VALUES ('gestionar_permisos', 'rol');
+INSERT INTO Permiso (pe_nombre, pe_tipo) VALUES ('gestionar_roles', 'rol');
 
 -- Permisos de Servicios (Aerolinea, Crucero, Transporte, Hotel)
+INSERT INTO Permiso (pe_nombre, pe_tipo) VALUES ('gestionar_proveedores', 'servicio');
+
 INSERT INTO Permiso (pe_nombre, pe_tipo) VALUES ('crear_aerolinea', 'servicio');
 INSERT INTO Permiso (pe_nombre, pe_tipo) VALUES ('editar_aerolinea', 'servicio');
 INSERT INTO Permiso (pe_nombre, pe_tipo) VALUES ('eliminar_aerolinea', 'servicio');
@@ -2010,6 +2014,10 @@ INSERT INTO Permiso (pe_nombre, pe_tipo) VALUES ('eliminar_promocion', 'promocio
 INSERT INTO Permiso (pe_nombre, pe_tipo) VALUES ('ver_promocion', 'promocion');
 INSERT INTO Permiso (pe_nombre, pe_tipo) VALUES ('activar_promocion', 'promocion');
 INSERT INTO Permiso (pe_nombre, pe_tipo) VALUES ('desactivar_promocion', 'promocion');
+INSERT INTO Permiso (pe_nombre, pe_tipo) VALUES ('gestionar_promociones', 'promocion');
+
+-- Permisos de Paquete
+INSERT INTO Permiso (pe_nombre, pe_tipo) VALUES ('gestionar_paquetes', 'paquete');
 
 -- Permisos de Reservas
 INSERT INTO Permiso (pe_nombre, pe_tipo) VALUES ('crear_reserva', 'reserva');
