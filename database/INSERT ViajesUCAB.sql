@@ -2355,7 +2355,7 @@ INSERT INTO Usuario (u_username, u_correo, u_hash_clave, cliente_c_cod, rol_ro_c
 	('adougherty7', 'fgarham7@so-net.ne.jp', '$2a$04$.ln/OtPeSvd46x.lnv4O5uM.oN2uTZRmtUsSGCcUxfjXVBGRoCNbq', (SELECT c_cod FROM Cliente WHERE c_ci = 22123456), (SELECT ro_cod FROM Rol WHERE ro_nombre = 'Cliente')),
 	('mripsher8', 'rbrunstan8@mashable.com', '$2a$04$fPi/Rpnif.ep2GXtNxcNeudruPY9RXcouCK6v7vghkPI7X9vSt7ja', (SELECT c_cod FROM Cliente WHERE c_ci = 22987654), (SELECT ro_cod FROM Rol WHERE ro_nombre = 'Cliente')),
 	('upeachment9', 'bserginson9@answers.com', '$2a$04$QeRJEmmmtN/WBdsKEaV3s.qQqHboW9NcMzJtdn8wc20OnYG75SB3m', (SELECT c_cod FROM Cliente WHERE c_ci = 14321098), (SELECT ro_cod FROM Rol WHERE ro_nombre = 'Cliente')),
-	('josemrmetra', 'jenuneslaguna@gmail.com', 'clavesupersecreta', (SELECT c_cod FROM Cliente WHERE c_ci = 30714884), (SELECT ro_cod FROM Rol WHERE ro_nombre = 'Cliente'));
+	('josemrmetra', 'jenuneslaguna@gmail.com', 'clavesupersecreta', (SELECT c_cod FROM Cliente WHERE c_ci = 30714884), (SELECT ro_cod FROM Rol WHERE ro_nombre = 'Administrador'));
 
 INSERT INTO Crucero (p_nombre, p_fecha_afiliacion, c_fecha_constitucion, lugar_l_cod) VALUES
 	('Royal Caribbean Int.', '2015-06-15', '1968-01-01', (SELECT l_cod FROM Lugar WHERE l_nombre = 'Estados Unidos' LIMIT 1)),
