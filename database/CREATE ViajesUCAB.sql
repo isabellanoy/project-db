@@ -5633,12 +5633,12 @@ RETURNS TABLE (
     id_compra INT,
     fecha TIMESTAMP,
     millas_usadas NUMERIC(12,2),
-    tasa_milla_bs NUMERIC(10, 4), -- Valor de 1 Milla en VES
-    valor_total_bs NUMERIC(15, 2), -- Valor total en VES
+    tasa_milla NUMERIC(10, 4), -- Valor de 1 Milla en VES
+    total_bs NUMERIC(15, 2), -- Valor total en VES
     tasa_usd NUMERIC(10, 4), -- Tasa USD en la fecha
-    usd_cubierto NUMERIC(15, 2), -- Equivalente en USD
+    usd NUMERIC(15, 2), -- Equivalente en USD
     tasa_eur NUMERIC(10, 4), -- Tasa EUR en la fecha
-    eur_cubierto NUMERIC(15, 2)  -- Equivalente en EUR
+    eur NUMERIC(15, 2)  -- Equivalente en EUR
 ) AS $$
 BEGIN
     RETURN QUERY
@@ -5646,11 +5646,11 @@ BEGIN
         -- Seleccionar pagos hechos con millas
         SELECT 
             p.compra_co_cod,
-            p.pa_fecha_hora AS fecha_pago,
-            p.pa_monto AS cantidad_millas
+            SUM(p.pa_monto) AS cantidad_millas
         FROM Pago p
         JOIN Metodo_Pago mp ON p.metodo_pago_mp_cod = mp.mp_cod
         WHERE mp.mp_tipo = 'MILLA'
+		GROUP BY p.compra_co_cod
     ),
     Compras_Internacionales AS (
         -- Filtrar compras que tengan algún destino/lugar fuera de Venezuela
@@ -5725,7 +5725,7 @@ BEGIN
     )
         SELECT
         pm.compra_co_cod AS id_compra,
-        pm.fecha_pago AS fecha,
+        co.co_fecha_hora,
         
 		-- Dividir por la tasa de Milla
         ROUND(pm.cantidad_millas / NULLIF(tasa.milla, 0), 2) AS millas_usadas,
@@ -5745,28 +5745,29 @@ BEGIN
         Pagos_Milla pm
     JOIN 
         Compras_Internacionales ci ON pm.compra_co_cod = ci.co_cod
+	JOIN Compra co ON ci.co_cod = co.co_cod
     -- Query para obtener las tasas aparte
     CROSS JOIN LATERAL (
         SELECT
             -- Tasa Histórica de la Milla (Bs / Milla)
             (SELECT tca_valor_tasa FROM Tasa_Cambio 
              WHERE tca_divisa_origen = 'MILLA' 
-               AND pm.fecha_pago >= tca_fecha_hora_tasa 
-               AND (tca_fecha_hora_fin IS NULL OR pm.fecha_pago < tca_fecha_hora_fin)
+               AND co.co_fecha_hora >= tca_fecha_hora_tasa 
+               AND (tca_fecha_hora_fin IS NULL OR co.co_fecha_hora < tca_fecha_hora_fin)
              ORDER BY tca_fecha_hora_tasa DESC LIMIT 1) AS milla,
             
             -- Tasa Histórica USD (Bs / USD)
             (SELECT tca_valor_tasa FROM Tasa_Cambio 
              WHERE tca_divisa_origen = 'USD' 
-               AND pm.fecha_pago >= tca_fecha_hora_tasa 
-               AND (tca_fecha_hora_fin IS NULL OR pm.fecha_pago < tca_fecha_hora_fin)
+               AND co.co_fecha_hora >= tca_fecha_hora_tasa 
+               AND (tca_fecha_hora_fin IS NULL OR co.co_fecha_hora < tca_fecha_hora_fin)
              ORDER BY tca_fecha_hora_tasa DESC LIMIT 1) AS usd,
 
             -- Tasa Histórica EUR (Bs / EUR)
             (SELECT tca_valor_tasa FROM Tasa_Cambio 
              WHERE tca_divisa_origen = 'EUR' 
-               AND pm.fecha_pago >= tca_fecha_hora_tasa 
-               AND (tca_fecha_hora_fin IS NULL OR pm.fecha_pago < tca_fecha_hora_fin)
+               AND co.co_fecha_hora >= tca_fecha_hora_tasa 
+               AND (tca_fecha_hora_fin IS NULL OR co.co_fecha_hora < tca_fecha_hora_fin)
              ORDER BY tca_fecha_hora_tasa DESC LIMIT 1) AS eur
     ) AS tasa;
 END;
