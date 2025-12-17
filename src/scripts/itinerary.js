@@ -21,7 +21,10 @@
       case 'vuelo':
         title = `VUELO: ${item.v_cod_vue}`;
         desc = `${item.origen} &#8594; ${item.destino}`;
-        details = `${item.bv_cant_pasajeros} Pasajeros`;
+        // details = `${item.bv_cant_pasajeros} Pasajeros`;
+        details = `<button class="manage-travelers-btn" data-service-id="${item.vuelo_s_cod}" data-capacity="${item.bv_cant_pasajeros}">
+                    ${item.bv_cant_pasajeros} Pasajeros (Gestionar)
+                   </button>`;
         break;
       case 'hotel':
         title = `HOTEL: ${item.nombre_hotel}`;
@@ -31,7 +34,10 @@
       case 'crucero':
         title = `CRUCERO: ${item.barco}`;
         desc = 'Viaje en alta mar';
-        details = `${item.bvi_cant_pasajeros} Pasajeros`;
+        // details = `${item.bvi_cant_pasajeros} Pasajeros`;
+        details = `<button class="manage-travelers-btn" data-service-id="${item.viaje_s_cod}" data-capacity="${item.bvi_cant_pasajeros}">
+                    ${item.bvi_cant_pasajeros} Pasajeros (Gestionar)
+                   </button>`;
         break;
       case 'traslado':
         title = `TRASLADO`;
@@ -41,7 +47,10 @@
       case 'actividad':
         title = `ACTIVIDAD: ${item.nombre_actividad}`;
         desc = 'Entrada Digital';
-        details = `${item.ed_cant_personas} Personas`;
+        // details = `${item.ed_cant_personas} Personas`;
+        details = `<button class="manage-travelers-btn" data-service-id="${item.servicio_adicional_s_cod}" data-capacity="${item.ed_cant_personas}">
+                    ${item.ed_cant_personas} Personas (Gestionar)
+                   </button>`;
         break;
     }
 
@@ -92,11 +101,116 @@
       document.getElementById('totalBs').textContent = `Bs. ${total.toLocaleString('es-VE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
       document.getElementById('totalMillas').textContent = millas;
 
+      setupModalHandlers();
+
     } catch (error) {
       console.error(error);
       listContainer.innerHTML = '<p style="color: red">Error cargando itinerario.</p>';
     }
   };
+
+  // --- Modal Logic ---
+  const modal = document.getElementById('travelerModal');
+  const closeModalBtn = document.getElementById('closeModalBtn');
+  const addForm = document.getElementById('addTravelerForm');
+  const removeForm = document.getElementById('removeTravelerForm');
+  const modalServiceIdInput = document.getElementById('modalServiceId');
+
+  const setupModalHandlers = () => {
+    document.querySelectorAll('.manage-travelers-btn').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        const serviceId = e.target.dataset.serviceId;
+        modalServiceIdInput.value = serviceId;
+        modal.classList.add('active');
+      });
+    });
+  };
+
+  if (closeModalBtn) {
+    closeModalBtn.addEventListener('click', () => {
+      modal.classList.remove('active');
+    });
+  }
+
+  // Cerrar al hacer click fuera
+  window.addEventListener('click', (e) => {
+    if (e.target === modal) {
+      modal.classList.remove('active');
+    }
+  });
+
+  // Agregar Viajero
+  if (addForm) {
+    addForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const serviceId = modalServiceIdInput.value;
+      
+      const payload = {
+        usuario_id: userId,
+        servicio_reserva_id: serviceId,
+        nombre: document.getElementById('t_nombre').value,
+        s_nombre: document.getElementById('t_s_nombre').value,
+        apellido: document.getElementById('t_apellido').value,
+        s_apellido: document.getElementById('t_s_apellido').value,
+        correo: document.getElementById('t_correo').value,
+        fnacim: document.getElementById('t_fnacim').value
+      };
+
+      try {
+        const res = await fetch('/api/travelers/add', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+        const data = await res.json();
+
+        if (data.ok) {
+          alert('Viajero agregado correctamente');
+          window.location.reload();
+        } else {
+          alert('Error: ' + data.message);
+        }
+      } catch (err) {
+        console.error(err);
+        alert('Error de conexión');
+      }
+    });
+  }
+
+  // Eliminar Viajero
+  if (removeForm) {
+    removeForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const serviceId = modalServiceIdInput.value;
+      const email = document.getElementById('t_remove_email').value;
+
+      if (!confirm(`¿Seguro que deseas eliminar al viajero con correo ${email}?`)) return;
+
+      try {
+        const res = await fetch('/api/travelers/remove', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            usuario_id: userId,
+            servicio_reserva_id: serviceId,
+            correo: email
+          })
+        });
+        const data = await res.json();
+
+        if (data.ok) {
+          alert('Viajero eliminado correctamente');
+          window.location.reload();
+        } else {
+          alert('Error: ' + data.message);
+        }
+      } catch (err) {
+        console.error(err);
+        alert('Error de conexión');
+      }
+    });
+  }
+
 
   document.addEventListener('DOMContentLoaded', () => {
     loadItinerary();

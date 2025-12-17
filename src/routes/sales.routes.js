@@ -492,6 +492,170 @@ router.get('/history', async (req, res) => {
 });
 
 // =====================================================================
+// GESTIÓN DE VIAJEROS (AGREGAR / ELIMINAR)
+// =====================================================================
+
+// Helper para determinar tipo de servicio y capacidad
+async function getServiceInfo(compraId, servicioId) {
+  // Check Vuelo
+  let res = await pool.query('SELECT bv_cant_pasajeros FROM Boleto_Vuelo WHERE Compra_co_cod = $1 AND Vuelo_s_cod = $2', [compraId, servicioId]);
+  if (res.rows.length > 0) return { type: 'VUELO', max: res.rows[0].bv_cant_pasajeros };
+
+  // Check Hotel
+  res = await pool.query(`
+      SELECT h.ha_capacidad 
+      FROM Detalle_Hospedaje dh
+      JOIN Habitacion h ON dh.Habitacion_s_cod = h.s_cod
+      WHERE dh.Compra_co_cod = $1 AND dh.Habitacion_s_cod = $2`, [compraId, servicioId]);
+  if (res.rows.length > 0) return { type: 'HOTEL', max: res.rows[0].ha_capacidad };
+
+  // Check Crucero
+  res = await pool.query('SELECT bvi_cant_pasajeros FROM Boleto_Viaje WHERE Compra_co_cod = $1 AND Viaje_s_cod = $2', [compraId, servicioId]);
+  if (res.rows.length > 0) return { type: 'CRUCERO', max: res.rows[0].bvi_cant_pasajeros };
+
+  // Check Traslado
+  res = await pool.query(`
+      SELECT a.mt_capacidad 
+      FROM Detalle_Traslado dt
+      JOIN Automovil a ON dt.Automovil_mt_cod = a.mt_cod
+      WHERE dt.Compra_co_cod = $1 AND dt.Traslado_s_cod = $2`, [compraId, servicioId]);
+  if (res.rows.length > 0) return { type: 'TRASLADO', max: res.rows[0].mt_capacidad };
+
+  // Check Actividad
+  res = await pool.query('SELECT ed_cant_personas FROM Entrada_Digital WHERE Compra_co_cod = $1 AND Servicio_Adicional_s_cod = $2', [compraId, servicioId]);
+  if (res.rows.length > 0) return { type: 'ENTRADA', max: res.rows[0].ed_cant_personas };
+
+  return null;
+}
+
+router.post('/travelers/add', async (req, res) => {
+  const { 
+    usuario_id, servicio_reserva_id, 
+    nombre, s_nombre, apellido, s_apellido, correo, fnacim 
+  } = req.body;
+
+  if (!usuario_id || !servicio_reserva_id || !nombre || !apellido || !correo || !fnacim) {
+    return fail(res, 'Faltan datos obligatorios para agregar viajero.');
+  }
+
+  try {
+    const p_usuario_id = parseInt(usuario_id, 10);
+    const p_servicio_reserva_id = parseInt(servicio_reserva_id, 10);
+
+    if (isNaN(p_usuario_id) || isNaN(p_servicio_reserva_id)) return fail(res, 'IDs inválidos.');
+
+    // 1. Obtener Cliente
+    const clientRes = await pool.query('SELECT cliente_c_cod FROM Usuario WHERE u_cod = $1', [p_usuario_id]);
+    if (clientRes.rows.length === 0) return fail(res, 'Usuario no encontrado');
+    const clienteId = clientRes.rows[0].cliente_c_cod;
+
+    // 2. Obtener Compra Activa
+    const compraRes = await pool.query('SELECT fn_obtener_compra_activa($1) as id', [clienteId]);
+    const compraId = compraRes.rows[0].id;
+    if (!compraId) return fail(res, 'No hay compra activa en proceso');
+
+    // 3. Determinar Tipo y Capacidad
+    const serviceInfo = await getServiceInfo(compraId, p_servicio_reserva_id);
+    if (!serviceInfo) return fail(res, 'Servicio no encontrado en la compra activa');
+
+    const { type, max } = serviceInfo;
+
+    // 4. Verificar Capacidad Actual
+    let countQuery = '';
+    if (type === 'VUELO') countQuery = 'SELECT COUNT(*) FROM Via_Res WHERE Boleto_Vuelo_co_cod = $1 AND Boleto_Vuelo_s_cod = $2';
+    if (type === 'HOTEL') countQuery = 'SELECT COUNT(*) FROM Via_Res WHERE Detalle_Hospedaje_co_cod = $1 AND Detalle_Hospedaje_s_cod = $2';
+    if (type === 'CRUCERO') countQuery = 'SELECT COUNT(*) FROM Via_Res WHERE Boleto_Viaje_co_cod = $1 AND Boleto_Viaje_s_cod = $2';
+    if (type === 'TRASLADO') countQuery = 'SELECT COUNT(*) FROM Via_Res WHERE Detalle_Traslado_co_cod = $1 AND Detalle_Traslado_s_cod = $2';
+    if (type === 'ENTRADA') countQuery = 'SELECT COUNT(*) FROM Via_Res WHERE Entrada_Digital_co_cod = $1 AND Entrada_Digital_s_cod = $2';
+
+    const countRes = await pool.query(countQuery, [compraId, p_servicio_reserva_id]);
+    const currentCount = parseInt(countRes.rows[0].count);
+
+    if (currentCount >= max) return fail(res, `Capacidad máxima alcanzada (${currentCount}/${max})`);
+
+    // 5. Insertar o Buscar Viajero
+    let viajeroId;
+    const existingViajero = await pool.query('SELECT via_cod FROM Viajero WHERE via_correo = $1', [correo]);
+    if (existingViajero.rows.length > 0) {
+      viajeroId = existingViajero.rows[0].via_cod;
+    } else {
+      const insertViajero = await pool.query(`
+        INSERT INTO Viajero (via_p_nombre, via_s_nombre, via_p_apellido, via_s_apellido, via_correo, via_fecha_nacimiento)
+        VALUES ($1, $2, $3, $4, $5, $6) RETURNING via_cod`, 
+        [nombre, s_nombre || null, apellido, s_apellido || null, correo, fnacim]);
+      viajeroId = insertViajero.rows[0].via_cod;
+    }
+
+    // 6. Vincular Viajero (Via_Res)
+    let insertQuery = '';
+    if (type === 'VUELO') insertQuery = 'INSERT INTO Via_Res (viajero_via_cod, boleto_vuelo_co_cod, boleto_vuelo_s_cod) VALUES ($1, $2, $3)';
+    if (type === 'HOTEL') insertQuery = 'INSERT INTO Via_Res (viajero_via_cod, detalle_hospedaje_co_cod, detalle_hospedaje_s_cod) VALUES ($1, $2, $3)';
+    if (type === 'CRUCERO') insertQuery = 'INSERT INTO Via_Res (viajero_via_cod, boleto_viaje_co_cod, boleto_viaje_s_cod) VALUES ($1, $2, $3)';
+    if (type === 'TRASLADO') insertQuery = 'INSERT INTO Via_Res (viajero_via_cod, detalle_traslado_co_cod, detalle_traslado_s_cod) VALUES ($1, $2, $3)';
+    if (type === 'ENTRADA') insertQuery = 'INSERT INTO Via_Res (viajero_via_cod, entrada_digital_co_cod, entrada_digital_s_cod) VALUES ($1, $2, $3)';
+
+    await pool.query(insertQuery, [viajeroId, compraId, p_servicio_reserva_id]);
+
+    return ok(res, null, 'Viajero agregado exitosamente.');
+
+  } catch (error) {
+    console.error(error);
+    return fail(res, error.message);
+  }
+});
+
+router.post('/travelers/remove', async (req, res) => {
+  const { usuario_id, servicio_reserva_id, correo } = req.body;
+
+  if (!usuario_id || !servicio_reserva_id || !correo) {
+    return fail(res, 'Faltan datos obligatorios para eliminar viajero.');
+  }
+
+  try {
+    const p_usuario_id = parseInt(usuario_id, 10);
+    const p_servicio_reserva_id = parseInt(servicio_reserva_id, 10);
+
+    if (isNaN(p_usuario_id) || isNaN(p_servicio_reserva_id)) return fail(res, 'IDs inválidos.');
+
+    // 1. Obtener Cliente
+    const clientRes = await pool.query('SELECT cliente_c_cod FROM Usuario WHERE u_cod = $1', [p_usuario_id]);
+    if (clientRes.rows.length === 0) return fail(res, 'Usuario no encontrado');
+    const clienteId = clientRes.rows[0].cliente_c_cod;
+
+    // 2. Obtener Compra Activa
+    const compraRes = await pool.query('SELECT fn_obtener_compra_activa($1) as id', [clienteId]);
+    const compraId = compraRes.rows[0].id;
+    if (!compraId) return fail(res, 'No hay compra activa');
+
+    // 3. Obtener Viajero
+    const viajeroRes = await pool.query('SELECT via_cod FROM Viajero WHERE via_correo = $1', [correo]);
+    if (viajeroRes.rows.length === 0) return fail(res, 'Viajero no encontrado');
+    const viajeroId = viajeroRes.rows[0].via_cod;
+
+    // 4. Determinar Tipo
+    const serviceInfo = await getServiceInfo(compraId, p_servicio_reserva_id);
+    if (!serviceInfo) return fail(res, 'Servicio no encontrado en la compra activa');
+    const { type } = serviceInfo;
+
+    // 5. Eliminar de Via_Res
+    let deleteQuery = '';
+    if (type === 'VUELO') deleteQuery = 'DELETE FROM Via_Res WHERE viajero_via_cod = $1 AND boleto_vuelo_co_cod = $2 AND boleto_vuelo_s_cod = $3';
+    if (type === 'HOTEL') deleteQuery = 'DELETE FROM Via_Res WHERE viajero_via_cod = $1 AND detalle_hospedaje_co_cod = $2 AND detalle_hospedaje_s_cod = $3';
+    if (type === 'CRUCERO') deleteQuery = 'DELETE FROM Via_Res WHERE viajero_via_cod = $1 AND boleto_viaje_co_cod = $2 AND boleto_viaje_s_cod = $3';
+    if (type === 'TRASLADO') deleteQuery = 'DELETE FROM Via_Res WHERE viajero_via_cod = $1 AND detalle_traslado_co_cod = $2 AND detalle_traslado_s_cod = $3';
+    if (type === 'ENTRADA') deleteQuery = 'DELETE FROM Via_Res WHERE viajero_via_cod = $1 AND entrada_digital_co_cod = $2 AND entrada_digital_s_cod = $3';
+
+    await pool.query(deleteQuery, [viajeroId, compraId, p_servicio_reserva_id]);
+
+    return ok(res, null, 'Viajero eliminado exitosamente.');
+
+  } catch (error) {
+    console.error(error);
+    return fail(res, error.message);
+  }
+});
+
+// =====================================================================
 // RUTAS CRUD (ADMINISTRACIÓN Y CONSULTAS BÁSICAS)
 // =====================================================================
 

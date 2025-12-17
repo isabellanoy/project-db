@@ -48,6 +48,67 @@
         </div>
     </main>
 
+    <!-- Modal Gestión de Viajeros -->
+    <div id="travelerModal" class="modal-overlay">
+        <div class="modal-card">
+            <div class="modal-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
+                <h3 class="modal-title">Gestionar Viajeros</h3>
+                <button id="closeModalBtn" style="background: none; border: none; font-size: 1.5rem; cursor: pointer;">&times;</button>
+            </div>
+            
+            <div class="modal-body">
+                <p style="margin-bottom: 1rem; font-size: 0.9rem; color: #666;">
+                    Agrega los datos de los acompañantes para este servicio.
+                </p>
+
+                <!-- Formulario Agregar -->
+                <form id="addTravelerForm" style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 2rem;">
+                    <input type="hidden" id="modalServiceId">
+                    
+                    <div class="form-group">
+                        <label for="t_nombre">Primer Nombre *</label>
+                        <input type="text" id="t_nombre" required class="form-input">
+                    </div>
+                    <div class="form-group">
+                        <label for="t_s_nombre">Segundo Nombre</label>
+                        <input type="text" id="t_s_nombre" class="form-input">
+                    </div>
+                    <div class="form-group">
+                        <label for="t_apellido">Primer Apellido *</label>
+                        <input type="text" id="t_apellido" required class="form-input">
+                    </div>
+                    <div class="form-group">
+                        <label for="t_s_apellido">Segundo Apellido</label>
+                        <input type="text" id="t_s_apellido" class="form-input">
+                    </div>
+                    <div class="form-group" style="grid-column: 1 / -1;">
+                        <label for="t_correo">Correo Electrónico *</label>
+                        <input type="email" id="t_correo" required class="form-input">
+                    </div>
+                    <div class="form-group" style="grid-column: 1 / -1;">
+                        <label for="t_fnacim">Fecha de Nacimiento *</label>
+                        <input type="date" id="t_fnacim" required class="form-input">
+                    </div>
+
+                    <button type="submit" class="cta-button" style="grid-column: 1 / -1; width: 100%; justify-content: center;">
+                        Agregar Viajero
+                    </button>
+                </form>
+
+                <hr style="margin: 1.5rem 0; border: 0; border-top: 1px solid #eee;">
+
+                <!-- Sección Eliminar -->
+                <h4 style="font-size: 1rem; font-weight: 600; margin-bottom: 1rem;">Eliminar Viajero</h4>
+                <form id="removeTravelerForm" style="display: flex; gap: 0.5rem;">
+                    <input type="email" id="t_remove_email" placeholder="Correo del viajero a eliminar" required class="form-input" style="flex: 1;">
+                    <button type="submit" class="cta-button" style="background: #ef4444; border-color: #ef4444; color: white;">
+                        Eliminar
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+
     <script src="/src/scripts/itinerary.js"></script>
 </body>
 </html>
