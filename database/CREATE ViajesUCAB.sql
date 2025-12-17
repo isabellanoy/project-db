@@ -4319,7 +4319,6 @@ RETURNS BOOLEAN AS $$
 DECLARE
     v_cliente_cod INT;
 	v_compra_cod INT;
-    v_estado_compra VARCHAR;
 	v_contador INT := 0;
 BEGIN
     SELECT c.c_cod INTO v_cliente_cod FROM Cliente c, Usuario u WHERE c.c_cod = u.cliente_c_cod AND u.u_cod = p_cod_usuario;
@@ -4335,10 +4334,9 @@ BEGIN
 		RETURN NULL::BOOLEAN;
 	END IF;
 
-	-- Validar si se esta pagando
-	SELECT co_estado INTO v_estado_compra FROM Compra WHERE co_cod = v_compra_cod;
-	IF v_estado_compra = 'PAGANDO' THEN
-		RAISE NOTICE 'La compra está pagándose, no se puede cancelar';
+	-- Validar que no haya al menos un pago
+	IF EXISTS(SELECT 1 FROM Pago WHERE compra_co_cod = v_compra_cod) THEN
+		RAISE NOTICE 'La compra ya posee al menos un pago. Completar la compra';
 		RETURN NULL::BOOLEAN;
 	END IF;
 	

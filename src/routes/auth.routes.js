@@ -184,4 +184,30 @@ router.post('/change-password', async (req, res, next) => {
   }
 });
 
+router.get('/has-permission', async (req, res) => {
+  const userId = parseUserId(req);
+  const { permiso } = req.query;
+
+  if (!userId) {
+    return failure(res, 'Falta el código de usuario (usuario_cod).');
+  }
+
+  if (!permiso) {
+    return failure(res, 'Falta el nombre del permiso (permiso).');
+  }
+
+  try {
+    const query = 'SELECT fn_rol_tiene_permiso($1, $2) as "tiene_permiso"';
+    const result = await pool.query(query, [userId, permiso]);
+    
+    const tienePermiso = result.rows[0]?.tiene_permiso ?? false;
+
+    return success(res, { tiene_permiso: tienePermiso }, 'Verificación de permiso completada.');
+
+  } catch (error) {
+    console.error('Error al verificar permiso:', error);
+    return failure(res, error.message || 'Error en la base de datos al verificar permiso.');
+  }
+});
+
 module.exports = router;

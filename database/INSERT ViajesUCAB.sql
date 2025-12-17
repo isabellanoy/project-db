@@ -2049,10 +2049,9 @@ INSERT INTO Permiso (pe_nombre, pe_tipo) VALUES ('editar_mi_perfil', 'cliente');
 INSERT INTO Permiso (pe_nombre, pe_tipo) VALUES ('ver_mis_reservas', 'cliente');
 INSERT INTO Permiso (pe_nombre, pe_tipo) VALUES ('ver_mis_millas', 'cliente');
 INSERT INTO Permiso (pe_nombre, pe_tipo) VALUES ('ver_mis_pagos', 'cliente');
+INSERT INTO Permiso (pe_nombre, pe_tipo) VALUES ('ver_servicios', 'cliente');
 
--- ============================================================================
--- FASE 2: INSERTAR 10 ROLES
--- ============================================================================
+-- 10 ROLES
 
 INSERT INTO Rol (ro_nombre) VALUES ('Cliente');                    -- ID: 1
 INSERT INTO Rol (ro_nombre) VALUES ('Administrador');              -- ID: 2
@@ -2080,7 +2079,8 @@ SELECT 1, pe_cod FROM Permiso WHERE pe_nombre IN (
   'ver_transporte',
   'ver_hotel',
   'crear_reclamo',
-  'ver_reclamo'
+  'ver_reclamo',
+  'ver_servicios'
 );
 
 -- ADMINISTRADOR (Control total del sistema)

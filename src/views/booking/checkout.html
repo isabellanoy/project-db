@@ -53,7 +53,10 @@
                                     <input type="text" id="card-holder" class="form-input" placeholder="Nombre del Titular" required
                                         oninput="this.value = this.value.replace(/[^a-zA-Z\sñÑáéíóúÁÉÍÓÚ]/g, '')">
 
-                                    <input type="text" id="card-expiry" class="form-input" placeholder="MM/YY" pattern="(0[1-9]|1[0-2])\/[0-9]{2}" maxlength="5" required>
+                                    <div style="display: flex; gap: 10px;">
+                                        <input type="text" id="card-expiry-month" class="form-input" placeholder="MM" pattern="[1-12]" maxlength="2" required oninput="this.value = this.value.replace(/[^0-9]/g, '')">
+                                        <input type="text" id="card-expiry-year" class="form-input" placeholder="YY" pattern="[0-9]{2}" maxlength="2" required oninput="this.value = this.value.replace(/[^0-9]/g, '')">
+                                    </div>
 
                                     <input type="text" id="card-cvc" class="form-input" placeholder="CVC" 
                                         pattern="[0-9]{3,4}" maxlength="4" required

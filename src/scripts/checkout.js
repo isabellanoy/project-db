@@ -20,7 +20,8 @@
   // Campos de Tarjeta
   const cardNumberInput = document.getElementById('card-number');
   const cardHolderInput = document.getElementById('card-holder');
-  const cardExpiryInput = document.getElementById('card-expiry');
+  const cardExpiryMonthInput = document.getElementById('card-expiry-month');
+  const cardExpiryYearInput = document.getElementById('card-expiry-year');
   const cardCvcInput = document.getElementById('card-cvc');
   const bankSelect = document.getElementById('bank-select');
   const cardIssuerInput = document.getElementById('card-issuer');
@@ -33,7 +34,7 @@
   let totalAmount = 0;  
   let activePurchaseId = null;
 
-  // 1. Cargar Bancos
+  // Cargar Bancos
   const loadBanks = async () => {
     try {
       const response = await fetch('/api/banks');
@@ -53,7 +54,7 @@
     }
   };
 
-  // 2. Cargar Resumen de la compra
+  // Cargar Resumen de la compra
   const loadSummary = async () => {
     try {
       const response = await fetch(`/api/checkout-summary?usuario_id=${userId}`);
@@ -96,7 +97,7 @@
     }
   };
 
-  // 3. Manejar el cambio de método de pago
+  // Manejar el cambio de método de pago
   const handleMethodChange = (event) => {
     if (event.target.value === 'card') {
       cardForm.style.display = 'block';
@@ -107,7 +108,7 @@
     }
   };
   
-  // 4. Procesar Pagos
+  // Procesar Pagos
   const handlePayment = async () => {
     const selectedMethod = document.querySelector('input[name="paymentMethod"]:checked').value;
     
@@ -117,7 +118,7 @@
     const isFinance = financeCheckbox ? financeCheckbox.checked : false;
 
     try {
-      // A. Iniciar el checkout (Cambiar estado a PAGANDO)
+      // Iniciar el checkout (Cambiar estado a PAGANDO)
       await fetch('/api/checkout/init', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -128,19 +129,31 @@
         })
       });
 
-      // B. Registrar el Pago según el método
+      // Registrar el Pago según el método
       let payEndpoint = '';
       let payBody = {};
 
       if (selectedMethod === 'card') {
+        const month = cardExpiryMonthInput.value;
+        const year = cardExpiryYearInput.value;
+
+        if (!month || !year || !/^(0[1-9]|1[0-2])$/.test(month) || !/^[0-9]{2}$/.test(year)) {
+            alert('Por favor, introduce una fecha de vencimiento válida (MM y YY).');
+            confirmPaymentBtn.disabled = false;
+            confirmPaymentBtn.textContent = 'Confirmar Pago';
+            return;
+        }
+
+        const expiryDate = `20${year}-${month}-01`;
+
         payEndpoint = '/api/checkout/pay/card';
         payBody = {
           usuario_id: userId,
-          monto: cardAmountInput.value, // Usamos la variable definida arriba
+          monto: cardAmountInput.value,
           numero: cardNumberInput.value,
           cvc: cardCvcInput.value,
           titular: cardHolderInput.value,
-          vencimiento: cardExpiryInput.value,
+          vencimiento: expiryDate,
           banco_id: bankSelect.value,
           emisor: cardIssuerInput.value
         };
@@ -218,7 +231,7 @@
     if(confirmPaymentBtn) confirmPaymentBtn.addEventListener('click', handlePayment);
     if(payWithMilesBtn) payWithMilesBtn.addEventListener('click', handleMilesPayment);
 
-    // --- AGREGAR VALIDACIÓN DE MONTO MÁXIMO EN TIEMPO REAL ---
+    // --- VALIDACIÓN DE MONTO MÁXIMO EN TIEMPO REAL ---
     if(cardAmountInput) cardAmountInput.addEventListener('input', enforceMaxAmount);
     if(digitalAmountInput) digitalAmountInput.addEventListener('input', enforceMaxAmount);
   });
