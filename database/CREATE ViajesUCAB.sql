@@ -6281,8 +6281,7 @@ BEGIN
 	SELECT c.c_cod INTO v_cliente_cod FROM Cliente c JOIN Usuario u ON c.c_cod = u.cliente_c_cod WHERE u.u_cod = p_cod_usuario;
 
 	IF v_cliente_cod IS NULL THEN
-		RAISE NOTICE 'El cliente no se ha encontrado';
-		RETURN FALSE;
+		RAISE EXCEPTION 'El cliente no se ha encontrado';
 	END IF;                                                                                
 	
     RETURN QUERY                                                                            
@@ -6320,8 +6319,7 @@ BEGIN
 	SELECT c.c_cod INTO v_cliente_cod FROM Cliente c JOIN Usuario u ON c.c_cod = u.cliente_c_cod WHERE u.u_cod = p_cod_usuario;
 
 	IF v_cliente_cod IS NULL THEN
-		RAISE NOTICE 'El cliente no se ha encontrado';
-		RETURN FALSE;
+		RAISE EXCEPTION 'El cliente no se ha encontrado';
 	END IF;
 
     RETURN QUERY
