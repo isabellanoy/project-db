@@ -5339,16 +5339,16 @@ DECLARE
 	v_capacidad_max INT := 0;
 	v_cantidad_actual INT := 0;
 BEGIN
-    -- Obtener Cliente desde Usuario (Asumiendo que c_ci es la PK según archivos anteriores)
+    -- Obtener Cliente desde Usuario
 	SELECT c.c_cod INTO v_cliente_cod FROM Cliente c JOIN Usuario u ON c.c_cod = u.cliente_c_cod WHERE u.u_cod = p_cod_usuario;
 
-	IF v_cliente_ci IS NULL THEN
+	IF v_cliente_cod IS NULL THEN
 		RAISE NOTICE 'El cliente no se ha encontrado para el usuario %', p_cod_usuario;
 		RETURN FALSE;
 	END IF;
 
 	-- Validar que la compra existe
-    SELECT fn_obtener_compra_activa(v_cliente_ci) INTO v_compra_cod;
+    SELECT fn_obtener_compra_activa(v_cliente_cod) INTO v_compra_cod;
 	
 	IF v_compra_cod IS NULL THEN
 		RAISE NOTICE 'No hay ninguna compra EN PROCESO para agregar Viajeros';
@@ -5484,7 +5484,7 @@ BEGIN
     -- Existe cliente
 	SELECT c.c_cod INTO v_cliente_cod FROM Cliente c JOIN Usuario u ON c.c_cod = u.cliente_c_cod WHERE u.u_cod = p_cod_usuario;
 
-	IF v_cliente_ci IS NULL THEN
+	IF v_cliente_cod IS NULL THEN
 		RAISE NOTICE 'El cliente no se ha encontrado';
 		RETURN FALSE;
 	END IF;
@@ -6125,3 +6125,311 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
+-- ===================================================
+-- FUNCIONES DE LISTA DE DESEOS
+-- ===================================================
+
+-- Agregar servicios o paquetes a la lista de deseados
+CREATE OR REPLACE FUNCTION fn_agregar_servicio_deseo(
+	p_cod_usuario INT,
+	p_cod_servicio INT
+) 
+RETURNS BOOLEAN AS $$
+DECLARE
+    v_cliente_cod INT;
+BEGIN
+    -- Existe cliente
+	SELECT c.c_cod INTO v_cliente_cod FROM Cliente c JOIN Usuario u ON c.c_cod = u.cliente_c_cod WHERE u.u_cod = p_cod_usuario;
+
+	IF v_cliente_cod IS NULL THEN
+		RAISE NOTICE 'El cliente no se ha encontrado';
+		RETURN FALSE;
+	END IF;
+
+	-- Validar que el servicio no está ya en la lista de deseos
+	IF EXISTS (SELECT 1 FROM Deseo_Servicio WHERE Servicio_s_cod = p_cod_servicio AND cliente_c_cod = v_cliente_cod) THEN
+		RAISE NOTICE 'El servicio % ya esta agregado a la lista de deseos del cliente', p_cod_servicio;
+		RETURN FALSE;
+	END IF;
+
+	-- Validar que el servicio existe
+	IF NOT EXISTS (SELECT 1 FROM Servicio WHERE s_cod = p_cod_servicio) THEN
+		RAISE NOTICE 'El servicio % no existe', p_cod_servicio;
+		RETURN FALSE;
+	END IF;
+
+	-- Agregar a la lista de deseados
+	INSERT INTO Deseo_Servicio VALUES (p_cod_servicio, v_cliente_cod);
+
+	RAISE NOTICE 'Servicio agregado a la lista de deseos con exito';
+	RETURN TRUE;
+END;
+$$ LANGUAGE plpgsql;
+
+-- Eliminar el servicio de la lista de deseos
+CREATE OR REPLACE FUNCTION fn_eliminar_servicio_deseo(
+	p_cod_usuario INT,
+	p_cod_servicio INT
+) 
+RETURNS BOOLEAN AS $$
+DECLARE
+    v_cliente_cod INT;
+BEGIN
+    -- Existe cliente
+	SELECT c.c_cod INTO v_cliente_cod FROM Cliente c JOIN Usuario u ON c.c_cod = u.cliente_c_cod WHERE u.u_cod = p_cod_usuario;
+
+	IF v_cliente_cod IS NULL THEN
+		RAISE NOTICE 'El cliente no se ha encontrado';
+		RETURN FALSE;
+	END IF;
+
+	-- Validar que el servicio no está ya en la lista de deseos
+	IF NOT EXISTS (SELECT 1 FROM Deseo_Servicio WHERE Servicio_s_cod = p_cod_servicio AND cliente_c_cod = v_cliente_cod) THEN
+		RAISE NOTICE 'El servicio % no se encontro en la lista de deseos del cliente', p_cod_servicio;
+		RETURN FALSE;
+	END IF;
+
+	-- Eliminar de la lista de deseados
+	DELETE FROM Deseo_Servicio WHERE servicio_s_cod = p_cod_servicio AND cliente_c_cod = v_cliente_cod;
+
+	RAISE NOTICE 'Servicio eliminado de la lista de deseos con exito';
+	RETURN TRUE;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE OR REPLACE FUNCTION fn_agregar_paquete_deseo(
+	p_cod_usuario INT,
+	p_cod_paquete INT
+) 
+RETURNS BOOLEAN AS $$
+DECLARE
+    v_cliente_cod INT;
+BEGIN
+    -- Existe cliente
+	SELECT c.c_cod INTO v_cliente_cod FROM Cliente c JOIN Usuario u ON c.c_cod = u.cliente_c_cod WHERE u.u_cod = p_cod_usuario;
+
+	IF v_cliente_cod IS NULL THEN
+		RAISE NOTICE 'El cliente no se ha encontrado';
+		RETURN FALSE;
+	END IF;
+
+	-- Validar que el paquete no está ya en la lista de deseos
+	IF EXISTS (SELECT 1 FROM Deseo_Paquete WHERE paquete_turistico_pt_cod = p_cod_paquete AND cliente_c_cod = v_cliente_cod) THEN
+		RAISE NOTICE 'El paquete % ya esta agregado a la lista de deseos del cliente', p_cod_paquete;
+		RETURN FALSE;
+	END IF;
+
+	-- Validar que el paquete existe
+	IF NOT EXISTS (SELECT 1 FROM Paquete_Turistico WHERE pt_cod = p_cod_paquete) THEN
+		RAISE NOTICE 'El paquete % no existe', p_cod_paquete;
+		RETURN FALSE;
+	END IF;
+
+	-- Agregar a la lista de deseados
+	INSERT INTO Deseo_Paquete VALUES (p_cod_paquete, v_cliente_cod);
+
+	RAISE NOTICE 'Paquete agregado a la lista de deseos con exito';
+	RETURN TRUE;
+END;
+$$ LANGUAGE plpgsql;
+
+-- Eliminar paquete de la lista de deseos
+CREATE OR REPLACE FUNCTION fn_eliminar_paquete_deseo(
+	p_cod_usuario INT,
+	p_cod_paquete INT
+) 
+RETURNS BOOLEAN AS $$
+DECLARE
+    v_cliente_cod INT;
+BEGIN
+    -- Existe cliente
+	SELECT c.c_cod INTO v_cliente_cod FROM Cliente c JOIN Usuario u ON c.c_cod = u.cliente_c_cod WHERE u.u_cod = p_cod_usuario;
+
+	IF v_cliente_cod IS NULL THEN
+		RAISE NOTICE 'El cliente no se ha encontrado';
+		RETURN FALSE;
+	END IF;
+
+	-- Validar que el paquete no está ya en la lista de deseos
+	IF NOT EXISTS (SELECT 1 FROM Deseo_Paquete WHERE Paquete_Turistico_pt_cod = p_cod_paquete AND cliente_c_cod = v_cliente_cod) THEN
+		RAISE NOTICE 'El paquete % no se encontro en la lista de deseos del cliente', p_cod_paquete;
+		RETURN FALSE;
+	END IF;
+
+	-- Eliminar de la lista de deseados
+	DELETE FROM Deseo_Paquete WHERE paquete_turistico_pt_cod = p_cod_paquete AND cliente_c_cod = v_cliente_cod;
+
+	RAISE NOTICE 'Paquete eliminado de la lista de deseos con exito';
+	RETURN TRUE;
+END;
+$$ LANGUAGE plpgsql;
+
+-- VER LISTA DE DESEOS DE PAQUETES                                                          
+CREATE OR REPLACE FUNCTION fn_ver_deseos_paquetes(p_cod_usuario INT)                        
+RETURNS TABLE (                                                                             
+    id_paquete INT,                                                                         
+    nombre VARCHAR,                                                                         
+    descripcion VARCHAR,                                                                    
+    costo NUMERIC,                                                                          
+    costo_millas INT,                                                                       
+    cantidad_personas INT                                                                   
+) AS $$                                                                                     
+DECLARE
+	v_cliente_cod INT;
+BEGIN                                                                                       
+    -- Existe cliente
+	SELECT c.c_cod INTO v_cliente_cod FROM Cliente c JOIN Usuario u ON c.c_cod = u.cliente_c_cod WHERE u.u_cod = p_cod_usuario;
+
+	IF v_cliente_cod IS NULL THEN
+		RAISE NOTICE 'El cliente no se ha encontrado';
+		RETURN FALSE;
+	END IF;                                                                                
+	
+    RETURN QUERY                                                                            
+    SELECT                                                                                  
+        pt.pt_cod,                                                                          
+        pt.pt_nombre,                                                                       
+        pt.pt_descripcion,                                                                  
+        pt.pt_costo,                                                                        
+        pt.pt_costo_millas,                                                                 
+        pt.pt_cant_personas                                                                 
+    FROM Paquete_Turistico pt                                                               
+    JOIN Deseo_Paquete dp ON pt.pt_cod = dp.Paquete_Turistico_pt_cod                        
+    WHERE dp.Cliente_c_cod = v_cliente_cod;                                                 
+END;                                                                                        
+$$ LANGUAGE plpgsql;                                                                        
+ 
+-- VER LISTA DE DESEOS DE SERVICIOS                                                         
+CREATE OR REPLACE FUNCTION fn_ver_deseos_servicios(p_cod_usuario INT)                       
+RETURNS TABLE (                                                                             
+    id_servicio INT,                                                                        
+    tipo_servicio VARCHAR,                                                                  
+    nombre VARCHAR,                                                                         
+    descripcion VARCHAR,                                                                    
+    costo NUMERIC,                                                                          
+    origen VARCHAR,                                                                         
+    destino VARCHAR,                                                                        
+    fecha_inicio TIMESTAMP,                                                                 
+    fecha_fin TIMESTAMP,                                                                    
+    proveedor VARCHAR                                                                       
+) AS $$   
+DECLARE
+	v_cliente_cod INT;
+BEGIN                                                                                       
+    -- Existe cliente
+	SELECT c.c_cod INTO v_cliente_cod FROM Cliente c JOIN Usuario u ON c.c_cod = u.cliente_c_cod WHERE u.u_cod = p_cod_usuario;
+
+	IF v_cliente_cod IS NULL THEN
+		RAISE NOTICE 'El cliente no se ha encontrado';
+		RETURN FALSE;
+	END IF;
+
+    RETURN QUERY
+    -- Vuelos
+    SELECT
+        s.s_cod,
+        'Vuelo'::VARCHAR,
+        ('Vuelo ' || v.v_cod_vue)::VARCHAR AS nombre,
+        ('De ' || l_origen.l_nombre || ' a ' || l_destino.l_nombre)::VARCHAR AS descripcion,
+        s.s_costo,
+        l_origen.l_nombre,
+        l_destino.l_nombre,
+        v.v_fecha_hora_salida,
+        (v.v_fecha_hora_salida + (v.v_duracion_horas * INTERVAL '1 hour'))::TIMESTAMP,
+        a.p_nombre
+    FROM Servicio s
+    JOIN Vuelo v ON s.s_cod = v.s_cod
+    JOIN Aerolinea a ON v.Aerolinea_p_cod = a.p_cod
+    JOIN Lugar l_origen ON v.Lugar_l_cod = l_origen.l_cod
+    JOIN Lugar l_destino ON v.Lugar_l_cod2 = l_destino.l_cod
+    JOIN Deseo_Servicio ds ON s.s_cod = ds.Servicio_s_cod
+    WHERE ds.Cliente_c_cod = v_cliente_cod
+
+    UNION ALL
+
+    -- Hospedajes
+    SELECT
+        s.s_cod,
+        'Hospedaje'::VARCHAR,
+        (th.th_nombre || ' en ' || h.p_nombre)::VARCHAR AS nombre,
+        th.th_descripcion::VARCHAR,
+        s.s_costo,
+        h_lugar.l_nombre,
+        NULL::VARCHAR,
+        NULL::TIMESTAMP,
+        NULL::TIMESTAMP,
+        h.p_nombre
+    FROM Servicio s
+    JOIN Habitacion ha ON s.s_cod = ha.s_cod
+    JOIN Hotel h ON ha.Hotel_p_cod = h.p_cod
+    JOIN Tipo_Habitacion th ON ha.Tipo_Habitacion_th_cod = th.th_cod
+    JOIN Lugar h_lugar ON h.Lugar_l_cod = h_lugar.l_cod
+    JOIN Deseo_Servicio ds ON s.s_cod = ds.Servicio_s_cod
+    WHERE ds.Cliente_c_cod = v_cliente_cod
+    
+	UNION ALL
+	
+    -- Traslados
+    SELECT
+        s.s_cod,
+        'Traslado'::VARCHAR,
+        ('Traslado en ' || l_origen.l_nombre)::VARCHAR AS nombre,
+        ('Distancia: ' || t.t_distancia_km || ' km')::VARCHAR AS descripcion,
+        s.s_costo,
+        l_origen.l_nombre,
+        (SELECT l.l_nombre FROM Lugar l JOIN Terminal_Operacion term ON l.l_cod = term.lugar_l_cod WHERE term.to_cod = t.Terminal_Operacion_to_cod),
+        NULL::TIMESTAMP,
+        NULL::TIMESTAMP,
+        tt.p_nombre
+    FROM Servicio s
+    JOIN Traslado t ON s.s_cod = t.s_cod
+    JOIN Transporte_Terrestre tt ON t.Transporte_Terrestre_p_cod = tt.p_cod
+    JOIN Lugar l_origen ON t.Lugar_l_cod = l_origen.l_cod
+    JOIN Deseo_Servicio ds ON s.s_cod = ds.Servicio_s_cod
+    WHERE ds.Cliente_c_cod = v_cliente_cod
+
+    UNION ALL
+
+    -- Viajes (Cruceros)
+    SELECT
+        s.s_cod,
+        'Crucero'::VARCHAR,
+        ('Viaje de ' || l_origen.l_nombre || ' a ' || l_destino.l_nombre)::VARCHAR AS nombre,
+        ('Duración: ' || vi.vi_duracion_dias || ' días.')::VARCHAR AS descripcion,
+        s.s_costo,
+        l_origen.l_nombre,
+        l_destino.l_nombre,
+        vi.vi_fecha_hora_salida,
+        (vi.vi_fecha_hora_salida + (vi.vi_duracion_dias * INTERVAL '1 day'))::TIMESTAMP,
+        c.p_nombre
+    FROM Servicio s
+    JOIN Viaje vi ON s.s_cod = vi.s_cod
+    JOIN Crucero c ON vi.Crucero_p_cod = c.p_cod
+    JOIN Lugar l_origen ON vi.Lugar_l_cod = l_origen.l_cod
+    JOIN Lugar l_destino ON vi.Lugar_l_cod2 = l_destino.l_cod
+    JOIN Deseo_Servicio ds ON s.s_cod = ds.Servicio_s_cod
+    WHERE ds.Cliente_c_cod = v_cliente_cod
+
+    UNION ALL
+
+    -- Servicios Adicionales (Tours, etc.)
+    SELECT
+        s.s_cod,
+        'Actividad Turística'::VARCHAR,
+        sa.sa_nombre,
+        sa.sa_descripcion,
+        s.s_costo,
+        l.l_nombre,
+        NULL::VARCHAR,
+        NULL::TIMESTAMP,
+        NULL::TIMESTAMP,
+        ot.p_nombre
+    FROM Servicio s
+    JOIN Servicio_Adicional sa ON s.s_cod = sa.s_cod
+    JOIN Operador_Turistico ot ON sa.Operador_Turistico_p_cod = ot.p_cod
+    JOIN Lugar l ON sa.Lugar_l_cod = l.l_cod
+    JOIN Deseo_Servicio ds ON s.s_cod = ds.Servicio_s_cod
+    WHERE ds.Cliente_c_cod = v_cliente_cod;
+
+END;
+$$ LANGUAGE plpgsql;

@@ -170,6 +170,12 @@ DROP FUNCTION IF EXISTS fn_listar_servicios_viaje;
 DROP FUNCTION IF EXISTS fn_listar_vehiculos_traslado;
 DROP FUNCTION IF EXISTS fn_obtener_monto_restante;
 DROP FUNCTION IF EXISTS fn_generar_factura;
+DROP FUNCTION IF EXISTS fn_agregar_servicio_deseo;
+DROP FUNCTION IF EXISTS fn_agregar_paquete_deseo;
+DROP FUNCTION IF EXISTS fn_eliminar_servicio_deseo;
+DROP FUNCTION IF EXISTS fn_eliminar_paquete_deseo;
+DROP FUNCTION IF EXISTS fn_ver_deseos_paquetes;
+DROP FUNCTION IF EXISTS fn_ver_deseos_servicios;
 
 DROP PROCEDURE IF EXISTS sp_actualizar_aerolinea;
 DROP PROCEDURE IF EXISTS sp_cambiar_clave_usuario;
