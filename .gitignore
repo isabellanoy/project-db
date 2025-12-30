@@ -19,7 +19,6 @@ tmp/
 temp/
 .cache/
 reports/
-database/templates/
 
 # Editor settings
 .vscode/
@@ -28,3 +27,4 @@ database/templates/
 # OS-specific files
 .DS_Store
 Thumbs.db
+/database/templates
