@@ -4395,7 +4395,9 @@ DECLARE
 	v_paquete_cod INT;
 	v_es_paquete BOOLEAN;
 	v_monto_compra NUMERIC;
+	v_monto_compensacion NUMERIC;
 	v_monto_pagado NUMERIC;
+	v_factor_financia NUMERIC;
 
 BEGIN
     SELECT c.c_cod INTO v_cliente_cod FROM Cliente c, Usuario u WHERE c.c_cod = u.cliente_c_cod AND u.u_cod = p_cod_usuario;
@@ -4411,19 +4413,26 @@ BEGIN
 		RETURN NULL::BOOLEAN;
 	END IF;
 
-	SELECT co_es_paquete, paquete_turistico_pt_cod, co_monto_total INTO v_es_paquete, v_paquete_cod, v_monto_compra 
+	SELECT co_es_paquete, paquete_turistico_pt_cod, co_monto_total, COALESCE(co_compensacion_huella, 0) 
+	INTO v_es_paquete, v_paquete_cod, v_monto_compra, v_monto_compensacion
 	FROM Compra WHERE co_cod = v_compra_cod;
 	IF v_es_paquete IS TRUE THEN
 		RETURN (SELECT pt_costo_millas FROM Paquete_Turistico WHERE pt_cod = v_paquete_cod);
 	END IF;
 
+	-- Revisar si se financia
+	v_factor_financia := 1;
+	IF EXISTS (SELECT 1 FROM Cuota WHERE compra_co_cod = v_compra_cod) THEN
+		v_factor_financia := 0.10;
+	END IF;
+
 	SELECT SUM(pa_monto) INTO v_monto_pagado FROM Pago WHERE compra_co_cod = v_compra_cod;
 
 	IF v_monto_pagado IS NOT NULL THEN
-		RETURN (v_monto_compra - v_monto_pagado);
+		RETURN (ROUND((v_monto_compra * v_factor_financia) + v_monto_compensacion - v_monto_pagado, 2));
 	END IF;
 	
-	RETURN v_monto_compra;
+	RETURN ROUND((v_monto_compra * v_factor_financia) + v_monto_compensacion, 2);
 
 END;
 $$ LANGUAGE plpgsql;
