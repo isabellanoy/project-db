@@ -469,7 +469,7 @@ COMMENT ON COLUMN Modelo.mv_nombre IS 'Nombre del modelo';
 CREATE TABLE Nota_Credito (
     nc_cod SERIAL NOT NULL,
     nc_monto_devuelto NUMERIC(12,2) NOT NULL,
-    Reembolso_ree_cod INT NOT NULL,
+    Reembolso_ree_cod INT UNIQUE NOT NULL,
 	Metodo_Pago_mp_cod INT NOT NULL
 );
 
@@ -601,6 +601,13 @@ CREATE TABLE Queja (
 );
 
 ALTER TABLE Queja ADD CONSTRAINT Queja_PK PRIMARY KEY (q_cod);
+
+ALTER TABLE Queja ADD CONSTRAINT Queja_Vuelo_Unique UNIQUE (Boleto_vuelo_co_cod, boleto_vuelo_s_cod);
+ALTER TABLE Queja ADD CONSTRAINT Queja_Viaje_Unique UNIQUE (Boleto_viaje_co_cod, boleto_viaje_s_cod);
+ALTER TABLE Queja ADD CONSTRAINT Queja_Traslado_Unique UNIQUE (detalle_traslado_co_cod, detalle_traslado_s_cod);
+ALTER TABLE Queja ADD CONSTRAINT Queja_hospedaje_Unique UNIQUE (detalle_hospedaje_co_cod, detalle_hospedaje_s_cod);
+ALTER TABLE Queja ADD CONSTRAINT Queja_EDigital_Unique UNIQUE (entrada_digital_co_cod, entrada_digital_s_cod);
+
 ALTER SEQUENCE queja_q_cod_seq RESTART WITH 1;
 
 COMMENT ON COLUMN Queja.q_cod IS 'Identificador de la queja';
@@ -624,6 +631,13 @@ CREATE TABLE Reembolso (
 );
 
 ALTER TABLE Reembolso ADD CONSTRAINT Reembolso_PK PRIMARY KEY (ree_cod);
+
+ALTER TABLE Reembolso ADD CONSTRAINT Ree_Vuelo_Unique UNIQUE (Boleto_vuelo_co_cod, boleto_vuelo_s_cod);
+ALTER TABLE Reembolso ADD CONSTRAINT Ree_Viaje_Unique UNIQUE (Boleto_viaje_co_cod, boleto_viaje_s_cod);
+ALTER TABLE Reembolso ADD CONSTRAINT Ree_Traslado_Unique UNIQUE (detalle_traslado_co_cod, detalle_traslado_s_cod);
+ALTER TABLE Reembolso ADD CONSTRAINT Ree_hospedaje_Unique UNIQUE (detalle_hospedaje_co_cod, detalle_hospedaje_s_cod);
+ALTER TABLE Reembolso ADD CONSTRAINT Ree_EDigital_Unique UNIQUE (entrada_digital_co_cod, entrada_digital_s_cod);
+
 ALTER SEQUENCE reembolso_ree_cod_seq RESTART WITH 1;
 
 COMMENT ON COLUMN Reembolso.ree_cod IS 'Identificador del reembolso';
@@ -646,6 +660,13 @@ CREATE TABLE Resena (
 );
 
 ALTER TABLE Resena ADD CONSTRAINT Resena_PK PRIMARY KEY (r_cod);
+
+ALTER TABLE Resena ADD CONSTRAINT Res_Vuelo_Unique UNIQUE (Boleto_vuelo_co_cod, boleto_vuelo_s_cod);
+ALTER TABLE Resena ADD CONSTRAINT Res_Viaje_Unique UNIQUE (Boleto_viaje_co_cod, boleto_viaje_s_cod);
+ALTER TABLE Resena ADD CONSTRAINT Res_Traslado_Unique UNIQUE (detalle_traslado_co_cod, detalle_traslado_s_cod);
+ALTER TABLE Resena ADD CONSTRAINT Res_hospedaje_Unique UNIQUE (detalle_hospedaje_co_cod, detalle_hospedaje_s_cod);
+ALTER TABLE Resena ADD CONSTRAINT Res_EDigital_Unique UNIQUE (entrada_digital_co_cod, entrada_digital_s_cod);
+
 ALTER SEQUENCE resena_r_cod_seq RESTART WITH 1;
 
 COMMENT ON COLUMN Resena.r_cod IS 'Identificador de la reseña';
@@ -6438,5 +6459,460 @@ BEGIN
     JOIN Deseo_Servicio ds ON s.s_cod = ds.Servicio_s_cod
     WHERE ds.Cliente_c_cod = v_cliente_cod;
 
+END;
+$$ LANGUAGE plpgsql;
+
+-- ===================================================
+-- FUNCIONES DE RESEÑAS, REEMBOLSOS, RECLAMOS
+-- ===================================================
+
+-- Obtener las reservas individuales de una compra
+CREATE OR REPLACE FUNCTION fn_obtener_reservas_compra(p_cod_compra INT)
+RETURNS TABLE (
+	compra_cod INT,
+	servicio_cod INT,
+	es_paquete BOOLEAN,
+	tipo_servicio VARCHAR,
+	descripcion VARCHAR,
+	detalle_1 VARCHAR,
+	detalle_2 VARCHAR,
+	cantidad_pasajeros INT
+) AS $$
+BEGIN
+RETURN QUERY WITH Compra_Base AS (
+	SELECT
+		c.co_cod,
+		c.co_es_paquete,
+		NULL::VARCHAR AS paquete_nombre
+	FROM Compra c
+	WHERE c.co_cod = p_cod_compra
+)
+-- Vuelos
+SELECT
+	cb.co_cod, bv.vuelo_s_cod AS servicio_cod, cb.co_es_paquete,
+	'Vuelo'::VARCHAR AS Tipo,
+	('Vuelo ' || v.v_cod_vue || ' de ' || l_origen.l_nombre || ' a ' || l_destino.l_nombre)::VARCHAR AS descripcion,
+	('Aerolínea: ' || aer.p_nombre || ' - Clase: ' || ca.ca_nombre)::VARCHAR AS Detalle_1,
+	('Fecha: ' || TO_CHAR(v.v_fecha_hora_salida, 'YYYY-MM-DD HH24:MI'))::VARCHAR AS Detalle_2,
+	bv.bv_cant_pasajeros
+FROM Compra_Base cb
+JOIN Boleto_Vuelo bv ON cb.co_cod = bv.compra_co_cod
+JOIN Vuelo v ON bv.vuelo_s_cod = v.s_cod
+JOIN Aerolinea aer ON v.aerolinea_p_cod = aer.p_cod
+JOIN Lugar l_origen ON v.lugar_l_cod = l_origen.l_cod
+JOIN Lugar l_destino ON v.lugar_l_cod2 = l_destino.l_cod
+JOIN Clase_Asiento ca ON bv.clase_asiento_ca_cod = ca.ca_cod
+
+UNION ALL
+
+-- Hospedajes
+SELECT
+	cb.co_cod, dh.habitacion_s_cod AS servicio_cod, cb.co_es_paquete,
+	'Hospedaje'::VARCHAR AS Tipo,
+	('Estadía en ' || h.p_nombre || ', ' || l.l_nombre)::VARCHAR AS descripcion,
+	('Habitación: ' || th.th_nombre)::VARCHAR AS Detalle_1,
+	('Check-in: ' || TO_CHAR(dh.dh_fecha_hora_check_in, 'YYYY-MM-DD'))::VARCHAR AS Detalle_2,
+	dh.dh_cant_noches
+FROM Compra_Base cb
+JOIN Detalle_Hospedaje dh ON cb.co_cod = dh.compra_co_cod
+JOIN Habitacion hab ON dh.habitacion_s_cod = hab.s_cod
+JOIN Hotel h ON hab.hotel_p_cod = h.p_cod
+JOIN Tipo_Habitacion th ON hab.tipo_habitacion_th_cod = th.th_cod
+JOIN Lugar l ON h.lugar_l_cod = l.l_cod
+
+UNION ALL
+
+-- Traslados
+SELECT
+	cb.co_cod, dt.traslado_s_cod AS servicio_cod, cb.co_es_paquete,
+	'Traslado'::VARCHAR AS Tipo,
+	('Traslado desde ' || l_origen.l_nombre || ' a ' || term.to_direccion)::VARCHAR AS descripcion,
+	('Vehículo: ' || mo.mv_nombre || ' (' || ma.mav_nombre || ')')::VARCHAR AS detalle_1,
+	('Fecha: ' || TO_CHAR(dt.dt_fecha_hora, 'YYYY-MM-DD HH24:MI'))::VARCHAR AS detalle_2,
+	1
+FROM Compra_Base cb
+JOIN Detalle_Traslado dt ON cb.co_cod = dt.compra_co_cod
+JOIN Traslado t ON dt.traslado_s_cod = t.s_cod
+JOIN Automovil a ON dt.automovil_mt_cod = a.mt_cod
+JOIN Modelo mo ON a.modelo_mv_cod = mo.mv_cod
+JOIN Marca ma ON mo.marca_mav_cod = ma.mav_cod
+JOIN Lugar l_origen ON t.lugar_l_cod = l_origen.l_cod
+JOIN Terminal_Operacion term ON t.terminal_operacion_to_cod = term.to_cod
+
+UNION ALL
+
+-- Cruceros (Boleto de Viaje)
+SELECT
+	cb.co_cod, bvi.viaje_s_cod AS servicio_cod, cb.co_es_paquete,
+	'Crucero'::VARCHAR AS tipo,
+	('Viaje en crucero ' || cru.p_nombre || ' de ' || l_origen.l_nombre || ' a ' || l_destino.l_nombre)::VARCHAR AS descripcion,
+	('Barco: ' || bar.b_nombre || ' - Camarote: ' || tc.tc_nombre)::VARCHAR AS detalle_1,
+	('Salida: ' || TO_CHAR(v.vi_fecha_hora_salida, 'YYYY-MM-DD HH24:MI'))::VARCHAR AS detalle_2,
+	bvi.bvi_cant_pasajeros
+FROM Compra_Base cb
+JOIN Boleto_Viaje bvi ON cb.co_cod = bvi.compra_co_cod
+JOIN Viaje v ON bvi.viaje_s_cod = v.s_cod
+JOIN Crucero cru ON v.crucero_p_cod = cru.p_cod
+JOIN Lugar l_origen ON v.lugar_l_cod = l_origen.l_cod
+JOIN Lugar l_destino ON v.lugar_l_cod2 = l_destino.l_cod
+JOIN Tipo_Camarote tc ON bvi.tipo_camarote_tc_cod = tc.tc_cod
+JOIN Barco bar ON v.barco_mt_cod = bar.mt_cod
+
+UNION ALL
+
+-- Actividades (Entrada Digital)
+SELECT
+	cb.co_cod, ed.servicio_adicional_s_cod AS servicio_cod, cb.co_es_paquete,
+	'Actividad Turística'::VARCHAR AS tipo,
+	sa.sa_nombre::VARCHAR AS descripcion,
+	('Lugar: ' || l.l_nombre)::VARCHAR AS detalle_1,
+	('Operador: ' || ot.p_nombre)::VARCHAR AS detalle_2,
+	ed.ed_cant_personas
+FROM Compra_Base cb
+JOIN Entrada_Digital ed ON cb.co_cod = ed.compra_co_cod
+JOIN Servicio_Adicional sa ON ed.servicio_adicional_s_cod = sa.s_cod
+JOIN Operador_Turistico ot ON sa.operador_turistico_p_cod = ot.p_cod
+JOIN Lugar l ON sa.lugar_l_cod = l.l_cod;
+END;
+$$ LANGUAGE plpgsql;
+
+-- SOLICITAR UN REEMBOLSO SOBRE UN SERVICIO
+CREATE OR REPLACE FUNCTION fn_solicitar_reembolso(
+	p_cod_usuario INT,
+	p_cod_compra INT,
+	p_cod_servicio INT,
+	p_razon_reembolso VARCHAR
+) RETURNS BOOLEAN AS $$
+DECLARE
+	v_cliente_cod INT;
+	v_edo_compra VARCHAR;
+	v_es_paquete BOOLEAN;
+	v_tipo_servicio VARCHAR;
+BEGIN
+	-- Obtener Cliente desde Usuario
+	SELECT c.c_cod INTO v_cliente_cod FROM Cliente c JOIN Usuario u ON c.c_cod = u.cliente_c_cod WHERE u.u_cod = p_cod_usuario;
+
+	IF v_cliente_cod IS NULL THEN
+		RAISE NOTICE 'El cliente no se ha encontrado para el usuario %', p_cod_usuario;
+		RETURN NULL::BOOLEAN;
+	END IF;	
+
+	SELECT co_estado, co_es_paquete 
+	INTO v_edo_compra, v_es_paquete 
+	FROM Compra
+	WHERE co_cod = p_cod_compra AND cliente_c_cod = v_cliente_cod;
+
+	IF v_edo_compra IS NULL THEN
+		RAISE NOTICE 'La compra para este cliente no existe';
+		RETURN FALSE;
+	END IF;
+	
+	IF v_edo_compra <> 'FINALIZADO' THEN
+		RAISE NOTICE 'Solo se puede reembolsar sobre compras finalizadas';
+		RETURN FALSE;
+	END IF;
+
+	IF v_es_paquete IS TRUE THEN
+		RAISE NOTICE 'No se pueden reembolsar servicios de un paquete';
+		RETURN FALSE;
+	END IF;
+
+	SELECT fn_obtener_tipo_proveedor_servicio(p_cod_servicio) INTO v_tipo_servicio;
+
+	CASE v_tipo_servicio
+		WHEN 'Aerolinea' THEN
+			IF (SELECT res_anulado FROM Boleto_Vuelo WHERE compra_co_cod = p_cod_compra AND vuelo_s_cod = p_cod_servicio) IS FALSE THEN
+				INSERT INTO Reembolso (ree_razon, ree_fecha_hora, boleto_vuelo_co_cod, boleto_vuelo_s_cod) 
+				VALUES (p_razon_reembolso, CURRENT_TIMESTAMP, p_cod_compra, p_cod_servicio);
+			ELSE
+				RAISE NOTICE 'Reembolso no posible';
+				RETURN FALSE;
+			END IF;			
+		WHEN 'Crucero' THEN
+			IF (SELECT res_anulado FROM Boleto_Viaje WHERE compra_co_cod = p_cod_compra AND viaje_s_cod = p_cod_servicio) IS FALSE THEN
+				INSERT INTO Reembolso (ree_razon, ree_fecha_hora, boleto_viaje_co_cod, boleto_viaje_s_cod) 
+				VALUES (p_razon_reembolso, CURRENT_TIMESTAMP, p_cod_compra, p_cod_servicio);
+			ELSE
+				RAISE NOTICE 'Reembolso no posible';
+				RETURN FALSE;
+			END IF;			
+		WHEN 'Hotel' THEN
+			IF (SELECT res_anulado FROM Detalle_Hospedaje WHERE compra_co_cod = p_cod_compra AND habitacion_s_cod = p_cod_servicio) IS FALSE THEN
+				INSERT INTO Reembolso (ree_razon, ree_fecha_hora, detalle_hospedaje_co_cod, detalle_hospedaje_s_cod) 
+				VALUES (p_razon_reembolso, CURRENT_TIMESTAMP, p_cod_compra, p_cod_servicio);
+			ELSE
+				RAISE NOTICE 'Reembolso no posible';
+				RETURN FALSE;
+			END IF;	
+		WHEN 'Transporte' THEN
+			IF (SELECT res_anulado FROM Detalle_Traslado WHERE compra_co_cod = p_cod_compra AND traslado_s_cod = p_cod_servicio) IS FALSE THEN
+				INSERT INTO Reembolso (ree_razon, ree_fecha_hora, detalle_traslado_co_cod, detalle_traslado_s_cod) 
+				VALUES (p_razon_reembolso, CURRENT_TIMESTAMP, p_cod_compra, p_cod_servicio);
+			ELSE
+				RAISE NOTICE 'Reembolso no posible';
+				RETURN FALSE;
+			END IF;
+		WHEN 'Operador' THEN
+			IF (SELECT res_anulado FROM Entrada_Digital WHERE compra_co_cod = p_cod_compra AND servicio_adicional_s_cod = p_cod_servicio) IS FALSE THEN
+				INSERT INTO Reembolso (ree_razon, ree_fecha_hora, entrada_digital_co_cod, entrada_digital_s_cod) 
+				VALUES (p_razon_reembolso, CURRENT_TIMESTAMP, p_cod_compra, p_cod_servicio);
+			ELSE
+				RAISE NOTICE 'Reembolso no posible';
+				RETURN FALSE;
+			END IF;
+	END CASE;	
+
+	RAISE NOTICE 'Reembolso solicitado con exito';
+	RETURN TRUE;
+END;
+$$ LANGUAGE plpgsql;
+
+-- Reclamar un servicio
+CREATE OR REPLACE FUNCTION fn_presentar_queja(
+	p_cod_usuario INT,
+	p_cod_compra INT,
+	p_cod_servicio INT,
+	p_descripcion VARCHAR
+) RETURNS BOOLEAN AS $$
+DECLARE
+	v_cliente_cod INT;
+	v_edo_compra VARCHAR;
+	v_tipo_servicio VARCHAR;
+BEGIN
+	-- Obtener Cliente desde Usuario
+	SELECT c.c_cod INTO v_cliente_cod FROM Cliente c JOIN Usuario u ON c.c_cod = u.cliente_c_cod WHERE u.u_cod = p_cod_usuario;
+
+	IF v_cliente_cod IS NULL THEN
+		RAISE NOTICE 'El cliente no se ha encontrado para el usuario %', p_cod_usuario;
+		RETURN NULL::BOOLEAN;
+	END IF;	
+
+	SELECT co_estado INTO v_edo_compra
+	FROM Compra
+	WHERE co_cod = p_cod_compra AND cliente_c_cod = v_cliente_cod;
+
+	IF v_edo_compra IS NULL THEN
+		RAISE NOTICE 'La compra para este cliente no existe';
+		RETURN FALSE;
+	END IF;
+	
+	IF v_edo_compra <> 'FINALIZADO' AND v_edo_compra <> 'FINANCIADO' THEN
+		RAISE NOTICE 'Solo se puede reclamar sobre compras finalizadas o financiadas';
+		RETURN FALSE;
+	END IF;
+
+	SELECT fn_obtener_tipo_proveedor_servicio(p_cod_servicio) INTO v_tipo_servicio;
+
+	CASE v_tipo_servicio
+		WHEN 'Aerolinea' THEN
+			IF EXISTS(SELECT 1 FROM Queja WHERE boleto_vuelo_co_cod = p_cod_compra AND boleto_vuelo_s_cod = p_cod_servicio) THEN
+				RAISE NOTICE 'Ya esta reserva tiene una queja';
+				RETURN FALSE;
+			END IF;
+			
+			IF (SELECT res_anulado FROM Boleto_Vuelo WHERE compra_co_cod = p_cod_compra AND vuelo_s_cod = p_cod_servicio) IS FALSE THEN
+				INSERT INTO Queja (q_descripcion, boleto_vuelo_co_cod, boleto_vuelo_s_cod, q_resuelta, empleado_e_cod) 
+				VALUES (p_descripcion, p_cod_compra, p_cod_servicio, FALSE, (SELECT e_cod FROM Empleado LIMIT 1));
+			ELSE
+				RAISE NOTICE 'Reclamo no posible';
+				RETURN FALSE;
+			END IF;			
+		WHEN 'Crucero' THEN
+			IF EXISTS(SELECT 1 FROM Queja WHERE boleto_viaje_co_cod = p_cod_compra AND boleto_viaje_s_cod = p_cod_servicio) THEN
+				RAISE NOTICE 'Ya esta reserva tiene una queja';
+				RETURN FALSE;
+			END IF;
+			
+			IF (SELECT res_anulado FROM Boleto_Viaje WHERE compra_co_cod = p_cod_compra AND viaje_s_cod = p_cod_servicio) IS FALSE THEN
+				INSERT INTO Queja (q_descripcion, boleto_viaje_co_cod, boleto_viaje_s_cod, q_resuelta, empleado_e_cod) 
+				VALUES (p_descripcion, p_cod_compra, p_cod_servicio, FALSE, (SELECT e_cod FROM Empleado LIMIT 1));
+			ELSE
+				RAISE NOTICE 'Reclamo no posible';
+				RETURN FALSE;
+			END IF;			
+		WHEN 'Hotel' THEN
+			IF EXISTS(SELECT 1 FROM Queja WHERE detalle_hospedaje_co_cod = p_cod_compra AND detalle_hospedaje_s_cod = p_cod_servicio) THEN
+				RAISE NOTICE 'Ya esta reserva tiene una queja';
+				RETURN FALSE;
+			END IF;
+			
+			IF (SELECT res_anulado FROM Detalle_Hospedaje WHERE compra_co_cod = p_cod_compra AND habitacion_s_cod = p_cod_servicio) IS FALSE THEN
+				INSERT INTO Queja (q_descripcion, detalle_hospedaje_co_cod, detalle_hospedaje_s_cod, q_resuelta, empleado_e_cod) 
+				VALUES (p_descripcion, p_cod_compra, p_cod_servicio, FALSE, (SELECT e_cod FROM Empleado LIMIT 1));
+			ELSE
+				RAISE NOTICE 'Reclamo no posible';
+				RETURN FALSE;
+			END IF;	
+		WHEN 'Transporte' THEN
+			IF EXISTS(SELECT 1 FROM Queja WHERE detalle_traslado_co_cod = p_cod_compra AND detalle_traslado_s_cod = p_cod_servicio) THEN
+				RAISE NOTICE 'Ya esta reserva tiene una queja';
+				RETURN FALSE;
+			END IF;
+			
+			IF (SELECT res_anulado FROM Detalle_Traslado WHERE compra_co_cod = p_cod_compra AND traslado_s_cod = p_cod_servicio) IS FALSE THEN
+				INSERT INTO Queja (q_descripcion, detalle_traslado_co_cod, detalle_traslado_s_cod, q_resuelta, empleado_e_cod) 
+				VALUES (p_descripcion, p_cod_compra, p_cod_servicio, FALSE, (SELECT e_cod FROM Empleado LIMIT 1));
+			ELSE
+				RAISE NOTICE 'Reclamo no posible';
+				RETURN FALSE;
+			END IF;
+		WHEN 'Operador' THEN
+			IF EXISTS(SELECT 1 FROM Queja WHERE entrada_digital_co_cod = p_cod_compra AND entrada_digital_s_cod = p_cod_servicio) THEN
+				RAISE NOTICE 'Ya esta reserva tiene una queja';
+				RETURN FALSE;
+			END IF;
+			
+			IF (SELECT res_anulado FROM Entrada_Digital WHERE compra_co_cod = p_cod_compra AND servicio_adicional_s_cod = p_cod_servicio) IS FALSE THEN
+				INSERT INTO Queja (q_descripcion, entrada_digital_co_cod, entrada_digital_s_cod, q_resuelta, empleado_e_cod) 
+				VALUES (p_descripcion, p_cod_compra, p_cod_servicio, FALSE, (SELECT e_cod FROM Empleado LIMIT 1));
+			ELSE
+				RAISE NOTICE 'Reclamo no posible';
+				RETURN FALSE;
+			END IF;
+	END CASE;	
+
+	RAISE NOTICE 'Reclamo presentado con exito';
+	RETURN TRUE;
+END;
+$$ LANGUAGE plpgsql;
+
+-- Presentar reseña
+CREATE OR REPLACE FUNCTION fn_presentar_valoracion(
+	p_cod_usuario INT,
+	p_cod_compra INT,
+	p_cod_servicio INT,
+	p_calificacion NUMERIC(2),
+	p_comentario VARCHAR
+) RETURNS BOOLEAN AS $$
+DECLARE
+	v_cliente_cod INT;
+	v_edo_compra VARCHAR;
+	v_tipo_servicio VARCHAR;
+BEGIN
+	-- Obtener Cliente desde Usuario
+	SELECT c.c_cod INTO v_cliente_cod FROM Cliente c JOIN Usuario u ON c.c_cod = u.cliente_c_cod WHERE u.u_cod = p_cod_usuario;
+
+	IF v_cliente_cod IS NULL THEN
+		RAISE NOTICE 'El cliente no se ha encontrado para el usuario %', p_cod_usuario;
+		RETURN NULL::BOOLEAN;
+	END IF;	
+
+	SELECT co_estado INTO v_edo_compra
+	FROM Compra
+	WHERE co_cod = p_cod_compra AND cliente_c_cod = v_cliente_cod;
+
+	IF v_edo_compra IS NULL THEN
+		RAISE NOTICE 'La compra para este cliente no existe';
+		RETURN FALSE;
+	END IF;
+	
+	IF v_edo_compra <> 'FINALIZADO' AND v_edo_compra <> 'FINANCIADO' THEN
+		RAISE NOTICE 'Solo se puede reseñar sobre compras finalizadas o financiadas';
+		RETURN FALSE;
+	END IF;
+
+	SELECT fn_obtener_tipo_proveedor_servicio(p_cod_servicio) INTO v_tipo_servicio;
+
+	CASE v_tipo_servicio
+		WHEN 'Aerolinea' THEN
+			IF EXISTS(SELECT 1 FROM Resena WHERE boleto_vuelo_co_cod = p_cod_compra AND boleto_vuelo_s_cod = p_cod_servicio) THEN
+				RAISE NOTICE 'Ya esta reserva tiene una reseña';
+				RETURN FALSE;
+			END IF;
+			
+			IF (SELECT res_anulado FROM Boleto_Vuelo WHERE compra_co_cod = p_cod_compra AND vuelo_s_cod = p_cod_servicio) IS FALSE THEN
+				INSERT INTO Resena (r_calificacion, r_comentario, boleto_vuelo_co_cod, boleto_vuelo_s_cod) 
+				VALUES (p_calificacion, p_comentario, p_cod_compra, p_cod_servicio);
+			ELSE
+				RAISE NOTICE 'Reseña no posible';
+				RETURN FALSE;
+			END IF;			
+		WHEN 'Crucero' THEN
+			IF EXISTS(SELECT 1 FROM Resena WHERE boleto_viaje_co_cod = p_cod_compra AND boleto_viaje_s_cod = p_cod_servicio) THEN
+				RAISE NOTICE 'Ya esta reserva tiene una reseña';
+				RETURN FALSE;
+			END IF;
+			
+			IF (SELECT res_anulado FROM Boleto_Viaje WHERE compra_co_cod = p_cod_compra AND viaje_s_cod = p_cod_servicio) IS FALSE THEN
+				INSERT INTO Resena (r_calificacion, r_comentario, boleto_viaje_co_cod, boleto_viaje_s_cod) 
+				VALUES (p_calificacion, p_comentario, p_cod_compra, p_cod_servicio);
+			ELSE
+				RAISE NOTICE 'Reseña no posible';
+				RETURN FALSE;
+			END IF;			
+		WHEN 'Hotel' THEN
+			IF EXISTS(SELECT 1 FROM Resena WHERE detalle_hospedaje_co_cod = p_cod_compra AND detalle_hospedaje_s_cod = p_cod_servicio) THEN
+				RAISE NOTICE 'Ya esta reserva tiene una reseña';
+				RETURN FALSE;
+			END IF;
+			
+			IF (SELECT res_anulado FROM Detalle_Hospedaje WHERE compra_co_cod = p_cod_compra AND habitacion_s_cod = p_cod_servicio) IS FALSE THEN
+				INSERT INTO Resena (r_calificacion, r_comentario, detalle_hospedaje_co_cod, detalle_hospedaje_s_cod) 
+				VALUES (p_calificacion, p_comentario, p_cod_compra, p_cod_servicio);
+			ELSE
+				RAISE NOTICE 'Reseña no posible';
+				RETURN FALSE;
+			END IF;	
+		WHEN 'Transporte' THEN
+			IF EXISTS(SELECT 1 FROM Resena WHERE detalle_traslado_co_cod = p_cod_compra AND detalle_traslado_s_cod = p_cod_servicio) THEN
+				RAISE NOTICE 'Ya esta reserva tiene una reseña';
+				RETURN FALSE;
+			END IF;
+			
+			IF (SELECT res_anulado FROM Detalle_Traslado WHERE compra_co_cod = p_cod_compra AND traslado_s_cod = p_cod_servicio) IS FALSE THEN
+				INSERT INTO Resena (r_calificacion, r_comentario, detalle_traslado_co_cod, detalle_traslado_s_cod) 
+				VALUES (p_calificacion, p_comentario, p_cod_compra, p_cod_servicio);
+			ELSE
+				RAISE NOTICE 'Reseña no posible';
+				RETURN FALSE;
+			END IF;
+		WHEN 'Operador' THEN
+			IF EXISTS(SELECT 1 FROM Resena WHERE entrada_digital_co_cod = p_cod_compra AND entrada_digital_s_cod = p_cod_servicio) THEN
+				RAISE NOTICE 'Ya esta reserva tiene una reseña';
+				RETURN FALSE;
+			END IF;
+			
+			IF (SELECT res_anulado FROM Entrada_Digital WHERE compra_co_cod = p_cod_compra AND servicio_adicional_s_cod = p_cod_servicio) IS FALSE THEN
+				INSERT INTO Resena (r_calificacion, r_comentario, entrada_digital_co_cod, entrada_digital_s_cod) 
+				VALUES (p_calificacion, p_comentario, p_cod_compra, p_cod_servicio);
+			ELSE
+				RAISE NOTICE 'Reseña no posible';
+				RETURN FALSE;
+			END IF;
+	END CASE;	
+
+	RAISE NOTICE 'Reseña presentada con exito';
+	RETURN TRUE;
+END;
+$$ LANGUAGE plpgsql;
+
+-- ===================================================
+-- FUNCIONES DE CUOTAS Y FINANCIAMIENTO
+-- ===================================================
+
+-- Ver cuotas de un cliente
+CREATE OR REPLACE FUNCTION fn_obtener_cuotas_cliente(p_cod_usuario INT)
+RETURNS TABLE (
+	cod_cuota INT,
+	monto_cuota NUMERIC,
+	fecha_final_cuota TIMESTAMP,
+	monto_recargo NUMERIC
+) AS $$
+DECLARE
+	v_cliente_cod INT;
+BEGIN
+	-- Obtener Cliente
+	SELECT c.c_cod INTO v_cliente_cod FROM Cliente c JOIN Usuario u ON c.c_cod = u.cliente_c_cod WHERE u.u_cod = p_cod_usuario;
+
+	IF v_cliente_cod IS NULL THEN
+		RAISE NOTICE 'El cliente no se ha encontrado para el usuario %', p_cod_usuario;
+		RETURN QUERY SELECT NULL, NULL, NULL, NULL;
+	END IF;	
+
+	RETURN QUERY SELECT cu_cod, cu_monto, cu_fecha_hora_final, cu_recargo_adicional
+	FROM Cuota cu
+	INNER JOIN Compra co ON co.co_cod = cu.compra_co_cod
+	INNER JOIN Cliente c ON c.c_cod = co.cliente_c_cod
+	WHERE c.c_cod = v_cliente_cod;
 END;
 $$ LANGUAGE plpgsql;

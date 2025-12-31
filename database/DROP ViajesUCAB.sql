@@ -176,6 +176,11 @@ DROP FUNCTION IF EXISTS fn_eliminar_servicio_deseo;
 DROP FUNCTION IF EXISTS fn_eliminar_paquete_deseo;
 DROP FUNCTION IF EXISTS fn_ver_deseos_paquetes;
 DROP FUNCTION IF EXISTS fn_ver_deseos_servicios;
+DROP FUNCTION IF EXISTS fn_obtener_reservas_compra;
+DROP FUNCTION IF EXISTS fn_solicitar_reembolso;
+DROP FUNCTION IF EXISTS fn_presentar_queja;
+DROP FUNCTION IF EXISTS fn_presentar_valoracion;
+DROP FUNCTION IF EXISTS fn_obtener_cuotas_cliente;
 
 DROP PROCEDURE IF EXISTS sp_actualizar_aerolinea;
 DROP PROCEDURE IF EXISTS sp_cambiar_clave_usuario;
