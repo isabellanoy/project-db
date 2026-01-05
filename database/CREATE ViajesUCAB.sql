@@ -3273,17 +3273,6 @@ $$ LANGUAGE plpgsql;
 -- CRUD DE PAQUETE TURISTICO
 -- ============================================================================
 
-CREATE OR REPLACE FUNCTION fn_listar_restricciones_paquete()
-	RETURNS TABLE (
-		cod INT,
-		restriccion_completa TEXT
-	) AS $$
-	DECLARE
-	BEGIN
-		RETURN QUERY SELECT rp_cod, rp_caracteristica || ' ' || rp_operador || ' ' || rp_valor_restriccion FROM Restriccion_Paquete;
-	END;
-	$$ LANGUAGE plpgsql;
-
 -- CREAR PAQUETE TURISTICO
 CREATE OR REPLACE PROCEDURE sp_crear_paquete_turistico(
 	OUT p_paquete_nuevo INT,
@@ -5305,6 +5294,10 @@ DECLARE
 	v_costo_paquete NUMERIC(12,2);
     v_costo_millas INT;
     v_cant_personas INT;
+    v_restriccion_cod INT;
+    v_restriccion RECORD;
+    v_cliente_valor VARCHAR;
+    v_cumple_restriccion BOOLEAN := TRUE;
 BEGIN
     -- Existe cliente
 	SELECT c.c_cod INTO v_cliente_cod FROM Cliente c, Usuario u WHERE c.c_cod = u.cliente_c_cod AND u.u_cod = p_cod_usuario;
@@ -5314,12 +5307,53 @@ BEGIN
 	END IF;
 
     -- Validar que el paquete existe
-    IF NOT EXISTS (SELECT 1 FROM Paquete_Turistico WHERE pt_cod = p_id_paquete) THEN
-		RAISE NOTICE 'El paquete turistico no existe';
+    SELECT pt.restriccion_paquete_rp_cod INTO v_restriccion_cod
+    FROM Paquete_Turistico pt
+    WHERE pt.pt_cod = p_id_paquete;
+
+    IF v_restriccion_cod IS NULL AND NOT FOUND THEN
+        RAISE NOTICE 'El paquete turistico no existe';
         RETURN NULL::BOOLEAN;
     END IF;
 
-	-- Validar que la compra existe, si no, crearlo
+    -- Validar restricción del paquete
+    IF v_restriccion_cod IS NOT NULL THEN
+        SELECT rp.rp_caracteristica, rp.rp_operador, rp.rp_valor_restriccion
+        INTO v_restriccion
+        FROM Restriccion_Paquete rp
+        WHERE rp.rp_cod = v_restriccion_cod;
+
+        -- Obtener el dato del cliente
+        CASE v_restriccion.rp_caracteristica
+            WHEN 'c_edo_civil' THEN
+                SELECT c_edo_civil INTO v_cliente_valor 
+				FROM Cliente WHERE c_cod = v_cliente_cod;
+            WHEN 'c_sexo' THEN
+                SELECT c_sexo INTO v_cliente_valor 
+				FROM Cliente WHERE c_cod = v_cliente_cod;
+            WHEN 'c_fecha_nacimiento' THEN
+                SELECT c_fecha_nacimiento::VARCHAR INTO v_cliente_valor 
+				FROM Cliente WHERE c_cod = v_cliente_cod;
+            WHEN 'EDAD' THEN
+                SELECT EXTRACT(YEAR FROM AGE(c_fecha_nacimiento))::VARCHAR INTO v_cliente_valor 
+				FROM Cliente WHERE c_cod = v_cliente_cod;
+			-- Mas casos sobre otras caracteristicas
+            ELSE
+                v_cliente_valor := NULL;
+        END CASE;
+
+        IF v_cliente_valor IS NOT NULL THEN
+            EXECUTE 'SELECT $1 ' || v_restriccion.rp_operador || ' $2'
+            INTO v_cumple_restriccion
+            USING v_cliente_valor, v_restriccion.rp_valor_restriccion;
+        END IF;
+    END IF;
+
+    IF NOT v_cumple_restriccion THEN
+        RAISE EXCEPTION 'El cliente no cumple con las restricciones del paquete.';
+    END IF;
+
+	-- Validar que la compra existe
     SELECT * INTO v_compra_cod FROM fn_obtener_compra_activa(v_cliente_cod);
 	IF v_compra_cod IS NOT NULL THEN
 		RAISE NOTICE 'Ya hay otra compra en proceso. Completarla o cancelarla para comprar paquete';
@@ -6914,5 +6948,133 @@ BEGIN
 	INNER JOIN Compra co ON co.co_cod = cu.compra_co_cod
 	INNER JOIN Cliente c ON c.c_cod = co.cliente_c_cod
 	WHERE c.c_cod = v_cliente_cod;
+END;
+$$ LANGUAGE plpgsql;
+
+-- ============================================================================
+-- CRUD DE RESTRICCION_PAQUETE
+-- ============================================================================
+
+-- CREAR RESTRICCION_PAQUETE
+CREATE OR REPLACE PROCEDURE sp_crear_restriccion_paquete(
+    OUT p_restriccion_nuevo INT,
+    p_caracteristica VARCHAR,
+    p_operador VARCHAR,
+    p_valor_restriccion VARCHAR
+)
+AS $$
+BEGIN
+    -- Validar datos de entrada
+    IF p_caracteristica IS NULL OR p_caracteristica = '' 
+	OR p_operador IS NULL OR p_operador = '' 
+	OR p_valor_restriccion IS NULL OR p_valor_restriccion = '' THEN
+        RAISE EXCEPTION 'Todos los campos son requeridos';
+    END IF;
+
+    -- Crear la restricción
+    INSERT INTO Restriccion_Paquete (
+        rp_caracteristica,
+        rp_operador,
+        rp_valor_restriccion
+    ) VALUES (
+        p_caracteristica,
+        p_operador,
+        p_valor_restriccion
+    )
+    RETURNING rp_cod INTO p_restriccion_nuevo;
+
+    RAISE NOTICE 'Restriccion creada exitosamente con código: %', p_restriccion_nuevo;
+END;
+$$ LANGUAGE plpgsql;
+
+-- OBTENER RESTRICCIONES DE PAQUETE
+CREATE OR REPLACE FUNCTION fn_listar_restricciones_paquete()                                                                                                      
+RETURNS TABLE (                                                                                                                                               
+	cod INT,
+	restriccion_completa TEXT
+) AS $$
+DECLARE
+BEGIN
+	RETURN QUERY SELECT rp_cod, rp_caracteristica || ' ' || rp_operador || ' ' || rp_valor_restriccion FROM Restriccion_Paquete;
+END;
+$$ LANGUAGE plpgsql;
+
+-- OBTENER RESTRICCION_PAQUETE POR ID
+CREATE OR REPLACE FUNCTION fn_obtener_restriccion_paquete(
+    p_rp_cod INT
+)
+RETURNS TABLE (
+    cod INT,
+    caracteristica VARCHAR,
+    operador VARCHAR,
+    valor_restriccion VARCHAR
+) AS $$
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM Restriccion_Paquete WHERE rp_cod = p_rp_cod) THEN
+        RAISE EXCEPTION 'La restriccion con codigo % no existe', p_rp_cod;
+    END IF;
+
+    RETURN QUERY SELECT rp.rp_cod, 
+        rp.rp_caracteristica, 
+        rp.rp_operador, 
+        rp.rp_valor_restriccion
+    FROM Restriccion_Paquete rp
+    WHERE rp.rp_cod = p_rp_cod;
+END;
+$$ LANGUAGE plpgsql;
+
+-- ACTUALIZAR RESTRICCION_PAQUETE
+CREATE OR REPLACE PROCEDURE sp_actualizar_restriccion_paquete(
+    OUT mensaje VARCHAR,
+    p_rp_cod INT,
+    p_caracteristica VARCHAR DEFAULT NULL,
+    p_operador VARCHAR DEFAULT NULL,
+    p_valor_restriccion VARCHAR DEFAULT NULL
+)
+AS $$
+DECLARE
+    v_nombre_actual VARCHAR;
+BEGIN
+    -- Validar que la restriccion existe
+    SELECT rp_caracteristica INTO v_nombre_actual FROM Restriccion_Paquete WHERE rp_cod = p_rp_cod;
+
+    IF v_nombre_actual IS NULL THEN
+        RAISE EXCEPTION 'No se encontro la restriccion';
+    END IF;
+
+    -- Actualizar la restriccion
+    UPDATE Restriccion_Paquete
+    SET
+        rp_caracteristica = COALESCE(p_caracteristica, rp_caracteristica),
+        rp_operador = COALESCE(p_operador, rp_operador),
+        rp_valor_restriccion = COALESCE(p_valor_restriccion, rp_valor_restriccion)
+    WHERE rp_cod = p_rp_cod;
+
+    mensaje:= 'Restriccion actualizada';
+    
+    RAISE NOTICE 'Actualizado correctamente';
+END;
+$$ LANGUAGE plpgsql;
+
+-- ELIMINAR RESTRICCION_PAQUETE
+CREATE OR REPLACE PROCEDURE sp_eliminar_restriccion_paquete(
+    p_rp_cod INT,
+    OUT mensaje VARCHAR
+) AS $$
+BEGIN
+    -- Verificar si la restriccion existe
+    IF NOT EXISTS (SELECT 1 FROM Restriccion_Paquete WHERE rp_cod = p_rp_cod) THEN
+        RAISE EXCEPTION 'No se ha encontrado la restriccion con codigo %', p_rp_cod;
+    END IF;
+	
+	-- Validar que no este en uso
+	IF EXISTS (SELECT 1 FROM Paquete_Turistico WHERE restriccion_paquete_rp_cod = p_rp_cod) THEN
+		RAISE EXCEPTION 'La restriccion esta en uso en un paquete';
+	END IF;
+
+    -- Eliminar la restriccion
+    DELETE FROM Restriccion_Paquete WHERE rp_cod = p_rp_cod;
+
+    mensaje:='Restriccion eliminada correctamente';
 END;
 $$ LANGUAGE plpgsql;

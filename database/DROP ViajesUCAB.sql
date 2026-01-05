@@ -124,6 +124,7 @@ DROP FUNCTION IF EXISTS fn_agregar_permisos_a_rol;
 DROP FUNCTION IF EXISTS fn_crear_rol_con_permisos;
 DROP FUNCTION IF EXISTS fn_listar_permisos_disponibles;
 DROP FUNCTION IF EXISTS fn_listar_restricciones_paquete;
+DROP FUNCTION IF EXISTS fn_obtener_restriccion_paquete;
 DROP FUNCTION IF EXISTS fn_listar_todos_roles;
 DROP FUNCTION IF EXISTS fn_obtener_rol_con_permisos;
 DROP FUNCTION IF EXISTS fn_quitar_permisos_de_rol;
@@ -198,6 +199,9 @@ DROP PROCEDURE IF EXISTS sp_quitar_servicios_paquete;
 DROP PROCEDURE IF EXISTS sp_validar_pagos;
 DROP PROCEDURE IF EXISTS sp_crear_cuotas_pago;
 DROP PROCEDURE IF EXISTS sp_agregar_servicios_paquete_a_compra;
+DROP PROCEDURE IF EXISTS sp_crear_restriccion_paquete;
+DROP PROCEDURE IF EXISTS sp_actualizar_restriccion_paquete;
+DROP PROCEDURE IF EXISTS sp_eliminar_restriccion_paquete;
 
 -- Triggers
 DROP FUNCTION IF EXISTS fn_crear_pago_millas;
