@@ -6951,6 +6951,403 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
+CREATE OR REPLACE PROCEDURE sp_validar_pagos_cuota(p_cod_cuota INT)
+AS $$
+DECLARE
+	v_recargo NUMERIC;
+	v_monto_a_pagar NUMERIC(15,2);
+	v_monto_pagado NUMERIC(15,2);
+BEGIN
+	SELECT cu_monto, COALESCE(cu_recargo_adicional, 0) 
+	INTO v_monto_a_pagar, v_recargo
+	FROM Cuota WHERE cu_cod = p_cod_cuota;
+
+	v_monto_a_pagar := v_monto_a_pagar + v_recargo;
+
+	SELECT COALESCE(SUM(pc_monto), 0) INTO v_monto_pagado FROM Pago_Cuota WHERE cuota_cu_cod = p_cod_cuota;
+
+	IF v_monto_pagado < v_monto_a_pagar THEN
+		RETURN;
+	END IF;
+
+	-- Actualizar el estado de la compra
+	UPDATE Compra SET co_estado = 'FINALIZADO' 
+	WHERE co_cod = (SELECT compra_co_cod FROM Cuota WHERE cu_cod = p_cod_cuota);
+	
+	RAISE NOTICE 'Pagos concretaron la cuota';
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE OR REPLACE FUNCTION fn_validar_monto_cuota(
+	p_cod_cuota INT,
+	p_monto NUMERIC
+)
+RETURNS BOOLEAN AS $$
+DECLARE
+	v_recargo NUMERIC;
+	v_monto_a_pagar NUMERIC(15,2);
+	v_monto_pagado NUMERIC(15,2);
+BEGIN
+	SELECT cu_monto, COALESCE(cu_recargo_adicional, 0) 
+	INTO v_monto_a_pagar, v_recargo
+	FROM Cuota WHERE cu_cod = p_cod_cuota;
+	
+	-- Mas el monto de recargo
+	v_monto_a_pagar := v_monto_a_pagar + v_recargo;
+
+	SELECT COALESCE(SUM(pc_monto), 0) INTO v_monto_pagado FROM Pago_Cuota WHERE cuota_cu_cod = p_cod_cuota;
+
+	IF v_monto_pagado + p_monto > v_monto_a_pagar THEN
+		RAISE NOTICE 'Monto superior';
+		RETURN FALSE;
+	ELSE
+		RAISE NOTICE 'Monto adecuado';
+		RETURN TRUE;
+	END IF;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE OR REPLACE FUNCTION fn_pago_cuota_tarjeta(
+	p_cod_usuario INT,
+	p_cod_cuota INT
+	p_monto NUMERIC(12,2),
+	p_tarj_numero BIGINT,
+	p_tarj_cod_seguridad INT,
+	p_tarj_nombre_titular VARCHAR,
+	p_tarj_fecha_venc DATE,
+	p_tarj_banco_cod INT,
+	p_tarj_emisor VARCHAR
+) RETURNS BOOLEAN AS $$
+DECLARE
+	v_cliente_cod INT;
+	v_mp_cod INT;
+BEGIN
+	-- Validar monto
+	IF p_monto IS NULL OR p_monto <= 0 THEN
+		RAISE NOTICE 'El monto debe ser positivo';
+		RETURN NULL::BOOLEAN;
+	END IF;
+	
+	-- Existe cliente
+	SELECT c.c_cod INTO v_cliente_cod FROM Cliente c, Usuario u WHERE c.c_cod = u.cliente_c_cod AND u.u_cod = p_cod_usuario;
+	IF v_cliente_cod IS NULL THEN
+		RAISE NOTICE 'El cliente no se ha encontrado';
+		RETURN NULL::BOOLEAN;
+	END IF;
+
+	-- Validar que la cuota existe
+	IF EXISTS(SELECT 1 FROM Cuota WHERE cu_cod = p_cod_cuota) THEN
+		RAISE NOTICE 'No se encontro la cuota a pagar';
+		RETURN NULL::BOOLEAN;
+	END IF;
+	
+	-- Validar que no se pase del monto
+	IF (SELECT * FROM fn_validar_monto_cuota(p_cod_cuota, p_monto)) IS NOT TRUE THEN
+		RAISE NOTICE 'Monto inadecuado para pagar';
+		RETURN NULL::BOOLEAN;
+	END IF;
+
+	IF NOT EXISTS(SELECT 1 FROM Banco WHERE ba_cod = p_tarj_banco_cod) THEN
+		RAISE NOTICE 'El codigo del banco no existe';
+		RETURN NULL::BOOLEAN;
+	END IF;
+	
+	INSERT INTO Metodo_Pago (cliente_c_cod, t_numero, t_cod_seguridad, t_nombre_titular, t_fecha_vencimiento, t_banco_cod, t_emisor, mp_tipo)
+	VALUES (v_cliente_cod, p_tarj_numero, p_tarj_cod_seguridad, p_tarj_nombre_titular, p_tarj_fecha_venc, p_tarj_banco_cod, p_tarj_emisor, 'TARJETA')
+	RETURNING mp_cod INTO v_mp_cod;
+	RAISE NOTICE 'Metodo de pago creado';
+
+	INSERT INTO Pago_Cuota VALUES (p_monto, CURRENT_TIMESTAMP, p_cod_cuota, v_mp_cod);
+	RAISE NOTICE 'Pago creado';
+
+	-- Validar si ya completa la cuota
+	CALL sp_validar_pagos_cuota(p_cod_cuota);
+	
+	RETURN TRUE;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE OR REPLACE FUNCTION fn_pago_cuota_cheque(
+	p_cod_usuario INT,
+	p_cod_cuota INT,
+	p_monto NUMERIC(12,2),
+	p_cheq_cod_cuenta BIGINT,
+	p_cheq_numero BIGINT,
+	p_cheq_nombre_titular VARCHAR(50),
+	p_cheq_fecha_emision DATE,
+	p_cheq_banco_cod INT
+) RETURNS BOOLEAN AS $$
+DECLARE
+	v_cliente_cod INT;
+	v_mp_cod INT;
+BEGIN
+	-- Validar monto
+	IF p_monto IS NULL OR p_monto <= 0 THEN
+		RAISE NOTICE 'El monto debe ser positivo';
+		RETURN NULL::BOOLEAN;
+	END IF;
+	
+	-- Existe cliente
+	SELECT c.c_cod INTO v_cliente_cod FROM Cliente c, Usuario u WHERE c.c_cod = u.cliente_c_cod AND u.u_cod = p_cod_usuario;
+	IF v_cliente_cod IS NULL THEN
+		RAISE NOTICE 'El cliente no se ha encontrado';
+		RETURN NULL::BOOLEAN;
+	END IF;
+
+	-- Validar que la cuota existe
+	IF EXISTS(SELECT 1 FROM Cuota WHERE cu_cod = p_cod_cuota) THEN
+		RAISE NOTICE 'No se encontro la cuota a pagar';
+		RETURN NULL::BOOLEAN;
+	END IF;
+	
+	-- Validar que no se pase del monto
+	IF (SELECT * FROM fn_validar_monto_cuota(p_cod_cuota, p_monto)) IS NOT TRUE THEN
+		RAISE NOTICE 'Monto inadecuado para pagar';
+		RETURN NULL::BOOLEAN;
+	END IF;
+
+	IF NOT EXISTS (SELECT 1 FROM Banco WHERE ba_cod = p_cheq_banco_cod) THEN
+		RAISE NOTICE 'El codigo del banco no existe';
+		RETURN NULL::BOOLEAN;
+	END IF;
+	
+	INSERT INTO Metodo_Pago (cliente_c_cod, c_codigo_cuenta, c_numero, c_fecha_emision, c_nombre_titular, c_banco_cod, mp_tipo)
+	VALUES (v_cliente_cod, p_cheq_cod_cuenta, p_cheq_numero, p_cheq_fecha_emision, p_cheq_nombre_titular, p_cheq_banco_cod, 'CHEQUE')
+	RETURNING mp_cod INTO v_mp_cod;
+	RAISE NOTICE 'Metodo de pago creado';
+
+	INSERT INTO Pago_Cuota VALUES (p_monto, CURRENT_TIMESTAMP, p_cod_cuota, v_mp_cod);
+	RAISE NOTICE 'Pago creado';
+
+	-- Validar si ya completa la compra
+	CALL sp_validar_pagos_cuota(p_cod_cuota);
+	
+	RETURN TRUE;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE OR REPLACE FUNCTION fn_pago_cuota_deposito(
+	p_cod_usuario INT,
+	p_cod_cuota INT,
+	p_monto NUMERIC(12,2),
+	p_dep_num_ref BIGINT,
+	p_dep_num_destino BIGINT,
+	p_dep_banco_cod INT
+) RETURNS BOOLEAN AS $$
+DECLARE
+	v_cliente_cod INT;
+	v_mp_cod INT;
+BEGIN
+	-- Validar monto
+	IF p_monto IS NULL OR p_monto <= 0 THEN
+		RAISE NOTICE 'El monto debe ser positivo';
+		RETURN NULL::BOOLEAN;
+	END IF;
+	
+	-- Existe cliente
+	SELECT c.c_cod INTO v_cliente_cod FROM Cliente c, Usuario u WHERE c.c_cod = u.cliente_c_cod AND u.u_cod = p_cod_usuario;
+	IF v_cliente_cod IS NULL THEN
+		RAISE NOTICE 'El cliente no se ha encontrado';
+		RETURN NULL::BOOLEAN;
+	END IF;
+
+	-- Validar que la cuota existe
+	IF EXISTS(SELECT 1 FROM Cuota WHERE cu_cod = p_cod_cuota) THEN
+		RAISE NOTICE 'No se encontro la cuota a pagar';
+		RETURN NULL::BOOLEAN;
+	END IF;
+	
+	-- Validar que no se pase del monto
+	IF (SELECT * FROM fn_validar_monto_cuota(p_cod_cuota, p_monto)) IS NOT TRUE THEN
+		RAISE NOTICE 'Monto inadecuado para pagar';
+		RETURN NULL::BOOLEAN;
+	END IF;
+
+	IF NOT EXISTS (SELECT 1 FROM Banco WHERE ba_cod = p_dep_banco_cod) THEN
+		RAISE NOTICE 'El codigo del banco no existe';
+		RETURN NULL::BOOLEAN;
+	END IF;
+	
+	INSERT INTO Metodo_Pago (cliente_c_cod, de_num_referencia, de_num_destino, de_banco_cod, mp_tipo)
+	VALUES (v_cliente_cod, p_dep_num_ref, p_dep_num_destino, p_dep_banco_cod, 'DEPOSITO')
+	RETURNING mp_cod INTO v_mp_cod;
+	RAISE NOTICE 'Metodo de pago creado';
+
+	INSERT INTO Pago_Cuota VALUES (p_monto, CURRENT_TIMESTAMP, p_cod_cuota, v_mp_cod);
+	RAISE NOTICE 'Pago creado';
+
+	-- Validar si ya completa la compra
+	CALL sp_validar_pagos_cuota(p_cod_cuota);
+	
+	RETURN TRUE;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE OR REPLACE FUNCTION fn_pago_cuota_operacion_digital(
+	p_cod_usuario INT,
+	p_cod_cuota INT,
+	p_monto NUMERIC(12,2),
+	p_op_num_referencia BIGINT
+) RETURNS BOOLEAN AS $$
+DECLARE
+	v_cliente_cod INT;
+	v_mp_cod INT;
+BEGIN
+	-- Validar monto
+	IF p_monto IS NULL OR p_monto <= 0 THEN
+		RAISE NOTICE 'El monto debe ser positivo';
+		RETURN NULL::BOOLEAN;
+	END IF;
+	
+	-- Existe cliente
+	SELECT c.c_cod INTO v_cliente_cod FROM Cliente c, Usuario u WHERE c.c_cod = u.cliente_c_cod AND u.u_cod = p_cod_usuario;
+	IF v_cliente_cod IS NULL THEN
+		RAISE NOTICE 'El cliente no se ha encontrado';
+		RETURN NULL::BOOLEAN;
+	END IF;
+
+	-- Validar que la cuota existe
+	IF EXISTS(SELECT 1 FROM Cuota WHERE cu_cod = p_cod_cuota) THEN
+		RAISE NOTICE 'No se encontro la cuota a pagar';
+		RETURN NULL::BOOLEAN;
+	END IF;
+	
+	-- Validar que no se pase del monto
+	IF (SELECT * FROM fn_validar_monto_cuota(p_cod_cuota, p_monto)) IS NOT TRUE THEN
+		RAISE NOTICE 'Monto inadecuado para pagar';
+		RETURN NULL::BOOLEAN;
+	END IF;
+
+	INSERT INTO Metodo_Pago (cliente_c_cod, od_num_referencia, mp_tipo)
+	VALUES (v_cliente_cod, p_op_num_referencia, 'OPERACION_DIGITAL')
+	RETURNING mp_cod INTO v_mp_cod;
+	RAISE NOTICE 'Metodo de pago creado';
+
+	INSERT INTO Pago_Cuota VALUES (p_monto, CURRENT_TIMESTAMP, p_cod_cuota, v_mp_cod);
+	RAISE NOTICE 'Pago creado';
+
+	-- Validar si ya completa la compra
+	CALL sp_validar_pagos_cuota(p_cod_cuota);
+	
+	RETURN TRUE;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE OR REPLACE FUNCTION fn_pago_cuota_cripto(
+	p_cod_usuario INT,
+	p_cod_cuota INT,
+	p_monto NUMERIC(12,2),
+	p_cript_hash_id VARCHAR(100),
+	p_cript_dir_billetera VARCHAR(100)
+) RETURNS BOOLEAN AS $$
+DECLARE
+	v_cliente_cod INT;
+	v_mp_cod INT;
+BEGIN
+	-- Validar monto
+	IF p_monto IS NULL OR p_monto <= 0 THEN
+		RAISE NOTICE 'El monto debe ser positivo';
+		RETURN NULL::BOOLEAN;
+	END IF;
+	
+	-- Existe cliente
+	SELECT c.c_cod INTO v_cliente_cod FROM Cliente c, Usuario u WHERE c.c_cod = u.cliente_c_cod AND u.u_cod = p_cod_usuario;
+	IF v_cliente_cod IS NULL THEN
+		RAISE NOTICE 'El cliente no se ha encontrado';
+		RETURN NULL::BOOLEAN;
+	END IF;
+
+	-- Validar que la cuota existe
+	IF EXISTS(SELECT 1 FROM Cuota WHERE cu_cod = p_cod_cuota) THEN
+		RAISE NOTICE 'No se encontro la cuota a pagar';
+		RETURN NULL::BOOLEAN;
+	END IF;
+	
+	-- Validar que no se pase del monto
+	IF (SELECT * FROM fn_validar_monto_cuota(p_cod_cuota, p_monto)) IS NOT TRUE THEN
+		RAISE NOTICE 'Monto inadecuado para pagar';
+		RETURN NULL::BOOLEAN;
+	END IF;
+
+	INSERT INTO Metodo_Pago (cliente_c_cod, u_hash_id, u_direccion_billetera, mp_tipo)
+	VALUES (v_cliente_cod, p_cript_hash_id, p_cript_dir_billetera, 'USDT')
+	RETURNING mp_cod INTO v_mp_cod;
+	RAISE NOTICE 'Metodo de pago creado';
+
+	INSERT INTO Pago_Cuota VALUES (p_monto, CURRENT_TIMESTAMP, p_cod_cuota, v_mp_cod);
+	RAISE NOTICE 'Pago creado';
+
+	-- Validar si ya completa la compra
+	CALL sp_validar_pagos_cuotas(p_cod_cuota);
+	
+	RETURN TRUE;
+END;
+$$ LANGUAGE plpgsql;
+
+-- Pagar con Millas
+CREATE OR REPLACE FUNCTION fn_pago_cuota_millas(
+	p_cod_usuario INT,
+	p_cod_cuota INT,
+	p_monto INT
+) RETURNS BOOLEAN AS $$
+DECLARE
+	v_cliente_cod INT;
+	v_mp_cod INT;
+	v_tasa_milla NUMERIC;
+	v_monto_calculado NUMERIC;
+BEGIN
+	-- Validar monto
+	IF p_monto IS NULL OR p_monto <= 0 THEN
+		RAISE NOTICE 'El monto debe ser positivo';
+		RETURN NULL::BOOLEAN;
+	END IF;
+	
+	-- Existe cliente
+	SELECT c.c_cod INTO v_cliente_cod FROM Cliente c, Usuario u WHERE c.c_cod = u.cliente_c_cod AND u.u_cod = p_cod_usuario;
+	IF v_cliente_cod IS NULL THEN
+		RAISE NOTICE 'El cliente no se ha encontrado';
+		RETURN NULL::BOOLEAN;
+	END IF;
+
+	-- Validar que la cuota existe
+	IF EXISTS(SELECT 1 FROM Cuota WHERE cu_cod = p_cod_cuota) THEN
+		RAISE NOTICE 'No se encontro la cuota a pagar';
+		RETURN NULL::BOOLEAN;
+	END IF;
+
+	-- Calcular el monto equivalent de las Millas a Bs
+	SELECT mp_cod INTO v_mp_cod FROM Metodo_Pago WHERE m_cliente_cod = v_cliente_cod;
+	
+	SELECT tca_valor_tasa INTO v_tasa_milla FROM Tasa_Cambio
+	WHERE tca_fecha_hora_fin IS NULL AND tca_divisa_origen = 'Milla';
+
+	IF v_tasa_milla IS NULL THEN
+		RAISE NOTICE 'No se encontro la tasa de la Milla';
+		RETURN NULL::BOOLEAN;
+	END IF;
+
+	v_monto_calculado := p_monto * v_tasa_milla;
+
+		-- Validar que no se pase del monto
+	IF (SELECT * FROM fn_validar_monto_cuota(p_cod_cuota, v_monto_calculado)) IS NOT TRUE THEN
+		RAISE NOTICE 'Monto inadecuado para pagar';
+		RETURN NULL::BOOLEAN;
+	END IF;
+
+	INSERT INTO Pago_Cuota VALUES (v_monto_calculado, CURRENT_TIMESTAMP, p_cod_cuota, v_mp_cod);
+	RAISE NOTICE 'Pago creado';
+
+	-- Validar si ya completa la compra
+	CALL sp_validar_pagos_cuota(p_cod_cuota);
+
+	-- Descontar las millas
+	UPDATE Metodo_Pago SET m_cant_acumulada = m_cant_acumulada - p_monto 
+	WHERE mp_cod = v_mp_cod;
+	
+	RETURN TRUE;
+END;
+$$ LANGUAGE plpgsql;
+
 -- ============================================================================
 -- CRUD DE RESTRICCION_PAQUETE
 -- ============================================================================
