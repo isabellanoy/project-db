@@ -6930,7 +6930,8 @@ RETURNS TABLE (
 	cod_cuota INT,
 	monto_cuota NUMERIC,
 	fecha_final_cuota TIMESTAMP,
-	monto_recargo NUMERIC
+	monto_recargo NUMERIC,
+	estado_compra VARCHAR
 ) AS $$
 DECLARE
 	v_cliente_cod INT;
@@ -6943,7 +6944,7 @@ BEGIN
 		RETURN QUERY SELECT NULL, NULL, NULL, NULL;
 	END IF;	
 
-	RETURN QUERY SELECT cu_cod, cu_monto, cu_fecha_hora_final, cu_recargo_adicional
+	RETURN QUERY SELECT cu.cu_cod, cu.cu_monto, cu.cu_fecha_hora_final, cu.cu_recargo_adicional, co.co_estado
 	FROM Cuota cu
 	INNER JOIN Compra co ON co.co_cod = cu.compra_co_cod
 	INNER JOIN Cliente c ON c.c_cod = co.cliente_c_cod
