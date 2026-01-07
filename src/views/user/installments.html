@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <script src="/src/scripts/admin-guard.js"></script>
+    <title>Mis Cuotas | ViajesUCAB</title>
+    <link rel="stylesheet" href="/src/styles/styles.css">
+</head>
+<body>
+    <header class="navbar">
+        <div class="navbar__content">
+            <a class="navbar__brand" href="/home">ViajesUCAB</a>
+            <div style="display: flex; gap: 10px;">
+                <a href="/perfil" class="cta-button">Mi Cuenta</a>
+            </div>
+        </div>
+    </header>
+
+    <div class="dashboard-container">
+        <aside class="sidebar">
+            <div class="sidebar__title">
+                <h3>Panel de Usuario</h3>
+            </div>
+            <nav class="sidebar__nav">
+                <a href="/perfil">Tablero</a>
+                <a href="/mis-viajes">Mis Reservas</a>
+                <a href="/mis-cuotas" class="active">Financiamiento</a>
+            </nav>
+        </aside>
+
+        <main class="dashboard-main" style="grid-template-columns: 1fr;">
+            <div class="central-col">
+                <h1 class="section__title">Pagos Pendientes (Cuotas)</h1>
+                <p style="margin-bottom: 2rem;">Gestiona los pagos de tus viajes financiados.</p>
+
+                <div class="data-table-container">
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>ID Cuota</th>
+                                <th>Fecha Límite</th>
+                                <th>Estado Compra</th>
+                                <th>Monto Base</th>
+                                <th>Recargo</th>
+                                <th>Total a Pagar</th>
+                                <th>Acción</th>
+                            </tr>
+                        </thead>
+                        <tbody id="cuotasBody">
+                            <tr><td colspan="7" style="text-align:center;">Cargando...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <div id="paymentModal" class="modal-overlay">
+        <div class="modal-card">
+            <h3 class="modal-title">Pagar Cuota #<span id="modalQuotaId"></span></h3>
+            <p style="margin-bottom: 1rem;">Monto a pagar: <strong id="modalAmountDisplay"></strong></p>
+            
+            <form id="paymentForm">
+                <input type="hidden" id="inputQuotaId">
+                <input type="hidden" id="inputAmount">
+
+                <div class="form-group">
+                    <label>Método de Pago</label>
+                    <select id="methodSelect" class="form-input" onchange="toggleMethodFields()">
+                        <option value="card">Tarjeta de Crédito/Débito</option>
+                        <option value="digital">Pago Móvil / Zelle</option>
+                    </select>
+                </div>
+
+                <div id="cardFields">
+                    <div class="form-group">
+                        <input type="text" name="numero" class="form-input" placeholder="Número de Tarjeta (16 dígitos)" maxlength="16">
+                    </div>
+                    <div class="form-group" style="display:flex; gap:10px;">
+                        <input type="text" name="titular" class="form-input" placeholder="Titular">
+                        <input type="text" name="cvc" class="form-input" placeholder="CVC" maxlength="4" style="width: 80px;">
+                    </div>
+                    <div class="form-group" style="display:flex; gap:10px;">
+                        <input type="date" name="vencimiento" class="form-input">
+                        <select name="banco_id" id="bankSelect" class="form-input">
+                            <option value="">Banco...</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <select name="emisor" class="form-input">
+                            <option value="VISA">VISA</option>
+                            <option value="MasterCard">MasterCard</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div id="digitalFields" style="display: none;">
+                    <div class="form-group">
+                        <label>Referencia</label>
+                        <input type="text" name="referencia" class="form-input" placeholder="Ej. 123456">
+                    </div>
+                </div>
+
+                <div style="margin-top: 1.5rem; display:flex; justify-content: center; gap: 10px;">
+                    <button type="button" class="btn-secondary" onclick="closePaymentModal()">Cancelar</button>
+                    <button type="submit" class="btn-primary">Pagar Ahora</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script src="/src/scripts/installments.js"></script>
+</body>
+</html>

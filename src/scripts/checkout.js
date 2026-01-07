@@ -54,6 +54,33 @@
     }
   };
 
+  // Función para actualizar los inputs de monto según el financiamiento
+  const updatePaymentAmounts = () => {
+      if (!financeCheckbox) return;
+
+      const isFinanced = financeCheckbox.checked;
+      let amountToPay = totalAmount;
+
+      // Si se financia, el pago inicial es el 10%
+      if (isFinanced) {
+          amountToPay = totalAmount * 0.10;
+      }
+
+      const formatted = amountToPay.toFixed(2);
+
+      // Actualizar inputs y sus máximos
+      if (cardAmountInput) {
+          cardAmountInput.value = formatted;
+          // Si es financiado, bloqueamos o sugerimos el maximo como el 10% exacto
+          // Si es pago total, el maximo es el total.
+          cardAmountInput.max = formatted; 
+      }
+      if (digitalAmountInput) {
+          digitalAmountInput.value = formatted;
+          digitalAmountInput.max = formatted;
+      }
+  };
+
   // Cargar Resumen de la compra
   const loadSummary = async () => {
     try {
@@ -81,15 +108,8 @@
         packagePaymentDiv.style.display = 'none';
         totalAmountLabel.textContent = `Bs. ${totalAmount.toFixed(2)}`;
         
-        // Asignamos el valor y también el atributo MAX
-        if (cardAmountInput) {
-            cardAmountInput.value = totalAmount.toFixed(2);
-            cardAmountInput.max = totalAmount.toFixed(2);
-        }
-        if (digitalAmountInput) {
-            digitalAmountInput.value = totalAmount.toFixed(2);
-            digitalAmountInput.max = totalAmount.toFixed(2);
-        }
+        // Inicializar los inputs con el monto total (o el 10% si el check ya estaba puesto por defecto)
+        updatePaymentAmounts();
       }
     } catch (error) {
       console.error(error);
@@ -217,6 +237,7 @@
   // Función auxiliar para forzar el máximo
   const enforceMaxAmount = (e) => {
       const input = e.target;
+      // Solo forzar si el valor es mayor que el max
       if (input.max && parseFloat(input.value) > parseFloat(input.max)) {
           input.value = input.max;
       }
@@ -230,6 +251,11 @@
     
     if(confirmPaymentBtn) confirmPaymentBtn.addEventListener('click', handlePayment);
     if(payWithMilesBtn) payWithMilesBtn.addEventListener('click', handleMilesPayment);
+
+    // --- NUEVO: Escuchar cambios en el checkbox de financiamiento ---
+    if(financeCheckbox) {
+        financeCheckbox.addEventListener('change', updatePaymentAmounts);
+    }
 
     // --- VALIDACIÓN DE MONTO MÁXIMO EN TIEMPO REAL ---
     if(cardAmountInput) cardAmountInput.addEventListener('input', enforceMaxAmount);
