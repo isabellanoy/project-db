@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <script src="/src/scripts/admin-guard.js"></script>
+    <title>Restricciones | Admin</title>
+    <link rel="stylesheet" href="/src/styles/styles.css">
+</head>
+<body>
+    <div class="dashboard-container">
+        <aside class="sidebar">
+            <div class="sidebar__title"><h3>Panel Admin</h3></div>
+            <nav class="sidebar__nav">
+                <a href="/admin/proveedores">Proveedores</a>
+                <a href="/admin/paquetes">Paquetes</a>
+                <a href="/admin/restricciones" class="active">Restricciones</a>
+                <a href="/admin/promociones">Promociones</a>
+                <a href="/admin/roles">Roles</a>
+                <a href="/admin/reportes">Reportes</a>
+                <a href="/admin/usuarios">Usuarios</a>
+            </nav>
+        </aside>
+
+        <main style="grid-column: 2 / -1;">
+            <div style="display: flex; justify-content: space-between; margin-bottom: 1.5rem;">
+                <h1 class="section__title">Restricciones de Paquetes</h1>
+                <a href="/admin/restricciones/crear" class="cta-button" style="background: #000;">+ Nueva Restricción</a>
+            </div>
+
+            <div class="data-table-container">
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Descripción Lógica</th>
+                            <th>Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody id="restrictionsBody">
+                        <tr><td colspan="3">Cargando...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </main>
+    </div>
+
+    <script>
+        fetch('/api/restrictions')
+            .then(r => r.json())
+            .then(res => {
+                const tbody = document.getElementById('restrictionsBody');
+                if(!res.ok || res.data.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="3" style="text-align:center;">No hay restricciones registradas.</td></tr>';
+                    return;
+                }
+                tbody.innerHTML = res.data.map(r => `
+                    <tr>
+                        <td>${r.cod}</td>
+                        <td style="font-family: monospace; font-size: 1rem;">${r.restriccion_completa}</td>
+                        <td>
+                            <button onclick="deleteRestriction(${r.cod})" class="btn-danger" style="padding: 0.25rem 0.5rem; font-size: 0.8rem;">Eliminar</button>
+                        </td>
+                    </tr>
+                `).join('');
+            });
+
+        function deleteRestriction(id) {
+            if(confirm('¿Eliminar restricción? Si está en uso por un paquete, fallará.')) {
+                fetch(`/api/restrictions/${id}`, { method: 'DELETE' })
+                    .then(r => r.json())
+                    .then(res => {
+                        if(res.ok) window.location.reload();
+                        else alert('Error: ' + res.message);
+                    });
+            }
+        }
+    </script>
+</body>
+</html>

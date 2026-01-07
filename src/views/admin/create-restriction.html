@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <script src="/src/scripts/admin-guard.js"></script>
+    <title>Nueva Restricción | Admin</title>
+    <link rel="stylesheet" href="/src/styles/styles.css">
+</head>
+<body>
+    <div class="dashboard-container">
+        <main style="grid-column: 1 / -1; max-width: 600px; margin: 0 auto;">
+            <div class="crud-form-wrapper">
+                <div class="crud-header"><h2>Crear Restricción</h2></div>
+
+                <form id="restrictionForm">
+                    <div class="form-row">
+                        <label>Característica (Campo en BD)</label>
+                        <select name="caracteristica" class="form-input" required id="charSelect">
+                            <option value="">Seleccione...</option>
+                            <option value="c_edo_civil">Estado Civil (c_edo_civil)</option>
+                            <option value="c_sexo">Sexo (c_sexo)</option>
+                            <option value="EDAD">Edad (Calculado)</option>
+                            <option value="PAIS">País de Residencia</option>
+                        </select>
+                    </div>
+
+                    <div class="form-row">
+                        <label>Operador Lógico</label>
+                        <select name="operador" class="form-input" required>
+                            <option value="=">Igual a (=)</option>
+                            <option value="<>">Diferente de (<>)</option>
+                            <option value=">">Mayor que (>)</option>
+                            <option value="<">Menor que (<)</option>
+                            <option value=">=">Mayor o igual (>=)</option>
+                            <option value="<=">Menor o igual (<=)</option>
+                        </select>
+                    </div>
+
+                    <div class="form-row">
+                        <label>Valor de la Restricción</label>
+                        <input type="text" name="valor" class="form-input" required placeholder="Ej: SOLTERO, 18, Venezuela...">
+                        <small style="color: #666; display: block; margin-top: 5px;">
+                            Para Estado Civil: SOLTERO, CASADO<br>
+                            Para Sexo: M, F<br>
+                            Para Edad: Número entero
+                        </small>
+                    </div>
+
+                    <div class="form-actions" style="justify-content: center;">
+                        <button type="submit" class="btn-primary">Guardar</button>
+                        <a href="/admin/restricciones" class="btn-danger">Cancelar</a>
+                    </div>
+                </form>
+            </div>
+        </main>
+    </div>
+
+    <script>
+        document.getElementById('restrictionForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const formData = new FormData(e.target);
+            const data = Object.fromEntries(formData.entries());
+
+            try {
+                const res = await fetch('/api/restrictions', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify(data)
+                });
+                const json = await res.json();
+
+                if(json.ok) {
+                    alert('Restricción creada');
+                    window.location.href = '/admin/restricciones';
+                } else {
+                    alert('Error: ' + json.message);
+                }
+            } catch(err) {
+                console.error(err);
+                alert('Error de conexión');
+            }
+        });
+    </script>
+</body>
+</html>

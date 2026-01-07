@@ -14,6 +14,7 @@ const promotionsRoutes = require('./routes/promotions.routes');
 const jasperRoutes = require('./routes/jasper.routes');
 const usersRoutes = require('./routes/users.routes');
 const wishlistRoutes = require('./routes/wishlist.routes');
+const restrictionsRoutes = require('./routes/restrictions.routes');
 
 const app = express();
 
@@ -56,6 +57,7 @@ const apiRoutes = [
   { basePath: '/api', router: jasperRoutes },
   { basePath: '/api/users', router: usersRoutes },
   { basePath: '/api/wishlist', router: wishlistRoutes },
+  { basePath: '/api/restrictions', router: restrictionsRoutes },
 ];
 
 apiRoutes.forEach(({ basePath, router }) => {

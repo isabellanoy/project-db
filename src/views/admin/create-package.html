@@ -44,6 +44,15 @@
                         <small style="color:#666;">Seleccione al menos uno.</small>
                     </div>
 
+                    <div class="form-row">
+                        <label>Restricción de Aplicación (Opcional)</label>
+                        <select name="restriccion" id="restrictionSelect" class="form-input">
+                            <option value="">Ninguna</option>
+                            <option>Cargando...</option>
+                        </select>
+                        <small style="color:#666;">Si selecciona una, solo los clientes que cumplan la condición podrán comprarlo.</small>
+                    </div>
+
                     <div class="form-actions" style="justify-content: center;">
                         <button type="submit" class="btn-primary">Guardar Paquete</button>
                         <a href="/admin/paquetes" class="btn-danger">Cancelar</a>
@@ -56,8 +65,25 @@
     <script>
         const servSel = document.getElementById('servicesSelect');
         const form = document.getElementById('packageForm');
+        const restSel = document.getElementById('restrictionSelect');
 
-        // Cargar todos los servicios disponibles
+        // 1. Cargar restricciones
+        fetch('/api/restrictions')
+            .then(r => r.json())
+            .then(res => {
+                if(res.ok) {
+                    restSel.innerHTML = '<option value="">Ninguna</option>' + 
+                        res.data.map(r => `<option value="${r.cod}">${r.restriccion_completa}</option>`).join('');
+                } else {
+                    restSel.innerHTML = '<option value="">Error cargando</option>';
+                }
+            })
+            .catch(err => {
+                console.error(err);
+                restSel.innerHTML = '<option value="">Error de conexión</option>';
+            });
+
+        // 2. Cargar todos los servicios disponibles
         fetch('/api/services/options/all-services')
             .then(res => res.json())
             .then(json => {
@@ -70,6 +96,7 @@
                 }
             });
 
+        // 3. Manejar envío del formulario
         form.addEventListener('submit', async (e) => {
             e.preventDefault();
             
@@ -86,21 +113,28 @@
                 personas: form.personas.value,
                 costo: form.costo.value,
                 costo_millas: form.costo_millas.value,
-                servicios: selectedServices
+                servicios: selectedServices,
+                // Enviar restricción (o null si está vacío)
+                restriccion: restSel.value || null
             };
 
-            const res = await fetch('/api/services/paquetes', {
-                method: 'POST',
-                headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify(data)
-            });
-            
-            const result = await res.json();
-            if(result.ok) {
-                alert('Paquete creado exitosamente');
-                window.location.href = '/admin/paquetes';
-            } else {
-                alert('Error: ' + result.message);
+            try {
+                const res = await fetch('/api/services/paquetes', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify(data)
+                });
+                
+                const result = await res.json();
+                if(result.ok) {
+                    alert('Paquete creado exitosamente');
+                    window.location.href = '/admin/paquetes';
+                } else {
+                    alert('Error: ' + result.message);
+                }
+            } catch (error) {
+                console.error(error);
+                alert('Error de conexión al crear el paquete');
             }
         });
     </script>

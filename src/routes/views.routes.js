@@ -98,6 +98,10 @@ router.get('/admin/eliminar', (_req, res) => {
 
 router.get('/admin/usuarios', (_req, res) => sendView(res, ['admin', 'manage-users.html']));
 
+router.get('/admin/restricciones', (_req, res) => sendView(res, ['admin', 'manage-restrictions.html']));
+
+router.get('/admin/restricciones/crear', (_req, res) => sendView(res, ['admin', 'create-restriction.html']));
+
 // Paquetes
 router.get('/admin/paquetes', (_req, res) => sendView(res, ['admin', 'manage-packages.html']));
 router.get('/admin/paquetes/crear', (_req, res) => sendView(res, ['admin', 'create-package.html']));
