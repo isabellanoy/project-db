@@ -42,9 +42,13 @@
               </div>
           </div>
           
-          <div style="margin-top: 1.5rem; padding-top: 1rem; border-top: 1px solid #eee; display: flex; gap: 1rem;">
-              ${trip.co_estado === 'FINALIZADO' ? `<button class="btn-secondary download-invoice-btn" data-compra-id="${trip.co_cod}" style="padding: 0.5rem 1rem; font-size: 0.85rem;">Descargar Factura</button>` : ''}
-          </div>
+      <div style="margin-top: 1.5rem; padding-top: 1rem; border-top: 1px solid #eee; display: flex; gap: 1rem;">
+          ${trip.co_estado === 'FINALIZADO' ? `<button class="btn-secondary download-invoice-btn" data-compra-id="${trip.co_cod}" style="padding: 0.5rem 1rem; font-size: 0.85rem;">Descargar Factura</button>` : ''}
+          
+          <a href="/mis-viajes/detalle?id=${trip.co_cod}" class="cta-button" style="background: #000; padding: 0.5rem 1rem; font-size: 0.85rem; color: white;">
+              Gestionar / Ver Servicios
+          </a>
+      </div>
       </div>
     `;
   };

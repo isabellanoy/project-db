@@ -38,6 +38,8 @@ router.get('/mis-viajes', (_req, res) => {
   sendView(res, ['user', 'my-trips.html']);
 });
 
+router.get('/mis-viajes/detalle', (_req, res) => sendView(res, ['user', 'trip-detail.html']));
+
 // --- Búsqueda ---
 
 // Resultados -> localhost:3000/busqueda
