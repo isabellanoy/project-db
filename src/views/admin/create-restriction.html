@@ -10,44 +10,32 @@
     <div class="dashboard-container">
         <main style="grid-column: 1 / -1; max-width: 600px; margin: 0 auto;">
             <div class="crud-form-wrapper">
-                <div class="crud-header"><h2>Crear Restricción</h2></div>
+                <div class="crud-header"><h2 id="form-title">Crear Restricción</h2></div>
 
                 <form id="restrictionForm">
                     <div class="form-row">
                         <label>Característica (Campo en BD)</label>
                         <select name="caracteristica" class="form-input" required id="charSelect">
                             <option value="">Seleccione...</option>
-                            <option value="c_edo_civil">Estado Civil (c_edo_civil)</option>
-                            <option value="c_sexo">Sexo (c_sexo)</option>
+                            <option value="c_edo_civil">Estado Civil</option>
+                            <option value="c_sexo">Sexo</option>
                             <option value="EDAD">Edad (Calculado)</option>
-                            <option value="PAIS">País de Residencia</option>
                         </select>
                     </div>
 
                     <div class="form-row">
                         <label>Operador Lógico</label>
-                        <select name="operador" class="form-input" required>
-                            <option value="=">Igual a (=)</option>
-                            <option value="<>">Diferente de (<>)</option>
-                            <option value=">">Mayor que (>)</option>
-                            <option value="<">Menor que (<)</option>
-                            <option value=">=">Mayor o igual (>=)</option>
-                            <option value="<=">Menor o igual (<=)</option>
+                        <select name="operador" class="form-input" required id="operadorSelect">
+                            <!-- Options will be populated by JS -->
                         </select>
                     </div>
 
-                    <div class="form-row">
-                        <label>Valor de la Restricción</label>
-                        <input type="text" name="valor" class="form-input" required placeholder="Ej: SOLTERO, 18, Venezuela...">
-                        <small style="color: #666; display: block; margin-top: 5px;">
-                            Para Estado Civil: SOLTERO, CASADO<br>
-                            Para Sexo: M, F<br>
-                            Para Edad: Número entero
-                        </small>
+                    <div class="form-row" id="valorContainer">
+                        <!-- Content will be populated by JS -->
                     </div>
 
                     <div class="form-actions" style="justify-content: center;">
-                        <button type="submit" class="btn-primary">Guardar</button>
+                        <button type="submit" class="btn-primary" id="submit-button">Guardar</button>
                         <a href="/admin/restricciones" class="btn-danger">Cancelar</a>
                     </div>
                 </form>
@@ -56,29 +44,133 @@
     </div>
 
     <script>
-        document.getElementById('restrictionForm').addEventListener('submit', async (e) => {
-            e.preventDefault();
-            const formData = new FormData(e.target);
-            const data = Object.fromEntries(formData.entries());
+        document.addEventListener('DOMContentLoaded', async () => {
+            const charSelect = document.getElementById('charSelect');
+            const operadorSelect = document.getElementById('operadorSelect');
+            const valorContainer = document.getElementById('valorContainer');
+            const form = document.getElementById('restrictionForm');
+            const formTitle = document.getElementById('form-title');
+            const submitButton = document.getElementById('submit-button');
 
-            try {
-                const res = await fetch('/api/restrictions', {
-                    method: 'POST',
-                    headers: {'Content-Type': 'application/json'},
-                    body: JSON.stringify(data)
-                });
-                const json = await res.json();
+            const urlParams = new URLSearchParams(window.location.search);
+            const restrictionId = urlParams.get('id');
+            const isEditMode = !!restrictionId;
 
-                if(json.ok) {
-                    alert('Restricción creada');
-                    window.location.href = '/admin/restricciones';
-                } else {
-                    alert('Error: ' + json.message);
+            function updateDependentFields() {
+                const characteristic = charSelect.value;
+                let operatorOptions = '';
+                let valueInputHTML = '';
+
+                operadorSelect.disabled = !characteristic;
+
+                switch (characteristic) {
+                    case 'c_edo_civil':
+                        operatorOptions = '<option value="=">Igual a (=)</option>';
+                        valueInputHTML = `
+                            <label>Valor de la Restricción</label>
+                            <select name="valor" class="form-input" required>
+                                <option value="">Seleccione...</option>
+                                <option value="SOLTERO">Soltero</option>
+                                <option value="CASADO">Casado</option>
+                            </select>
+                        `;
+                        break;
+                    case 'c_sexo':
+                        operatorOptions = '<option value="=">Igual a (=)</option>';
+                        valueInputHTML = `
+                            <label>Valor de la Restricción</label>
+                            <select name="valor" class="form-input" required>
+                                <option value="">Seleccione...</option>
+                                <option value="M">Masculino (M)</option>
+                                <option value="F">Femenino (F)</option>
+                            </select>
+                        `;
+                        break;
+                    case 'EDAD':
+                        operatorOptions = `
+                            <option value="=">Igual a (=)</option>
+                            <option value="<>">Diferente de (<>)</option>
+                            <option value=">">Mayor que (>)</option>
+                            <option value="<">Menor que (<)</option>
+                            <option value=">=">Mayor o igual (>=)</option>
+                            <option value="<=">Menor o igual (<=)</option>
+                        `;
+                        valueInputHTML = `
+                            <label>Valor de la Restricción</label>
+                            <input type="number" min="0" step="1" name="valor" class="form-input" required placeholder="Ej: 18">
+                        `;
+                        break;
+                    default:
+                        operatorOptions = '<option value="">Seleccione característica...</option>';
+                        valueInputHTML = `
+                            <label>Valor de la Restricción</label>
+                            <input type="text" name="valor" class="form-input" required placeholder="Seleccione característica..." disabled>
+                        `;
+                        break;
                 }
-            } catch(err) {
-                console.error(err);
-                alert('Error de conexión');
+                operadorSelect.innerHTML = operatorOptions;
+                valorContainer.innerHTML = valueInputHTML;
             }
+
+            charSelect.addEventListener('change', updateDependentFields);
+            updateDependentFields(); 
+
+            if (isEditMode) {
+                formTitle.textContent = 'Editar Restricción';
+                submitButton.textContent = 'Actualizar';
+
+                try {
+                    const res = await fetch(`/api/restrictions/${restrictionId}`);
+                    const json = await res.json();
+
+                    if (json.ok) {
+                        const data = json.data;
+                        charSelect.value = data.caracteristica;
+                        updateDependentFields(); // Actualiza los campos dependientes
+                        
+                        // Pequeño delay para asegurar que el DOM se actualice antes de setear los valores
+                        setTimeout(() => {
+                           document.querySelector('[name="operador"]').value = data.operador;
+                           document.querySelector('[name="valor"]').value = data.valor;
+                        }, 50);
+
+                    } else {
+                        alert('Error al cargar la restricción: ' + json.message);
+                        window.location.href = '/admin/restricciones';
+                    }
+                } catch(err) {
+                    console.error(err);
+                    alert('Error de conexión al cargar la restricción.');
+                }
+            }
+
+            form.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                const formData = new FormData(e.target);
+                const data = Object.fromEntries(formData.entries());
+
+                const url = isEditMode ? `/api/restrictions/${restrictionId}` : '/api/restrictions';
+                const method = isEditMode ? 'PUT' : 'POST';
+
+                try {
+                    const res = await fetch(url, {
+                        method: method,
+                        headers: {'Content-Type': 'application/json'},
+                        body: JSON.stringify(data)
+                    });
+                    const json = await res.json();
+
+                    if(json.ok) {
+                        alert(`Restricción ${isEditMode ? 'actualizada' : 'creada'}`);
+                        window.location.href = '/admin/restricciones';
+                    } else {
+                        alert('Error: ' + json.message);
+                    }
+                } catch(err) {
+                    console.error(err);
+                    alert('Error de conexión');
+                }
+            });
         });
     </script>
 </body>

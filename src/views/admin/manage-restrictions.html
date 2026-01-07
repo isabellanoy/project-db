@@ -7,6 +7,14 @@
     <link rel="stylesheet" href="/src/styles/styles.css">
 </head>
 <body>
+    <header class="navbar">
+        <div class="navbar__content">
+            <a class="navbar__brand" href="/home">ViajesUCAB</a>
+            <div>
+                <a href="/login" style="text-decoration: underline; font-size: 0.9rem;">Cerrar Sesión</a>
+            </div>
+        </div>
+    </header>
     <div class="dashboard-container">
         <aside class="sidebar">
             <div class="sidebar__title"><h3>Panel Admin</h3></div>
@@ -58,6 +66,7 @@
                         <td>${r.cod}</td>
                         <td style="font-family: monospace; font-size: 1rem;">${r.restriccion_completa}</td>
                         <td>
+                            <a href="/admin/restricciones/editar?id=${r.cod}" class="btn-primary" style="padding: 0.25rem 0.5rem; font-size: 0.8rem; margin-right: 5px; text-decoration: none;">Editar</a>
                             <button onclick="deleteRestriction(${r.cod})" class="btn-danger" style="padding: 0.25rem 0.5rem; font-size: 0.8rem;">Eliminar</button>
                         </td>
                     </tr>
