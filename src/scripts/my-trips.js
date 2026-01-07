@@ -17,8 +17,8 @@
 
   const createTripCard = (trip) => {
     let statusColor = '#10b981';
-    if (trip.co_estado === 'CANCELADO') statusColor = '#ef4444';
-    if (trip.co_estado === 'PAGANDO' || trip.co_estado === 'FINANCIADO') statusColor = '#f59e0b';
+    if (trip.co_estado === 'PAGANDO') statusColor = '#fd1f1fff';
+    if (trip.co_estado === 'FINANCIADO') statusColor = '#fd9d1fff';
 
     const title = trip.co_es_paquete 
       ? ` Paquete: ${trip.nombre_paquete || 'Turístico'}` 
@@ -45,9 +45,9 @@
       <div style="margin-top: 1.5rem; padding-top: 1rem; border-top: 1px solid #eee; display: flex; gap: 1rem;">
           ${trip.co_estado === 'FINALIZADO' ? `<button class="btn-secondary download-invoice-btn" data-compra-id="${trip.co_cod}" style="padding: 0.5rem 1rem; font-size: 0.85rem;">Descargar Factura</button>` : ''}
           
-          <a href="/mis-viajes/detalle?id=${trip.co_cod}" class="cta-button" style="background: #000; padding: 0.5rem 1rem; font-size: 0.85rem; color: white;">
+          ${trip.co_estado === 'FINALIZADO' || trip.co_estado === 'FINANCIADO' ? `<a href="/mis-viajes/detalle?id=${trip.co_cod}" class="cta-button" style="background: #000; padding: 0.5rem 1rem; font-size: 0.85rem; color: white;">
               Gestionar / Ver Servicios
-          </a>
+          </a>` : ''}
       </div>
       </div>
     `;

@@ -36,7 +36,7 @@
             }
 
             // Filtrar solo las de compras que NO estén finalizadas (PAGANDO o FINANCIADO)
-            const activeQuotas = json.data.filter(q => q.estado_compra !== 'FINALIZADO' && q.estado_compra !== 'CANCELADO');
+            const activeQuotas = json.data.filter(q => q.estado_compra !== 'FINALIZADO');
 
             if (activeQuotas.length === 0) {
                 tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;">Estás al día. No hay cuotas pendientes.</td></tr>';
@@ -49,6 +49,12 @@
                 const total = montoBase + recargo;
                 const fecha = new Date(q.fecha_final_cuota).toLocaleDateString();
 
+                const paymentButton = total > 0 ? `
+                            <button onclick="openPaymentModal(${q.cod_cuota}, ${total})" class="cta-button" style="background:#000; font-size:0.8rem; padding:0.4rem 0.8rem;">
+                                Pagar
+                            </button>
+                        ` : '';
+
                 return `
                     <tr>
                         <td>#${q.cod_cuota}</td>
@@ -58,9 +64,7 @@
                         <td style="color:red;">${recargo > 0 ? `+ Bs. ${recargo.toFixed(2)}` : '-'}</td>
                         <td style="font-weight:bold;">Bs. ${total.toFixed(2)}</td>
                         <td>
-                            <button onclick="openPaymentModal(${q.cod_cuota}, ${total})" class="cta-button" style="background:#000; font-size:0.8rem; padding:0.4rem 0.8rem;">
-                                Pagar
-                            </button>
+                            ${paymentButton}
                         </td>
                     </tr>
                 `;
@@ -97,17 +101,30 @@
         const data = Object.fromEntries(formData.entries());
         const method = document.getElementById('methodSelect').value;
 
+        // Separar los detalles de pago del resto de los datos
+        let paymentDetails = {};
+        if (method === 'card') {
+            paymentDetails = {
+                numero: data.numero,
+                cvc: data.cvc,
+                titular: data.titular,
+                vencimiento: data.vencimiento,
+                banco_id: data.banco_id,
+                emisor: data.emisor,
+            };
+        } else { // 'digital'
+            paymentDetails = {
+                referencia: data.referencia,
+            };
+        }
+        
+        // Construir el payload final
         const payload = {
             usuario_id: userId,
-            cuota_id: document.getElementById('inputQuotaId').value,
-            monto: document.getElementById('inputAmount').value,
-            ...data
+            cuota_id: parseInt(document.getElementById('inputQuotaId').value, 10),
+            monto: parseFloat(document.getElementById('inputAmount').value),
+            ...paymentDetails
         };
-
-        // Validaciones básicas de fecha para tarjeta
-        if (method === 'card' && data.vencimiento) {
-             // Asegurar formato YYYY-MM-DD si es necesario, aunque input date lo da así
-        }
 
         const endpoint = method === 'card' ? '/api/installments/pay/card' : '/api/installments/pay/digital';
 

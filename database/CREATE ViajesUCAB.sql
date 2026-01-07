@@ -6944,36 +6944,46 @@ BEGIN
 		RETURN QUERY SELECT NULL, NULL, NULL, NULL;
 	END IF;	
 
-	RETURN QUERY SELECT cu.cu_cod, cu.cu_monto, cu.cu_fecha_hora_final, cu.cu_recargo_adicional, co.co_estado
+	RETURN QUERY SELECT cu.cu_cod, cu.cu_monto - COALESCE(SUM(pc.pc_monto), 0), cu.cu_fecha_hora_final, cu.cu_recargo_adicional, co.co_estado
 	FROM Cuota cu
+	LEFT JOIN Pago_Cuota pc ON pc.cuota_cu_cod = cu.cu_cod
 	INNER JOIN Compra co ON co.co_cod = cu.compra_co_cod
 	INNER JOIN Cliente c ON c.c_cod = co.cliente_c_cod
-	WHERE c.c_cod = v_cliente_cod;
+	WHERE c.c_cod = v_cliente_cod
+	AND co.co_estado = 'FINANCIADO'
+	GROUP BY cu.cu_cod, cu.cu_fecha_hora_final, cu.cu_recargo_adicional, co.co_estado;
 END;
 $$ LANGUAGE plpgsql;
 
 CREATE OR REPLACE PROCEDURE sp_validar_pagos_cuota(p_cod_cuota INT)
 AS $$
 DECLARE
+	v_cod_compra INT;
 	v_recargo NUMERIC;
 	v_monto_a_pagar NUMERIC(15,2);
 	v_monto_pagado NUMERIC(15,2);
 BEGIN
-	SELECT cu_monto, COALESCE(cu_recargo_adicional, 0) 
+	SELECT compra_co_cod INTO v_cod_compra FROM Cuota WHERE cu_cod = p_cod_cuota;
+	
+	SELECT SUM(cu_monto), COALESCE(SUM(cu_recargo_adicional), 0)
 	INTO v_monto_a_pagar, v_recargo
-	FROM Cuota WHERE cu_cod = p_cod_cuota;
+	FROM Cuota WHERE compra_co_cod = v_cod_compra;
 
 	v_monto_a_pagar := v_monto_a_pagar + v_recargo;
 
-	SELECT COALESCE(SUM(pc_monto), 0) INTO v_monto_pagado FROM Pago_Cuota WHERE cuota_cu_cod = p_cod_cuota;
+	SELECT COALESCE(SUM(pc_monto), 0) INTO v_monto_pagado 
+	FROM Pago_Cuota 
+	INNER JOIN Cuota ON cu_cod = cuota_cu_cod
+	INNER JOIN Compra ON co_cod = compra_co_cod
+	WHERE compra_co_cod = v_cod_compra;
 
 	IF v_monto_pagado < v_monto_a_pagar THEN
 		RETURN;
 	END IF;
 
-	-- Actualizar el estado de la compra
+	-- Actualizar el estado de la compra al pagar TODAS las cuotas
 	UPDATE Compra SET co_estado = 'FINALIZADO' 
-	WHERE co_cod = (SELECT compra_co_cod FROM Cuota WHERE cu_cod = p_cod_cuota);
+	WHERE co_cod = v_cod_compra;
 	
 	RAISE NOTICE 'Pagos concretaron la cuota';
 END;
@@ -7010,7 +7020,7 @@ $$ LANGUAGE plpgsql;
 
 CREATE OR REPLACE FUNCTION fn_pago_cuota_tarjeta(
 	p_cod_usuario INT,
-	p_cod_cuota INT
+	p_cod_cuota INT,
 	p_monto NUMERIC(12,2),
 	p_tarj_numero BIGINT,
 	p_tarj_cod_seguridad INT,
@@ -7037,7 +7047,7 @@ BEGIN
 	END IF;
 
 	-- Validar que la cuota existe
-	IF EXISTS(SELECT 1 FROM Cuota WHERE cu_cod = p_cod_cuota) THEN
+	IF NOT EXISTS(SELECT 1 FROM Cuota WHERE cu_cod = p_cod_cuota) THEN
 		RAISE NOTICE 'No se encontro la cuota a pagar';
 		RETURN NULL::BOOLEAN;
 	END IF;
@@ -7096,7 +7106,7 @@ BEGIN
 	END IF;
 
 	-- Validar que la cuota existe
-	IF EXISTS(SELECT 1 FROM Cuota WHERE cu_cod = p_cod_cuota) THEN
+	IF NOT EXISTS(SELECT 1 FROM Cuota WHERE cu_cod = p_cod_cuota) THEN
 		RAISE NOTICE 'No se encontro la cuota a pagar';
 		RETURN NULL::BOOLEAN;
 	END IF;
@@ -7153,7 +7163,7 @@ BEGIN
 	END IF;
 
 	-- Validar que la cuota existe
-	IF EXISTS(SELECT 1 FROM Cuota WHERE cu_cod = p_cod_cuota) THEN
+	IF NOT EXISTS(SELECT 1 FROM Cuota WHERE cu_cod = p_cod_cuota) THEN
 		RAISE NOTICE 'No se encontro la cuota a pagar';
 		RETURN NULL::BOOLEAN;
 	END IF;
@@ -7208,7 +7218,7 @@ BEGIN
 	END IF;
 
 	-- Validar que la cuota existe
-	IF EXISTS(SELECT 1 FROM Cuota WHERE cu_cod = p_cod_cuota) THEN
+	IF NOT EXISTS(SELECT 1 FROM Cuota WHERE cu_cod = p_cod_cuota) THEN
 		RAISE NOTICE 'No se encontro la cuota a pagar';
 		RETURN NULL::BOOLEAN;
 	END IF;
@@ -7259,7 +7269,7 @@ BEGIN
 	END IF;
 
 	-- Validar que la cuota existe
-	IF EXISTS(SELECT 1 FROM Cuota WHERE cu_cod = p_cod_cuota) THEN
+	IF NOT EXISTS(SELECT 1 FROM Cuota WHERE cu_cod = p_cod_cuota) THEN
 		RAISE NOTICE 'No se encontro la cuota a pagar';
 		RETURN NULL::BOOLEAN;
 	END IF;
@@ -7311,7 +7321,7 @@ BEGIN
 	END IF;
 
 	-- Validar que la cuota existe
-	IF EXISTS(SELECT 1 FROM Cuota WHERE cu_cod = p_cod_cuota) THEN
+	IF NOT EXISTS(SELECT 1 FROM Cuota WHERE cu_cod = p_cod_cuota) THEN
 		RAISE NOTICE 'No se encontro la cuota a pagar';
 		RETURN NULL::BOOLEAN;
 	END IF;

@@ -139,7 +139,7 @@
 
     try {
       // Iniciar el checkout (Cambiar estado a PAGANDO)
-      await fetch('/api/checkout/init', {
+      const initResponse = await fetch('/api/checkout/init', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ 
@@ -148,6 +148,14 @@
             cuotas: isFinance ? 3 : 1 
         })
       });
+
+      const initResult = await initResponse.json();
+
+      // if (!initResult.ok) {
+      //   alert(`Error al iniciar el pago: ${initResult.message}`);
+      //   window.location.reload();
+      //   return;
+      // }
 
       // Registrar el Pago según el método
       let payEndpoint = '';

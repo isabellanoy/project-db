@@ -38,13 +38,11 @@
                     <p>${item.detalle_2 || ''}</p>
                     
                     <div class="service-actions">
+                        <button onclick="openAction('review', ${item.servicio_cod})" class="btn-primary" style="font-size:0.85rem; padding:0.4rem 0.8rem;">Dejar Reseña</button>
+                        <button onclick="openAction('complaint', ${item.servicio_cod})" class="btn-secondary" style="font-size:0.85rem; padding:0.4rem 0.8rem;">Abrir Reclamo</button>
                         ${!item.es_paquete ? `
                             <button onclick="openAction('refund', ${item.servicio_cod})" class="btn-danger" style="font-size:0.85rem; padding:0.4rem 0.8rem;">Solicitar Reembolso</button>
                         ` : ''}
-                        
-                        <button onclick="openAction('complaint', ${item.servicio_cod})" class="btn-secondary" style="font-size:0.85rem; padding:0.4rem 0.8rem;">Abrir Reclamo</button>
-                        
-                        <button onclick="openAction('review', ${item.servicio_cod})" class="btn-primary" style="font-size:0.85rem; padding:0.4rem 0.8rem;">Dejar Reseña</button>
                     </div>
                 </div>
             `).join('');
@@ -55,7 +53,7 @@
         }
     };
 
-    // 2. Manejo de Modales
+    // Manejo de Modales
     window.openAction = (action, serviceId) => {
         inputAction.value = action;
         inputService.value = serviceId;
@@ -88,7 +86,7 @@
 
     window.closeModal = () => modal.classList.remove('active');
 
-    // 3. Enviar Formulario
+    // Enviar Formulario
     actionForm.addEventListener('submit', async (e) => {
         e.preventDefault();
         const action = inputAction.value;
