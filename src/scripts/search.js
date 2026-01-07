@@ -13,6 +13,11 @@
 
   const createCard = (item, type) => {
     let title, description, details, icon;
+
+    // --- Identificar si es paquete y obtener ID genérico ---
+    const isPackage = type === 'paquetes';
+    // Intentamos obtener el ID sea cual sea el nombre de la columna que venga de la BD
+    const itemId = item.pt_cod || item.cod_servicio || item.s_cod;
     
     // Mapeo de precio
     const priceUsd = parseFloat(item.costo || item.pt_costo || 0);
@@ -49,22 +54,30 @@
         description = `📍 Lugar: ${item.lugar}`;
         details = `👥 Capacidad: ${item.capacidad} personas`;
         break;
-      // --- NUEVO: PAQUETES ---
+      // --- PAQUETES ---
       case 'paquetes':
         title = item.pt_nombre;
         icon = '📦';
         description = item.pt_descripcion || 'Paquete Turístico';
         details = `👥 Para ${item.pt_cant_personas} personas | 💎 ${item.pt_costo_millas} Millas`;
-        item.cod_servicio = item.pt_cod; // Normalizar ID para el link
         break;
       default:
         title = 'Servicio'; icon = '🏷️'; description = ''; details = '';
     }
 
-    const detailLink = `/detalle?id=${item.cod_servicio || item.pt_cod}&type=${type}`;
+    const detailLink = `/detalle?id=${itemId}&type=${type}`;
 
     return `
-      <article class="result-card">
+      <article class="result-card" style="position: relative;">
+          
+          <button onclick="addToWishlist(${itemId}, '${isPackage ? 'package' : 'service'}')" 
+                  title="Guardar en Lista de Deseos"
+                  style="position: absolute; top: 15px; right: 15px; background: transparent; border: none; font-size: 1.5rem; cursor: pointer; color: #fbbf24; z-index: 10; transition: transform 0.2s;"
+                  onmouseover="this.style.transform='scale(1.2)'"
+                  onmouseout="this.style.transform='scale(1)'">
+              ★
+          </button>
+
           <div>
               <div class="result-card__header">
                   <h2 style="font-size: 1.4rem; border-bottom: 1px solid #000; padding-bottom: 5px; display: inline-block;">
@@ -156,4 +169,34 @@
         });
     }
   });
+
+  // Asignar función global para que el onclick funcione
+  window.addToWishlist = async (id, type) => {
+      const userId = localStorage.getItem('userId');
+      if (!userId) {
+          alert('Inicia sesión para guardar en favoritos');
+          // opcional: window.location.href = '/login';
+          return;
+      }
+
+      const endpoint = type === 'package' ? '/api/wishlist/package' : '/api/wishlist/service';
+      const body = type === 'package' 
+          ? { usuario_id: userId, paquete_id: id }
+          : { usuario_id: userId, servicio_id: id };
+
+      try {
+          const res = await fetch(endpoint, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify(body)
+          });
+          const data = await res.json();
+          
+          if (data.ok) alert('¡Guardado en tu lista de deseos!');
+          else alert('Aviso: ' + data.message);
+      } catch (error) {
+          console.error(error);
+          alert('Error de conexión');
+      }
+  };
 })();

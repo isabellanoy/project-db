@@ -85,6 +85,21 @@
                     </div>
                 </div>
             </div>
+            <div class="dashboard-card" style="margin-top: 2rem;">
+                <h3 style="border-bottom: 1px solid #eee; padding-bottom: 0.5rem; margin-bottom: 1rem;">
+                    Mi Lista de Deseos
+                </h3>
+                
+                <div style="margin-bottom: 1rem;">
+                    <button onclick="loadWishes('services')" class="btn-secondary" id="btnWishServices">Servicios</button>
+                    <button onclick="loadWishes('packages')" class="btn-secondary" id="btnWishPackages">Paquetes</button>
+                </div>
+
+                <div id="wishlistContainer" style="display: grid; gap: 1rem;">
+                    <p style="color: #666;">Selecciona una categoría...</p>
+                </div>
+            </div>
+            
         </main>
     </div>
 
