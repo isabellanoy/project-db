@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <script src="/src/scripts/admin-guard.js"></script>
+    <title>Mis Reembolsos | ViajesUCAB</title>
+    <link rel="stylesheet" href="/src/styles/styles.css">
+</head>
+<body>
+    <header class="navbar">
+        <div class="navbar__content">
+            <a class="navbar__brand" href="/home">ViajesUCAB</a>
+            <div style="display: flex; gap: 10px;">
+                <a href="/perfil" class="cta-button">Mi Cuenta</a>
+            </div>
+        </div>
+    </header>
+
+    <div class="dashboard-container">
+        <aside class="sidebar">
+            <div class="sidebar__title">
+                <h3>Panel de Usuario</h3>
+            </div>
+            <nav class="sidebar__nav">
+                <a href="/perfil">Tablero</a>
+                <a href="/mis-viajes">Mis Reservas</a>
+                <a href="/mis-cuotas">Financiamiento</a>
+                <a href="/mis-resenas">Mis Reseñas</a>
+                <a href="/mis-quejas">Mis Quejas</a>
+                <a href="/mis-reembolsos" class="active">Mis Reembolsos</a>
+            </nav>
+        </aside>
+
+        <main class="dashboard-main" style="grid-template-columns: 1fr;">
+            <div class="central-col">
+                <h1 class="section__title">Mis Reembolsos</h1>
+                <p style="margin-bottom: 2rem;">Aquí puedes ver todos los reembolsos que has solicitado.</p>
+
+                <div class="data-table-container">
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>Monto Devuelto</th>
+                                <th>Fecha</th>
+                                <th>Razón</th>
+                                <th>Tipo de Servicio</th>
+                            </tr>
+                        </thead>
+                        <tbody id="refunds-body">
+                            <!-- Las filas se insertarán aquí dinámicamente -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script src="/src/scripts/my-refunds.js"></script>
+</body>
+</html>

@@ -41,12 +41,44 @@
       updatePriceDisplay(basePriceUsd);
 
       configureOptions(serviceType, item);
+      loadReviews();
 
     } catch (error) {
       console.error(error);
       contentContainer.innerHTML = '<p>Error cargando la información.</p>';
     }
   };
+
+  const loadReviews = async () => {
+    const reviewsContainer = document.getElementById('reviews-container');
+    const noReviewsMessage = document.getElementById('no-reviews');
+    try {
+      const response = await fetch(`/api/services/catalog/${serviceId}/reviews`);
+      const payload = await response.json();
+
+      if (payload.ok && payload.data.length > 0) {
+        reviewsContainer.innerHTML = payload.data.map(review => `
+          <div style="border: 1px solid #e2e8f0; padding: 1rem; margin-bottom: 1rem; border-radius: 5px;">
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+              <p style="font-weight: 600;">Anónimo. Proveedor: ${review.proveedor}</p>
+              <span class="rating-box" style="font-size: 0.9rem;">${review.calificacion}</span>
+            </div>
+            <p style="margin-top: 0.5rem; color: #333;">"${review.resena}"</p>
+          </div>
+        `).join('');
+        noReviewsMessage.style.display = 'none';
+      } else {
+        reviewsContainer.innerHTML = '';
+        noReviewsMessage.style.display = 'block';
+      }
+    } catch (error) {
+      console.error('Error loading reviews:', error);
+      reviewsContainer.innerHTML = '';
+      noReviewsMessage.textContent = 'Error al cargar las reseñas.';
+      noReviewsMessage.style.display = 'block';
+    }
+  };
+
 
   const updatePriceDisplay = (priceUsd) => {
     const priceBs = priceUsd * exchangeRate;

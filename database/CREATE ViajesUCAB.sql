@@ -6920,6 +6920,275 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
+-- Ver mis reembolsos
+CREATE OR REPLACE FUNCTION fn_listar_reembolsos(p_cod_usuario INT)
+RETURNS TABLE (
+	cod INT,
+	monto_devuelto NUMERIC,
+	fecha_reembolso TIMESTAMP,
+	razon VARCHAR,
+	tipo_servicio VARCHAR
+) AS $$
+DECLARE
+	v_cliente_cod INT;
+BEGIN
+	-- Obtener Cliente desde Usuario
+	SELECT c.c_cod INTO v_cliente_cod FROM Cliente c JOIN Usuario u ON c.c_cod = u.cliente_c_cod WHERE u.u_cod = p_cod_usuario;
+
+	IF v_cliente_cod IS NULL THEN
+		RAISE NOTICE 'El cliente no se ha encontrado para el usuario %', p_cod_usuario;
+		RETURN;
+	END IF;	
+
+	RETURN QUERY
+    -- Vuelos
+    SELECT r.ree_cod, nc.nc_monto_devuelto, r.ree_fecha_hora, r.ree_razon, 'Vuelo'::VARCHAR AS tipo_servicio
+    FROM Reembolso r
+    JOIN Boleto_Vuelo bv ON r.Boleto_Vuelo_co_cod = bv.Compra_co_cod AND r.Boleto_Vuelo_s_cod = bv.Vuelo_s_cod
+    JOIN Compra c ON bv.Compra_co_cod = c.co_cod
+	JOIN Nota_Credito nc ON nc.reembolso_ree_cod = r.ree_cod
+    WHERE c.Cliente_c_cod = v_cliente_cod
+    UNION ALL
+    -- Traslados
+    SELECT r.ree_cod, nc.nc_monto_devuelto, r.ree_fecha_hora, r.ree_razon, 'Traslado'::VARCHAR AS tipo_servicio
+    FROM Reembolso r
+    JOIN Detalle_Traslado dt ON r.Detalle_Traslado_co_cod = dt.Compra_co_cod AND r.Detalle_Traslado_s_cod = dt.Traslado_s_cod
+    JOIN Compra c ON dt.Compra_co_cod = c.co_cod
+	JOIN Nota_Credito nc ON nc.reembolso_ree_cod = r.ree_cod
+    WHERE c.Cliente_c_cod = v_cliente_cod
+    UNION ALL
+    -- Viajes (Crucero)
+    SELECT r.ree_cod, nc.nc_monto_devuelto, r.ree_fecha_hora, r.ree_razon, 'Viaje en Crucero'::VARCHAR AS tipo_servicio
+    FROM Reembolso r
+    JOIN Boleto_Viaje bvi ON r.Boleto_Viaje_co_cod = bvi.Compra_co_cod AND r.Boleto_Viaje_s_cod = bvi.Viaje_s_cod
+    JOIN Compra c ON bvi.Compra_co_cod = c.co_cod
+	JOIN Nota_Credito nc ON nc.reembolso_ree_cod = r.ree_cod
+    WHERE c.Cliente_c_cod = v_cliente_cod
+    UNION ALL
+    -- Entradas Digitales
+    SELECT r.ree_cod, nc.nc_monto_devuelto, r.ree_fecha_hora, r.ree_razon, 'Actividad Turística'::VARCHAR AS tipo_servicio
+    FROM Reembolso r
+    JOIN Entrada_Digital ed ON r.Entrada_Digital_co_cod = ed.Compra_co_cod AND r.Entrada_Digital_s_cod = ed.Servicio_Adicional_s_cod
+    JOIN Compra c ON ed.Compra_co_cod = c.co_cod
+	JOIN Nota_Credito nc ON nc.reembolso_ree_cod = r.ree_cod
+    WHERE c.Cliente_c_cod = v_cliente_cod
+    UNION ALL
+    -- Hospedajes
+    SELECT r.ree_cod, nc.nc_monto_devuelto, r.ree_fecha_hora, r.ree_razon, 'Hospedaje'::VARCHAR AS tipo_servicio
+    FROM Reembolso r
+    JOIN Detalle_Hospedaje dh ON r.Detalle_Hospedaje_co_cod = dh.Compra_co_cod AND r.Detalle_Hospedaje_s_cod = dh.Habitacion_s_cod
+    JOIN Compra c ON dh.Compra_co_cod = c.co_cod
+	JOIN Nota_Credito nc ON nc.reembolso_ree_cod = r.ree_cod
+    WHERE c.Cliente_c_cod = v_cliente_cod;
+END;
+$$ LANGUAGE plpgsql;
+
+-- Ver mis quejas
+CREATE OR REPLACE FUNCTION fn_listar_quejas(p_cod_usuario INT)
+RETURNS TABLE (
+	cod INT,
+	descripcion VARCHAR,
+	resuelta BOOLEAN,
+	tipo_servicio VARCHAR
+) AS $$
+DECLARE
+	v_cliente_cod INT;
+BEGIN
+	-- Obtener Cliente desde Usuario
+	SELECT c.c_cod INTO v_cliente_cod FROM Cliente c JOIN Usuario u ON c.c_cod = u.cliente_c_cod WHERE u.u_cod = p_cod_usuario;
+
+	IF v_cliente_cod IS NULL THEN
+		RAISE NOTICE 'El cliente no se ha encontrado para el usuario %', p_cod_usuario;
+		RETURN;
+	END IF;	
+
+	RETURN QUERY
+    -- Vuelos
+    SELECT q.q_cod, q.q_descripcion, q.q_resuelta, 'Vuelo'::VARCHAR AS tipo_servicio
+    FROM Queja q
+    JOIN Boleto_Vuelo bv ON q.Boleto_Vuelo_co_cod = bv.Compra_co_cod AND q.Boleto_Vuelo_s_cod = bv.Vuelo_s_cod
+    JOIN Compra c ON bv.Compra_co_cod = c.co_cod
+    WHERE c.Cliente_c_cod = v_cliente_cod
+    UNION ALL
+    -- Traslados
+    SELECT q.q_cod, q.q_descripcion, q.q_resuelta, 'Traslado'::VARCHAR AS tipo_servicio
+    FROM Queja q
+    JOIN Detalle_Traslado dt ON q.Detalle_Traslado_co_cod = dt.Compra_co_cod AND q.Detalle_Traslado_s_cod = dt.Traslado_s_cod
+    JOIN Compra c ON dt.Compra_co_cod = c.co_cod
+    WHERE c.Cliente_c_cod = v_cliente_cod
+    UNION ALL
+    -- Viajes (Crucero)
+    SELECT q.q_cod, q.q_descripcion, q.q_resuelta, 'Viaje en Crucero'::VARCHAR AS tipo_servicio
+    FROM Queja q
+    JOIN Boleto_Viaje bvi ON q.Boleto_Viaje_co_cod = bvi.Compra_co_cod AND q.Boleto_Viaje_s_cod = bvi.Viaje_s_cod
+    JOIN Compra c ON bvi.Compra_co_cod = c.co_cod
+    WHERE c.Cliente_c_cod = v_cliente_cod
+    UNION ALL
+    -- Entradas Digitales
+    SELECT q.q_cod, q.q_descripcion, q.q_resuelta, 'Actividad Turística'::VARCHAR AS tipo_servicio
+    FROM Queja q
+    JOIN Entrada_Digital ed ON q.Entrada_Digital_co_cod = ed.Compra_co_cod AND q.Entrada_Digital_s_cod = ed.Servicio_Adicional_s_cod
+    JOIN Compra c ON ed.Compra_co_cod = c.co_cod
+    WHERE c.Cliente_c_cod = v_cliente_cod
+    UNION ALL
+    -- Hospedajes
+    SELECT q.q_cod, q.q_descripcion, q.q_resuelta, 'Hospedaje'::VARCHAR AS tipo_servicio
+    FROM Queja q
+    JOIN Detalle_Hospedaje dh ON q.Detalle_Hospedaje_co_cod = dh.Compra_co_cod AND q.Detalle_Hospedaje_s_cod = dh.Habitacion_s_cod
+    JOIN Compra c ON dh.Compra_co_cod = c.co_cod
+    WHERE c.Cliente_c_cod = v_cliente_cod;
+END;
+$$ LANGUAGE plpgsql;
+
+-- Ver mis reseñas
+CREATE OR REPLACE FUNCTION fn_listar_resenas(p_cod_usuario INT)
+RETURNS TABLE (
+	cod INT,
+	calificacion NUMERIC,
+	comentario VARCHAR,
+	tipo_servicio VARCHAR
+) AS $$
+DECLARE
+	v_cliente_cod INT;
+BEGIN
+	-- Obtener Cliente desde Usuario
+	SELECT c.c_cod INTO v_cliente_cod FROM Cliente c JOIN Usuario u ON c.c_cod = u.cliente_c_cod WHERE u.u_cod = p_cod_usuario;
+
+	IF v_cliente_cod IS NULL THEN
+		RAISE NOTICE 'El cliente no se ha encontrado para el usuario %', p_cod_usuario;
+		RETURN;
+	END IF;	
+
+	RETURN QUERY
+    -- Vuelos
+    SELECT r.r_cod, r.r_calificacion, r.r_comentario, 'Vuelo'::VARCHAR AS tipo_servicio
+    FROM Resena r
+    JOIN Boleto_Vuelo bv ON r.Boleto_Vuelo_co_cod = bv.Compra_co_cod AND r.Boleto_Vuelo_s_cod = bv.Vuelo_s_cod
+    JOIN Compra c ON bv.Compra_co_cod = c.co_cod
+    WHERE c.Cliente_c_cod = v_cliente_cod
+    UNION ALL
+    -- Traslados
+    SELECT r.r_cod, r.r_calificacion, r.r_comentario, 'Traslado'::VARCHAR AS tipo_servicio
+    FROM Resena r
+    JOIN Detalle_Traslado dt ON r.Detalle_Traslado_co_cod = dt.Compra_co_cod AND r.Detalle_Traslado_s_cod = dt.Traslado_s_cod
+    JOIN Compra c ON dt.Compra_co_cod = c.co_cod
+    WHERE c.Cliente_c_cod = v_cliente_cod
+    UNION ALL
+    -- Viajes (Crucero)
+    SELECT r.r_cod, r.r_calificacion, r.r_comentario, 'Viaje en Crucero'::VARCHAR AS tipo_servicio
+    FROM Resena r
+    JOIN Boleto_Viaje bvi ON r.Boleto_Viaje_co_cod = bvi.Compra_co_cod AND r.Boleto_Viaje_s_cod = bvi.Viaje_s_cod
+    JOIN Compra c ON bvi.Compra_co_cod = c.co_cod
+    WHERE c.Cliente_c_cod = v_cliente_cod
+    UNION ALL
+    -- Entradas Digitales
+    SELECT r.r_cod, r.r_calificacion, r.r_comentario, 'Actividad Turística'::VARCHAR AS tipo_servicio
+    FROM Resena r
+    JOIN Entrada_Digital ed ON r.Entrada_Digital_co_cod = ed.Compra_co_cod AND r.Entrada_Digital_s_cod = ed.Servicio_Adicional_s_cod
+    JOIN Compra c ON ed.Compra_co_cod = c.co_cod
+    WHERE c.Cliente_c_cod = v_cliente_cod
+    UNION ALL
+    -- Hospedajes
+    SELECT r.r_cod, r.r_calificacion, r.r_comentario, 'Hospedaje'::VARCHAR AS tipo_servicio
+    FROM Resena r
+    JOIN Detalle_Hospedaje dh ON r.Detalle_Hospedaje_co_cod = dh.Compra_co_cod AND r.Detalle_Hospedaje_s_cod = dh.Habitacion_s_cod
+    JOIN Compra c ON dh.Compra_co_cod = c.co_cod
+    WHERE c.Cliente_c_cod = v_cliente_cod;
+END;
+$$ LANGUAGE plpgsql;
+
+-- Ver reseñas sobre un servicio
+CREATE OR REPLACE FUNCTION fn_listar_resenas_servicio(p_cod_servicio INT)
+RETURNS TABLE (
+    proveedor VARCHAR,
+    resena VARCHAR,
+    calificacion NUMERIC(4, 2)
+) AS $$
+BEGIN
+    RETURN QUERY
+    WITH Resenas_Unificadas AS (
+        -- AEROLÍNEAS (Desde Boleto_Vuelo)
+        SELECT 
+            a.p_nombre AS nombre,
+            r.r_comentario as comentario,
+            r.r_calificacion AS puntaje
+        FROM Resena r
+        JOIN Boleto_Vuelo bv 
+            ON r.Boleto_Vuelo_co_cod = bv.compra_co_cod 
+            AND r.Boleto_Vuelo_s_cod = bv.vuelo_s_cod
+        JOIN Vuelo v ON bv.vuelo_s_cod = v.s_cod
+        JOIN Aerolinea a ON v.aerolinea_p_cod = a.p_cod
+        WHERE v.s_cod = p_cod_servicio
+
+        UNION ALL
+
+        -- CRUCEROS (Desde Boleto_Viaje)
+        SELECT 
+            c.p_nombre,
+            r.r_comentario as comentario,
+            r.r_calificacion AS puntaje
+        FROM Resena r
+        JOIN Boleto_Viaje bvi 
+            ON r.Boleto_Viaje_co_cod = bvi.compra_co_cod 
+            AND r.Boleto_Viaje_s_cod = bvi.viaje_s_cod
+        JOIN Viaje vi ON bvi.viaje_s_cod = vi.s_cod
+        JOIN Crucero c ON vi.crucero_p_cod = c.p_cod
+        WHERE vi.s_cod = p_cod_servicio
+
+        UNION ALL
+
+        -- OPERADORES TURÍSTICOS (Desde Entrada_Digital - Servicios Adicionales)
+        SELECT 
+            op.p_nombre,
+            r.r_comentario as comentario,
+            r.r_calificacion AS puntaje
+        FROM Resena r
+        JOIN Entrada_Digital ed 
+            ON r.Entrada_Digital_co_cod = ed.compra_co_cod 
+            AND r.Entrada_Digital_s_cod = ed.servicio_adicional_s_cod
+        JOIN Servicio_Adicional sa ON ed.servicio_adicional_s_cod = sa.s_cod
+        JOIN Operador_Turistico op ON sa.operador_turistico_p_cod = op.p_cod
+        WHERE sa.s_cod = p_cod_servicio
+
+		UNION ALL
+		
+        -- TRANSPORTE TERRESTRE (Desde Detalle_Traslado - Traslado)
+		SELECT 
+            tt.p_nombre,
+            r.r_comentario as comentario,
+            r.r_calificacion AS puntaje
+        FROM Resena r
+        JOIN Detalle_Traslado dt 
+            ON r.Detalle_Traslado_co_cod = dt.compra_co_cod 
+            AND r.Detalle_Traslado_s_cod = dt.traslado_s_cod
+        JOIN Traslado t ON dt.traslado_s_cod = t.s_cod
+        JOIN Transporte_Terrestre tt ON t.transporte_terrestre_p_cod = tt.p_cod
+        WHERE t.s_cod = p_cod_servicio
+
+		UNION ALL
+		
+		-- HOTEL (Desde Detalle_Hospedaje - Habitacion)
+		SELECT 
+            ho.p_nombre,
+            r.r_comentario as comentario,
+            r.r_calificacion AS puntaje
+        FROM Resena r
+        JOIN Detalle_Hospedaje dh 
+            ON r.Detalle_Hospedaje_co_cod = dh.compra_co_cod 
+            AND r.Detalle_Hospedaje_s_cod = dh.habitacion_s_cod
+        JOIN Habitacion ha ON dh.habitacion_s_cod = ha.s_cod
+        JOIN Hotel ho ON ha.hotel_p_cod = ho.p_cod
+        WHERE ha.s_cod = p_cod_servicio
+    )
+    SELECT 
+        ru.nombre,
+        ru.comentario,
+        ru.puntaje
+    FROM Resenas_Unificadas ru
+    ORDER BY ru.puntaje DESC, ru.nombre;
+END;
+$$ LANGUAGE plpgsql;
+
 -- ===================================================
 -- FUNCIONES DE CUOTAS Y FINANCIAMIENTO
 -- ===================================================

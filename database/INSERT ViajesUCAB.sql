@@ -3347,10 +3347,11 @@ INSERT INTO Restriccion_Paquete (rp_caracteristica, rp_operador, rp_valor_restri
     ('EDAD', '>=', '60'),
     ('c_sexo', '=', 'F'),
     ('c_sexo', '=', 'M'),
-    ('PAIS', '=', 'Venezuela'),
     ('EDAD', 'BETWEEN', '18 AND 25'),
     ('EDAD', '<=', '12'),
-    ('PAIS', 'IN', '("España", "Italia", "Alemania", "Francia", "Portugal")');	
+	('EDAD', 'BETWEEN', '30 AND 40'),
+	('EDAD', 'BETWEEN', '20 AND 30');
+
 
 WITH pkg AS (
     INSERT INTO Paquete_Turistico (pt_cant_personas, pt_nombre, pt_descripcion, pt_costo, pt_costo_millas, restriccion_paquete_rp_cod)

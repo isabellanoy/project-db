@@ -16,7 +16,9 @@ const usersRoutes = require('./routes/users.routes');
 const wishlistRoutes = require('./routes/wishlist.routes');
 const restrictionsRoutes = require('./routes/restrictions.routes');
 const interactionsRoutes = require('./routes/interactions.routes');
+const userRoutes = require('./routes/user.routes');
 const installmentsRoutes = require('./routes/installments.routes');
+
 
 const app = express();
 
@@ -62,6 +64,7 @@ const apiRoutes = [
   { basePath: '/api/restrictions', router: restrictionsRoutes },
   { basePath: '/api/interactions', router: interactionsRoutes },
   { basePath: '/api/installments', router: installmentsRoutes },
+  { basePath: '/api/user', router: userRoutes },
 ];
 
 apiRoutes.forEach(({ basePath, router }) => {

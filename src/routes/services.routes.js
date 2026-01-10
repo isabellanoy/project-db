@@ -136,6 +136,14 @@ router.get('/catalog/actividades/:id', async (req, res) => {
   } catch (error) { return fail(res, error.message); }
 });
 
+router.get('/catalog/:id/reviews', async (req, res) => {
+  try {
+    const result = await pool.query('SELECT * FROM fn_listar_resenas_servicio($1)', [req.params.id]);
+    return ok(res, result.rows);
+  } catch (error) { return fail(res, error.message); }
+});
+
+
 // 2. Detalle de Paquete (Info + Servicios incluidos)
 router.get('/catalog/paquetes/:id', async (req, res) => {
   const id = parseInt(req.params.id);

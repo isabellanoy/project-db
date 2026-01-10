@@ -189,6 +189,10 @@ DROP FUNCTION IF EXISTS fn_presentar_queja;
 DROP FUNCTION IF EXISTS fn_presentar_valoracion;
 DROP FUNCTION IF EXISTS fn_obtener_cuotas_cliente;
 DROP FUNCTION IF EXISTS fn_validar_monto_cuota;
+DROP FUNCTION IF EXISTS fn_listar_reembolsos;
+DROP FUNCTION IF EXISTS fn_listar_quejas;
+DROP FUNCTION IF EXISTS fn_listar_resenas;
+DROP FUNCTION IF EXISTS fn_listar_resenas_servicio;
 
 DROP PROCEDURE IF EXISTS sp_actualizar_aerolinea;
 DROP PROCEDURE IF EXISTS sp_cambiar_clave_usuario;
